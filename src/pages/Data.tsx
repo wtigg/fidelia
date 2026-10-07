@@ -1,15 +1,17 @@
-import { useState } from 'react'
-import { Database, Download, FileUp, Mail, RefreshCw, Wand2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { CheckCircle2, Database, Download, FileUp, Mail, RefreshCw, Wand2, XCircle } from 'lucide-react'
 import { Badge, Button, Card, PageHeader } from '../components/ui.tsx'
 import { generateDemo } from '../data/generate.ts'
 import { download, exportDonations, exportDonors, exportEngagement, importCsv } from '../lib/csv.ts'
-import { formatDate } from '../lib/dates.ts'
+import { formatDate, fx } from '../lib/dates.ts'
 import { ACTION_LABELS } from '../lib/labels.ts'
+import { isOk, qualityReport } from '../lib/quality.ts'
 import { useStore } from '../state/store.tsx'
 
 export default function Data() {
   const { dataset, loadDataset, scores, donorsById } = useStore()
-  const [size, setSize] = useState(2000)
+  const quality = useMemo(() => qualityReport(dataset), [dataset])
+  const [size, setSize] = useState(4000)
   const [seed, setSeed] = useState(42)
   const [files, setFiles] = useState<{ donors?: File; donations?: File; engagement?: File }>({})
   const [error, setError] = useState<string>()
@@ -32,7 +34,7 @@ export default function Data() {
     const header = 'donor_id,first_name,last_name,email,segment,probability,action,expected_value,reasons'
     const rows = scores.map((s) => {
       const d = donorsById.get(s.donorId)!
-      return [s.donorId, d.firstName, d.lastName, d.email, s.segment, s.actionProb.toFixed(3), s.action ? ACTION_LABELS[s.action] : '', s.expectedValue, `"${s.reasons.map((r) => r.text).join(' | ')}"`].join(',')
+      return [s.donorId, d.firstName, d.lastName, d.email, s.segment, fx(s.actionProb, 3), s.action ? ACTION_LABELS[s.action] : '', s.expectedValue, `"${s.reasons.map((r) => r.text).join(' | ')}"`].join(',')
     })
     download('fidelia-scores.csv', [header, ...rows].join('\n'))
   }
@@ -59,14 +61,36 @@ export default function Data() {
         <span className="font-medium text-stone-900">Source active :</span>
         <Badge className="bg-brand-50 text-brand-700 ring-brand-100">{dataset.source === 'demo' ? 'Démo générée' : dataset.source === 'csv' ? 'Import CSV' : 'Supabase'}</Badge>
         <span className="text-stone-500">
-          {dataset.donors.length.toLocaleString('fr-FR')} donateurs · {dataset.donations.length.toLocaleString('fr-FR')} dons · du {formatDate(dataset.historyStart)} au {formatDate(dataset.refDate)}
+          {dataset.donors.length.toLocaleString('fr-CA')} donateurs · {dataset.donations.length.toLocaleString('fr-CA')} dons · du {formatDate(dataset.historyStart)} au {formatDate(dataset.refDate)}
         </span>
       </div>
+
+      <Card className="mb-6" title="Qualité des données" subtitle="Contrôles automatiques à chaque chargement, selon les dimensions de Strong, Lee et Wang (1997). Les autres dimensions sont documentées dans la datasheet du dépôt (docs/).">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm">
+            <tbody className="divide-y divide-stone-100">
+              {quality.map((c) => {
+                const ok = isOk(c)
+                return (
+                  <tr key={c.label}>
+                    <td className="w-8 py-2.5 pl-5">{ok ? <CheckCircle2 className="size-4 text-brand-600" /> : <XCircle className="size-4 text-rose-500" />}</td>
+                    <td className="px-3 py-2.5 text-xs font-medium uppercase tracking-wide text-stone-400">{c.dimension}</td>
+                    <td className="px-3 py-2.5 text-stone-700">{c.label}</td>
+                    <td className="py-2.5 pr-5 text-right tabular-nums text-stone-900">
+                      {c.total > 1 ? `${c.value.toLocaleString('fr-CA')} / ${c.total.toLocaleString('fr-CA')} (${fx(((c.value / c.total) * 100), 1)} %)` : c.value}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <Card title="Importer vos données (CSV)" subtitle="Export depuis votre CRM ou votre outil de dons. Le modèle se réentraîne automatiquement.">
           <div className="space-y-3 p-5">
-            {fileInput('donors', 'Donateurs', 'id, first_name, last_name, email, city, join_date, kind, monthly_amount, churn_date, converted_at, converted_from, email_consent')}
+            {fileInput('donors', 'Donateurs', 'id, first_name, last_name, email, city, join_date, kind, monthly_amount, churn_date, converted_at, converted_from, email_consent, age, channel')}
             {fileInput('donations', 'Dons', 'donor_id, date, amount, kind, status')}
             {fileInput('engagement', 'Engagement email', 'donor_id, month (AAAA-MM), open_rate', false)}
             {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
@@ -83,14 +107,14 @@ export default function Data() {
           </div>
         </Card>
 
-        <Card title="Données de démonstration" subtitle="Une association fictive simulée mois par mois, avec des comportements réalistes (échecs de paiement, baisse d'engagement, conversions…).">
+        <Card title="Données de démonstration" subtitle="Un OBNL québécois fictif simulé mois par mois sur 4 ans, calibré sur des taux de rétention publiés (environ 43 % des donateurs redonnent l'année suivante).">
           <div className="space-y-5 p-5">
             <label className="block">
               <div className="flex justify-between text-sm">
                 <span className="font-medium text-stone-800">Nombre de donateurs</span>
-                <span className="tabular-nums text-stone-600">{size.toLocaleString('fr-FR')}</span>
+                <span className="tabular-nums text-stone-600">{size.toLocaleString('fr-CA')}</span>
               </div>
-              <input type="range" min={300} max={5000} step={100} value={size} onChange={(e) => setSize(Number(e.target.value))} className="mt-1.5 w-full accent-brand-600" />
+              <input type="range" min={500} max={8000} step={250} value={size} onChange={(e) => setSize(Number(e.target.value))} className="mt-1.5 w-full accent-brand-600" />
             </label>
             <label className="block">
               <span className="text-sm font-medium text-stone-800">Graine aléatoire</span>
@@ -114,9 +138,9 @@ export default function Data() {
         <Card title="Connexions" subtitle="Synchronisation automatique avec vos outils.">
           <ul className="divide-y divide-stone-100">
             {[
-              { icon: Database, name: 'Base de données', desc: 'Supabase / PostgreSQL : synchronisation nocturne des dons' },
-              { icon: Mail, name: "Fournisseur d'emails", desc: 'Brevo, Mailchimp, Resend : envoi et suivi des ouvertures' },
-              { icon: RefreshCw, name: 'Plateforme de dons', desc: 'HelloAsso, iRaiser, Stripe : import des prélèvements' },
+              { icon: Database, name: 'Base de données', desc: 'PostgreSQL géré au Canada : synchronisation hebdomadaire des dons' },
+              { icon: Mail, name: "Fournisseur de courriels", desc: 'Brevo, Mailchimp : envoi et suivi des ouvertures' },
+              { icon: RefreshCw, name: 'Plateforme de dons', desc: 'CanaDon, Zeffy, Stripe : import des prélèvements' },
             ].map(({ icon: Icon, name, desc }) => (
               <li key={name} className="flex items-center gap-3 px-5 py-4">
                 <span className="grid size-9 place-items-center rounded-lg bg-stone-100 text-stone-500"><Icon className="size-4" /></span>

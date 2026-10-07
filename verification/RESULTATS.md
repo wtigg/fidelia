@@ -1,0 +1,10 @@
+# Vérification scikit-learn
+
+Mêmes exemples, mêmes découpages, jeu de test identique.
+
+| Modèle | Fidélia logistique | scikit-learn logistique | Fidélia boosting | scikit-learn boosting |
+|---|---|---|---|---|
+| churn | AUC-PR 0.207 · AUC 0.730 | AUC-PR 0.206 · AUC 0.731 | AUC-PR 0.243 · AUC 0.710 | AUC-PR 0.238 · AUC 0.720 |
+| upgrade | AUC-PR 0.084 · AUC 0.656 | AUC-PR 0.081 · AUC 0.656 | AUC-PR 0.066 · AUC 0.613 | AUC-PR 0.067 · AUC 0.622 |
+| conversion | AUC-PR 0.118 · AUC 0.820 | AUC-PR 0.118 · AUC 0.821 | AUC-PR 0.119 · AUC 0.810 | AUC-PR 0.092 · AUC 0.818 |
+| reactivation | AUC-PR 0.105 · AUC 0.769 | AUC-PR 0.105 · AUC 0.769 | AUC-PR 0.123 · AUC 0.747 | AUC-PR 0.126 · AUC 0.760 |

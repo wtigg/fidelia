@@ -2,14 +2,8 @@ import { DAY, monthIndex } from '../lib/dates.ts'
 import type { Dataset, Donation, Donor, Features, GiftKind, Segment } from '../lib/types.ts'
 
 export const FEATURE_KEYS: (keyof Features)[] = [
-  'recencyDays',
-  'gifts12m',
-  'amount12m',
-  'tenureMonths',
-  'failed90d',
-  'openRate3m',
-  'engagementTrend',
-  'amountTrend',
+  'recencyDays', 'gifts12m', 'amount12m', 'tenureMonths', 'failed90d', 'openRate3m', 'engagementTrend', 'amountTrend',
+  'giftsLifetime', 'avgGift', 'lastGiftRatio', 'anniversarySoon', 'emailOptOut', 'isAnnual', 'channelWeb', 'channelEvent', 'channelStreet', 'seasonQ4',
 ]
 
 export const FEATURE_LABELS: Record<keyof Features, string> = {
@@ -18,12 +12,33 @@ export const FEATURE_LABELS: Record<keyof Features, string> = {
   amount12m: 'Montant donné (12 mois)',
   tenureMonths: 'Ancienneté (mois)',
   failed90d: 'Paiements échoués (90 j)',
-  openRate3m: "Taux d'ouverture emails (3 mois)",
-  engagementTrend: "Tendance d'engagement",
+  openRate3m: 'Taux d\'ouverture des courriels (3 mois)',
+  engagementTrend: 'Tendance d\'engagement',
   amountTrend: 'Tendance des montants',
+  giftsLifetime: 'Nombre de dons (depuis le début)',
+  avgGift: 'Don moyen',
+  lastGiftRatio: 'Dernier don / don moyen',
+  anniversarySoon: 'Date anniversaire du don annuel proche',
+  emailOptOut: 'Pas de consentement courriel',
+  isAnnual: 'Donateur annuel',
+  channelWeb: 'Recruté en ligne',
+  channelEvent: 'Recruté lors d\'un événement',
+  channelStreet: 'Recruté dans la rue',
+  seasonQ4: 'Décembre dans l\'horizon de prédiction',
 }
 
-/** Index des dons par donateur, triés par date */
+/** Famille de chaque variable, pour la documentation (datasheet) */
+export const FEATURE_GROUPS: Record<keyof Features, 'Récence-fréquence-montant' | 'Paiement' | 'Engagement' | 'Profil' | 'Contexte'> = {
+  recencyDays: 'Récence-fréquence-montant', gifts12m: 'Récence-fréquence-montant', amount12m: 'Récence-fréquence-montant',
+  giftsLifetime: 'Récence-fréquence-montant', avgGift: 'Récence-fréquence-montant', lastGiftRatio: 'Récence-fréquence-montant',
+  amountTrend: 'Récence-fréquence-montant', tenureMonths: 'Profil', failed90d: 'Paiement', openRate3m: 'Engagement',
+  engagementTrend: 'Engagement', emailOptOut: 'Engagement', anniversarySoon: 'Contexte', isAnnual: 'Profil',
+  channelWeb: 'Profil', channelEvent: 'Profil', channelStreet: 'Profil', seasonQ4: 'Contexte',
+}
+
+/** Taux d'ouverture imputé quand il n'y a pas de donnée (pas de consentement) */
+export const OPEN_RATE_IMPUTED = 0.3
+
 export function indexDonations(donations: Donation[]): Map<string, Donation[]> {
   const map = new Map<string, Donation[]>()
   for (const g of donations) {
@@ -35,31 +50,33 @@ export function indexDonations(donations: Donation[]): Map<string, Donation[]> {
   return map
 }
 
-/** Type de don du donateur à la date T (avant une éventuelle conversion) */
 export function kindAt(d: Donor, T: string): GiftKind {
   if (d.convertedAt) return d.convertedAt <= T ? 'monthly' : (d.convertedFrom ?? 'one_time')
   return d.kind
 }
 
-/** Segment du donateur à la date T, ou null s'il n'était pas encore donateur */
+function lastPaidBefore(gifts: Donation[], T: string): Donation | undefined {
+  for (let i = gifts.length - 1; i >= 0; i--) if (gifts[i].date < T && gifts[i].status === 'paid') return gifts[i]
+  return undefined
+}
+
+/** Segment à la date T. Inactif = mensuel arrêté, ou ponctuel sans don depuis 12 mois (13 mois pour un annuel) */
 export function segmentAt(d: Donor, gifts: Donation[], T: string): Segment | null {
-  if (d.joinDate > T) return null
+  // inscrit à T ou après : pas encore donateur à la date de la photo (sinon son premier don devient une « réactivation »)
+  if (d.joinDate >= T) return null
   const kind = kindAt(d, T)
   const last = lastPaidBefore(gifts, T)
   const since = last ? (Date.parse(T) - Date.parse(last.date)) / DAY : Infinity
   if (kind === 'monthly') {
     if (!d.churnDate || d.churnDate > T) return 'monthly'
-    // Ancien mensuel revenu avec un don ponctuel : redevient un candidat au mensuel
     return since <= 365 && last && last.date > d.churnDate ? 'one_time' : 'lapsed'
   }
-  const limit = kind === 'annual' ? 425 : 365
-  return since > limit ? 'lapsed' : kind
+  return since > (kind === 'annual' ? 395 : 365) ? 'lapsed' : kind
 }
 
-function lastPaidBefore(gifts: Donation[], T: string): Donation | undefined {
-  for (let i = gifts.length - 1; i >= 0; i--) {
-    if (gifts[i].date < T && gifts[i].status === 'paid') return gifts[i]
-  }
+/** Montant du don mensuel en vigueur à la date T (dernier prélèvement) */
+export function monthlyAmountAt(gifts: Donation[], T: string): number | undefined {
+  for (let i = gifts.length - 1; i >= 0; i--) if (gifts[i].date < T && gifts[i].kind === 'monthly') return gifts[i].amount
   return undefined
 }
 
@@ -68,7 +85,7 @@ function meanValid(values: number[]): number | null {
   return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null
 }
 
-/** Calcule les variables du donateur en n'utilisant QUE les données antérieures à T */
+/** Variables du donateur calculées uniquement avec les données antérieures à T (pas de fuite du futur) */
 export function computeFeatures(d: Donor, gifts: Donation[], T: string, historyStart: string): Features {
   const t = Date.parse(T)
   const ago = (g: Donation) => (t - Date.parse(g.date)) / DAY
@@ -78,38 +95,56 @@ export function computeFeatures(d: Donor, gifts: Donation[], T: string, historyS
   const in12 = paid.filter((g) => ago(g) <= 365)
   const a6 = paid.filter((g) => ago(g) <= 182).reduce((s, g) => s + g.amount, 0)
   const p6 = paid.filter((g) => ago(g) > 182 && ago(g) <= 365).reduce((s, g) => s + g.amount, 0)
+  const avg = paid.length ? paid.reduce((s, g) => s + g.amount, 0) / paid.length : 0
+  const prevAvg = paid.length > 1 ? paid.slice(0, -1).reduce((s, g) => s + g.amount, 0) / (paid.length - 1) : avg
 
   const mi = monthIndex(new Date(T), new Date(historyStart))
-  const eng = d.engagement
-  const last3 = meanValid(eng.slice(Math.max(0, mi - 3), Math.max(0, mi)))
-  const prev3 = meanValid(eng.slice(Math.max(0, mi - 6), Math.max(0, mi - 3)))
+  const last3 = meanValid(d.engagement.slice(Math.max(0, mi - 3), Math.max(0, mi)))
+  const prev3 = meanValid(d.engagement.slice(Math.max(0, mi - 6), Math.max(0, mi - 3)))
+  const kind = kindAt(d, T)
+  const monthsSinceJoin = (t - Date.parse(d.joinDate)) / (30.44 * DAY)
+  const monthT = new Date(T).getUTCMonth()
 
   return {
-    recencyDays: last ? Math.round(ago(last)) : Math.round((t - Date.parse(d.joinDate)) / DAY),
+    recencyDays: last ? Math.round(ago(last)) : Math.round(monthsSinceJoin * 30.44),
     gifts12m: in12.length,
     amount12m: in12.reduce((s, g) => s + g.amount, 0),
-    tenureMonths: Math.max(0, Math.round((t - Date.parse(d.joinDate)) / (30.44 * DAY))),
+    tenureMonths: Math.max(0, Math.round(monthsSinceJoin)),
     failed90d: before.filter((g) => g.status === 'failed' && ago(g) <= 90).length,
-    openRate3m: last3 ?? 0,
+    openRate3m: last3 ?? OPEN_RATE_IMPUTED,
     engagementTrend: last3 !== null && prev3 !== null ? last3 - prev3 : 0,
     amountTrend: Math.log((a6 + 10) / (p6 + 10)),
+    giftsLifetime: paid.length,
+    avgGift: Math.round(avg),
+    lastGiftRatio: last ? Math.log((last.amount + 1) / (prevAvg + 1)) : 0,
+    anniversarySoon: kind === 'annual' && 12 - (Math.floor(monthsSinceJoin) % 12) <= 3 ? 1 : 0,
+    emailOptOut: last3 === null ? 1 : 0,
+    isAnnual: kind === 'annual' ? 1 : 0,
+    channelWeb: d.channel === 'web' ? 1 : 0,
+    channelEvent: d.channel === 'evenement' ? 1 : 0,
+    channelStreet: d.channel === 'rue' ? 1 : 0,
+    seasonQ4: monthT >= 6 ? 1 : 0,
   }
 }
 
-/** Transformation des variables avant normalisation (log pour les variables asymétriques) */
+/** Transformation avant apprentissage : logarithme des variables très asymétriques */
 export function toVector(f: Features): number[] {
-  return [
-    Math.log1p(f.recencyDays),
-    f.gifts12m,
-    Math.log1p(f.amount12m),
-    Math.log1p(f.tenureMonths),
-    f.failed90d,
-    f.openRate3m,
-    f.engagementTrend,
-    f.amountTrend,
-  ]
+  return FEATURE_KEYS.map((k) =>
+    k === 'recencyDays' || k === 'amount12m' || k === 'tenureMonths' || k === 'giftsLifetime' || k === 'avgGift' ? Math.log1p(f[k]) : f[k],
+  )
 }
 
 export function datasetIndex(ds: Dataset) {
   return { gifts: indexDonations(ds.donations) }
+}
+
+const REGIONS: Record<string, string> = {
+  Montréal: 'Montréal', Laval: 'Couronne de Montréal', Longueuil: 'Couronne de Montréal', Terrebonne: 'Couronne de Montréal',
+  Brossard: 'Couronne de Montréal', 'Saint-Jérôme': 'Couronne de Montréal', Québec: 'Capitale-Nationale', Lévis: 'Capitale-Nationale',
+}
+export const regionOf = (city: string) => REGIONS[city] ?? 'Autres régions'
+
+export function ageBandOf(age?: number): string {
+  if (!age) return 'Inconnu'
+  return age < 35 ? 'Moins de 35 ans' : age < 55 ? '35 à 54 ans' : age < 70 ? '55 à 69 ans' : '70 ans et plus'
 }

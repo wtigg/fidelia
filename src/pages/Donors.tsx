@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Search } from 'lucide-react'
 import { DonorDrawer } from '../components/DonorDrawer.tsx'
 import { Badge, Button, Card, PageHeader, ProbBar, Tabs, Td, Th } from '../components/ui.tsx'
-import { formatEur } from '../lib/dates.ts'
+import { formatMoney } from '../lib/dates.ts'
 import { ACTION_LABELS, ACTION_TONE, SEGMENT_LABELS, SEGMENT_TONE } from '../lib/labels.ts'
 import type { Segment } from '../lib/types.ts'
 import { useStore } from '../state/store.tsx'
@@ -78,7 +78,7 @@ export default function Donors() {
                       <p className="text-xs text-stone-500">{d.city}</p>
                     </Td>
                     <Td><Badge className={SEGMENT_TONE[s.segment]}>{SEGMENT_LABELS[s.segment]}</Badge></Td>
-                    <Td className="text-right tabular-nums">{formatEur(s.features.amount12m)}</Td>
+                    <Td className="text-right tabular-nums">{formatMoney(s.features.amount12m)}</Td>
                     <Td className="text-right tabular-nums text-stone-600">il y a {s.features.recencyDays} j</Td>
                     <Td className="text-right tabular-nums text-stone-600">{Math.round(s.features.openRate3m * 100)} %</Td>
                     <Td>

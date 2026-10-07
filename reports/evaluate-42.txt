@@ -1,0 +1,54 @@
+graine=42 donateurs=4000 dons=17909
+
+churn n=2362/845/808 taux=6.7% retenu=gbdt L2=0.003 prof=2 arbres=94 2618ms
+  logistic  AUC-PR=0.207 [0.141–0.331] AUC=0.730 P@50=0.28 lift10=3.27 brier=0.0629
+  gbdt      AUC-PR=0.243 [0.162–0.377] AUC=0.710 P@50=0.34 lift10=3.44 brier=0.0614
+  ensemble  AUC-PR=0.229 [0.152–0.358] AUC=0.727 P@50=0.32 lift10=3.27 brier=0.0618
+  rfm       AUC-PR=0.091 [0.068–0.139] AUC=0.585 P@50=0.08 lift10=1.20
+  temporel AUC-PR=0.246 AUC=0.671 n=338
+  importance openRate3m:0.042 recencyDays:0.030 failed90d:0.017 channelStreet:0.012 engagementTrend:0.005
+  apprentissage 321→0.129 802→0.174 1603→0.225 3207→0.243
+  équité age 35 à 54 ans: n=316 sel=1.37 | 55 à 69 ans: n=133 sel=0.42 | 70 ans et plus: n=126 sel=0.48 | Moins de 35 ans: n=233 sel=1.12
+  équité region Autres régions: n=184 sel=1.01 | Capitale-Nationale: n=148 sel=0.85 | Couronne de Montréal: n=203 sel=1.19 | Montréal: n=273 sel=0.94
+
+upgrade n=2054/737/704 taux=4.1% retenu=ensemble L2=0.003 prof=3 arbres=19 839ms
+  logistic  AUC-PR=0.084 [0.049–0.161] AUC=0.656 P@50=0.10 lift10=1.95 brier=0.0416
+  gbdt      AUC-PR=0.066 [0.043–0.122] AUC=0.613 P@50=0.04 lift10=2.27 brier=0.0423
+  ensemble  AUC-PR=0.076 [0.047–0.134] AUC=0.637 P@50=0.10 lift10=2.92 brier=0.0419
+  rfm       AUC-PR=0.066 [0.042–0.113] AUC=0.647 P@50=0.04 lift10=1.30
+  temporel AUC-PR=0.096 AUC=0.656 n=315
+  importance openRate3m:0.123 lastGiftRatio:0.033 tenureMonths:0.026 gifts12m:0.008 recencyDays:0.007
+  apprentissage 280→0.058 698→0.050 1395→0.058 2791→0.076
+  équité age 35 à 54 ans: n=281 sel=0.50 | 55 à 69 ans: n=119 sel=1.23 | 70 ans et plus: n=95 sel=2.86 | Moins de 35 ans: n=209 sel=0.70
+  équité region Autres régions: n=159 sel=0.73 | Capitale-Nationale: n=135 sel=1.12 | Couronne de Montréal: n=173 sel=0.96 | Montréal: n=237 sel=1.15
+
+conversion n=10688/3413/3541 taux=1.8% retenu=ensemble L2=0.0003 prof=2 arbres=25 7175ms
+  logistic  AUC-PR=0.118 [0.077–0.196] AUC=0.820 P@50=0.24 lift10=4.78 brier=0.0176
+  gbdt      AUC-PR=0.119 [0.070–0.198] AUC=0.810 P@50=0.18 lift10=4.03 brier=0.0179
+  ensemble  AUC-PR=0.113 [0.076–0.195] AUC=0.818 P@50=0.24 lift10=4.78 brier=0.0177
+  rfm       AUC-PR=0.043 [0.031–0.080] AUC=0.677 P@50=0.12 lift10=3.14
+  temporel AUC-PR=0.298 AUC=0.818 n=882
+  importance openRate3m:0.156 gifts12m:0.018 giftsLifetime:0.005 engagementTrend:0.002 recencyDays:0.002
+  apprentissage 1412→0.093 3526→0.122 7051→0.123 14101→0.113
+  équité age 35 à 54 ans: n=1290 sel=0.54 | 55 à 69 ans: n=859 sel=1.29 | 70 ans et plus: n=729 sel=1.80 | Moins de 35 ans: n=663 sel=0.64
+  équité region Autres régions: n=753 sel=0.88 | Capitale-Nationale: n=643 sel=0.93 | Couronne de Montréal: n=818 sel=1.34 | Montréal: n=1327 sel=0.89
+
+reactivation n=3468/1156/1199 taux=3.9% retenu=gbdt L2=0.0003 prof=3 arbres=60 1869ms
+  logistic  AUC-PR=0.105 [0.071–0.209] AUC=0.769 P@50=0.14 lift10=3.42 brier=0.0302
+  gbdt      AUC-PR=0.123 [0.080–0.241] AUC=0.747 P@50=0.18 lift10=3.68 brier=0.0301
+  ensemble  AUC-PR=0.117 [0.075–0.230] AUC=0.767 P@50=0.16 lift10=4.21 brier=0.0299
+  rfm       AUC-PR=0.039 [0.027–0.060] AUC=0.598 P@50=0.02 lift10=1.31
+  temporel AUC-PR=0.051 AUC=0.643 n=1111
+  importance openRate3m:0.105 recencyDays:0.034 isAnnual:0.026 giftsLifetime:0.014 channelEvent:0.014
+  apprentissage 464→0.063 1156→0.085 2311→0.111 4624→0.123
+  équité age 35 à 54 ans: n=480 sel=0.97 | 55 à 69 ans: n=245 sel=1.06 | 70 ans et plus: n=169 sel=1.13 | Moins de 35 ans: n=305 sel=0.92
+  équité region Autres régions: n=264 sel=1.14 | Capitale-Nationale: n=211 sel=1.00 | Couronne de Montréal: n=268 sel=0.94 | Montréal: n=456 sel=0.96
+
+segments { monthly: 489, lapsed: 2343, one_time: 894, annual: 274 }
+actions {
+  churn_prevention: 43,
+  upgrade_one_time: 53,
+  reactivation: 28,
+  thank: 33,
+  upgrade_annual: 16
+}

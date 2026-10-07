@@ -8,7 +8,12 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "evaluate": "tsx scripts/evaluate.ts"
+    "evaluate": "tsx scripts/evaluate.ts",
+    "kdd98": "tsx scripts/kdd98.ts",
+    "calibration": "tsx scripts/calibration.ts",
+    "train": "tsx scripts/train.ts",
+    "robustness": "tsx scripts/robustness.ts",
+    "export-rows": "tsx scripts/export-rows.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",

@@ -64,6 +64,8 @@ export function exportDonors(ds: Dataset): string {
       converted_at: d.convertedAt ?? '',
       converted_from: d.convertedFrom ?? '',
       email_consent: d.emailConsent ? 'oui' : 'non',
+      age: d.age ?? '',
+      channel: d.channel ?? '',
     })),
   )
 }
@@ -150,6 +152,8 @@ export function importCsv(donorsCsv: string, donationsCsv: string, engagementCsv
         monthlyAmount: r.monthly_amount ? Number(r.monthly_amount) : undefined,
         engagement: engagement.get(r.id) ?? new Array(months).fill(-1),
         emailConsent: !/^(non|no|false|0)$/i.test(r.email_consent ?? 'oui'),
+        age: r.age ? Number(r.age) || undefined : undefined,
+        channel: (['web', 'evenement', 'rue', 'courrier'] as const).find((c) => c === r.channel),
       }
     })
   if (!donors.length) throw new Error('Aucun donateur lisible : colonne id obligatoire')

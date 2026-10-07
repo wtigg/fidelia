@@ -1,86 +1,83 @@
 # Fidélia
 
-SaaS pour les associations et ONG : un modèle d'IA prédit quels donateurs vont arrêter leur don, lesquels peuvent passer au don mensuel et lesquels relancer, puis prépare les emails correspondants.
+**Qui relancer, remercier ou solliciter ?** Outil d'aide à la décision pour les petits OBNL. À partir de l'historique des dons, des modèles d'IA prédisent :
+- l'attrition des donateurs mensuels ;
+- le passage au don mensuel ;
+- la hausse du don ;
+- la réactivation des inactifs.
 
-Projet étudiant (cours de développement d'applications IA).
+L'outil classe ensuite les donateurs par valeur attendue et prépare des brouillons de courriels. Un humain valide chaque envoi.
 
-## Fonctionnalités
+Projet d'équipe, TECH60711 *Réalisation d'applications d'IA*, HEC Montréal, automne 2026. Équipe 4 : Geoffrey Carel, Juliette Ponce, Juliette Violon, Paul Soubigou.
 
-- **Trois modèles prédictifs**
-  - churn des donateurs mensuels à 90 jours
-  - passage au don mensuel (ponctuel ou annuel) à 6 mois
-  - réactivation des donateurs inactifs à 6 mois
-- **Deux algorithmes codés à la main**, sans librairie de ML :
-  - régression logistique (descente de gradient Adam + régularisation L2)
-  - gradient boosting d'arbres de décision
-  L'application compare les deux à une règle métier simple et retient automatiquement le meilleur.
-- **Explications** : pour chaque donateur, les variables qui font monter le score (« 2 paiements échoués sur 90 jours », « n'ouvre que 12 % des emails »…).
-- **Recommandations** classées par valeur attendue (probabilité × montant annuel).
-- **Emails personnalisés** générés à partir de l'action et des raisons. Envoi simulé pour l'instant.
-- **Automatisations** : seuil de déclenchement et validation humaine, par type d'action.
-- **Page Modèle IA** : courbe ROC, AUC, lift, calibration, importance des variables, hyperparamètres modifiables, simulateur de prédiction.
-- **Données** : démo générée (2 000 donateurs sur 36 mois) ou import CSV de vos propres données.
+## Résultats clés
 
-## Comment le modèle apprend
+| | Fidélia | Règle RFM (référence métier) |
+|---|---|---|
+| AUC-PR attrition, jeu synthétique | **0,243** [0,162–0,377] | 0,091 [0,068–0,139] |
+| AUC-PR passage au mensuel, jeu synthétique | **0,113** [0,076–0,195] | 0,043 [0,031–0,080] |
+| AUC-PR réactivation, jeu synthétique | **0,123** [0,080–0,241] | 0,039 [0,027–0,060] |
+| AUC-PR hausse, jeu synthétique | 0,076 | 0,066 : **règle RFM conservée** |
+| AUC-PR réactivation, **vrais donateurs** (KDD Cup 1998) | **0,083** [0,075–0,094] | 0,053 [0,049–0,058] |
+| Profit d'une relance réelle avec 20 % des envois (KDD 98) | **2 133 $** | 1 413 $ |
+| Écart significatif avec RFM, sur 5 jeux générés × 4 modèles | **15 / 20** | |
+| Requis de performance validés (modèle livré) | **17 / 24** (échecs discutés dans le rapport) | |
 
-1. **Photo à une date T** : 8 variables par donateur, calculées uniquement avec les données antérieures à T. Variables : récence, nombre et montant des dons sur 12 mois, ancienneté, échecs de paiement, ouverture des emails, tendances. On répète pour plusieurs dates T.
-2. **Étiquette** : ce qui s'est réellement passé après T (arrêt, conversion, nouveau don).
-3. **Entraînement** sur 80 % des donateurs.
-4. **Test** sur les 20 % restants, jamais vus, découpés par donateur pour éviter les fuites.
+**Gouvernance.** Un modèle n'est déployé que s'il bat la règle RFM de façon significative. Sinon, l'application garde la règle RFM : c'est le cas aujourd'hui pour « solliciter plus ».
 
-Les données de démo sont simulées mois par mois avec des variables cachées (attachement, humeur). Le modèle doit les retrouver à partir des seuls signaux observables.
+Les implémentations maison donnent des résultats équivalents à scikit-learn (`verification/RESULTATS.md`) : logistique à 0,003 près, boosting à 0,03 près.
 
-Résultats sur la démo (AUC sur le jeu de test) :
-
-| Modèle | Régression logistique | Gradient boosting | Règle métier |
-|---|---|---|---|
-| Churn 90 j | 0,74 | 0,71 | 0,55 |
-| Conversion 6 mois | 0,78 | 0,78 | 0,65 |
-| Réactivation 6 mois | 0,62 | 0,65 | 0,47 |
-
-## Lancer en local
+## Lancer
 
 ```bash
 npm install
 npm run dev
 ```
 
-Évaluer les modèles en ligne de commande :
+## Scripts
 
-```bash
-npm run evaluate
-```
+| Commande | Rôle |
+|---|---|
+| `npm run dev` | Application en local |
+| `npm run build` | Version de production (`dist/`, compatible GitHub Pages) |
+| `npm run train` | Entraîne les 4 modèles et écrit le modèle versionné `src/data/model.json` |
+| `npm run evaluate [graine]` | Rapport détaillé : IC, test temporel, courbes d'apprentissage, équité (`reports/`) |
+| `npm run calibration` | Compare le jeu synthétique à des taux de rétention publiés |
+| `npm run robustness` | Rejoue l'évaluation sur 5 jeux générés |
+| `./scripts/download-kdd98.sh && npm run kdd98` | Validation sur données réelles (KDD Cup 1998, 37 Mo) |
+| `npm run export-rows && python3 verification/verify_sklearn.py` | Vérification contre scikit-learn |
 
-## Déploiement (GitHub Pages)
+## Documentation
 
-1. Pousser le dossier sur un dépôt GitHub (branche `main`).
-2. Dans le dépôt : *Settings → Pages → Source : GitHub Actions*.
-3. Le workflow `.github/workflows/deploy.yml` construit et publie le site à chaque push.
+- [`docs/RAPPORT.md`](docs/RAPPORT.md) : rapport complet, structuré selon la grille du cours
+- [`docs/GRILLE.md`](docs/GRILLE.md) : correspondance entre la grille d'évaluation et le livrable
+- [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md) : fiche du modèle
+- [`docs/DATASHEET-synthetique.md`](docs/DATASHEET-synthetique.md) et [`docs/DATASHEET-kdd98.md`](docs/DATASHEET-kdd98.md) : datasheets (Gebru et al., 2021)
+- [`docs/PRESENTATION.md`](docs/PRESENTATION.md) : affiche et script de démonstration
 
-Tout le calcul (entraînement compris) tourne dans le navigateur, dans un Web Worker. Aucun serveur n'est nécessaire.
-
-## Structure
+## Architecture
 
 ```
 src/
-  ml/          features, régression logistique, boosting, métriques, pipeline, worker
-  data/        générateur de données de démo
-  lib/         types, dates, emails, CSV
-  state/       état global (modèles, scores, campagnes, automatisations)
-  pages/       tableau de bord, recommandations, donateurs, emails, automatisations, modèle, données
-scripts/       évaluation en ligne de commande
+  ml/        variables, régression logistique, gradient boosting, métriques, règle RFM,
+             protocole d'expérience, pipeline, worker
+  data/      générateur synthétique, modèle versionné (model.json), résultats KDD 98
+  lib/       types, impact, requis de performance, qualité des données, courriels, CSV
+  state/     état global (scores, campagnes, automatisations, groupe témoin)
+  pages/     tableau de bord, recommandations, impact, donateurs, courriels,
+             automatisations, modèle IA, données
+scripts/     entraînement, évaluation, calibration, robustesse, KDD 98, export
+verification/  vérification indépendante avec scikit-learn
+docs/        rapport et documentation
 ```
 
-## Format CSV attendu
+Tout le calcul tourne dans le navigateur ; aucune donnée ne quitte le poste. Le jeu de démonstration charge un modèle pré-entraîné. Un import CSV déclenche un réentraînement dans un Web Worker.
 
-- `donateurs.csv` : `id, first_name, last_name, email, city, join_date, kind (monthly|annual|one_time), monthly_amount, churn_date, converted_at, converted_from, email_consent`
-- `dons.csv` : `donor_id, date, amount, kind, status (paid|failed)`
-- `engagement.csv` (optionnel) : `donor_id, month (AAAA-MM), open_rate`
+## Déploiement sur GitHub Pages
 
-Le bouton « Modèles de fichiers » de la page Données télécharge des exemples complets.
+Le workflow `.github/workflows/deploy.yml` construit et publie le site à chaque push sur `main`. Il faut l'activer dans *Settings → Pages → Source : GitHub Actions*. Sur un dépôt privé, GitHub Pages demande un compte GitHub Pro, Team ou Education.
 
-## Prochaines étapes
+## Données
 
-- Backend (Supabase) : synchronisation nocturne avec la base de l'association, entraînement planifié.
-- Envoi réel des emails (Brevo, Resend…) et suivi des ouvertures.
-- Mesure de l'impact par groupe témoin (A/B test sur les relances).
+- **Aucune donnée réelle d'organisation** n'est utilisée. Le jeu de démonstration est synthétique et calibré : voir la datasheet.
+- **KDD Cup 1998** est un jeu public de recherche ; il n'est pas versionné. Conditions d'usage : ne pas nommer l'organisation commanditaire, et prévenir Epsilon en cas de résultats publiés.

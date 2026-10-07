@@ -19,7 +19,13 @@ export interface Donor {
   /** Taux d'ouverture email par mois (index 0 = premier mois de l'historique, -1 = pas encore donateur) */
   engagement: number[]
   emailConsent: boolean
+  /** Âge (sert uniquement à l'analyse d'équité, jamais comme variable du modèle) */
+  age?: number
+  /** Canal d'acquisition */
+  channel?: Channel
 }
+
+export type Channel = 'web' | 'evenement' | 'rue' | 'courrier'
 
 export interface Donation {
   id: string
@@ -42,9 +48,9 @@ export interface Dataset {
 
 export type Segment = 'monthly' | 'one_time' | 'annual' | 'lapsed'
 
-export type ActionType = 'churn_prevention' | 'reactivation' | 'upgrade_annual' | 'upgrade_one_time'
+export type ActionType = 'churn_prevention' | 'reactivation' | 'upgrade_annual' | 'upgrade_one_time' | 'upgrade_amount' | 'thank'
 
-export type ModelKind = 'churn' | 'conversion' | 'reactivation'
+export type ModelKind = 'churn' | 'conversion' | 'reactivation' | 'upgrade'
 
 export interface Features {
   recencyDays: number
@@ -55,6 +61,16 @@ export interface Features {
   openRate3m: number
   engagementTrend: number
   amountTrend: number
+  giftsLifetime: number
+  avgGift: number
+  lastGiftRatio: number
+  anniversarySoon: number
+  emailOptOut: number
+  isAnnual: number
+  channelWeb: number
+  channelEvent: number
+  channelStreet: number
+  seasonQ4: number
 }
 
 export interface Reason {
@@ -71,6 +87,9 @@ export interface DonorScore {
   churnProb?: number
   conversionProb?: number
   reactivationProb?: number
+  upgradeProb?: number
+  /** Raison du remerciement (règle, pas de modèle) */
+  thankReason?: string
   action?: ActionType
   /** Probabilité du modèle associé à l'action */
   actionProb: number
@@ -86,7 +105,8 @@ export interface CampaignItem {
   type: ActionType
   subject: string
   body: string
-  status: 'draft' | 'approved' | 'sent' | 'dismissed'
+  /** 'control' = groupe témoin : volontairement non contacté pour mesurer l'effet réel */
+  status: 'draft' | 'approved' | 'sent' | 'dismissed' | 'control'
   createdAt: string
   sentAt?: string
   /** 'auto' = envoyé par une automatisation sans validation */

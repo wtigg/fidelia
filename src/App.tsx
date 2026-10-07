@@ -5,6 +5,7 @@ import Campaigns from './pages/Campaigns.tsx'
 import Dashboard from './pages/Dashboard.tsx'
 import Data from './pages/Data.tsx'
 import Donors from './pages/Donors.tsx'
+import Impact from './pages/Impact.tsx'
 import Model from './pages/Model.tsx'
 import Recommendations from './pages/Recommendations.tsx'
 
@@ -14,6 +15,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/recommandations" element={<Recommendations />} />
+        <Route path="/impact" element={<Impact />} />
         <Route path="/donateurs" element={<Donors />} />
         <Route path="/campagnes" element={<Campaigns />} />
         <Route path="/automatisations" element={<Automations />} />

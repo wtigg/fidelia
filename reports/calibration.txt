@@ -1,0 +1,9 @@
+Donateurs ayant donné en N-1 : 1000
+Rétention globale N-1 → N        42.9 %   (cible FEP 2025 : 43,3 %)
+Rétention des nouveaux donateurs 29.6 %   (ordre de grandeur publié : ~20 %)
+Rétention des donateurs réguliers 68.6 %  (ordre de grandeur publié : 60-70 %)
+Rétention des mensuels sur 12 mois 77.2 % (ordre de grandeur : 75-85 %)
+Conversions au mensuel par an    4.1 %
+Part des revenus en mensuel      44.6 %
+Part des dons ponctuels en décembre 16.1 %
+Taux d'échec des prélèvements    3.1 %

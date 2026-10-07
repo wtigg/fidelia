@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
-import { BrainCircuit, Database, HeartHandshake, LayoutDashboard, Loader2, Mail, Menu, Sparkles, Users, Zap } from 'lucide-react'
+import { BrainCircuit, Database, HeartHandshake, LayoutDashboard, Loader2, Mail, Menu, Sparkles, TrendingUp, Users, Zap } from 'lucide-react'
 import { formatDate } from '../lib/dates.ts'
 import { ORG_NAME } from '../lib/emails.ts'
 import { useStore } from '../state/store.tsx'
@@ -9,15 +9,16 @@ import { cx } from './ui.tsx'
 const NAV = [
   { to: '/', label: 'Tableau de bord', icon: LayoutDashboard },
   { to: '/recommandations', label: 'Recommandations', icon: Sparkles },
+  { to: '/impact', label: 'Impact', icon: TrendingUp },
   { to: '/donateurs', label: 'Donateurs', icon: Users },
-  { to: '/campagnes', label: 'Emails', icon: Mail },
+  { to: '/campagnes', label: 'Courriels', icon: Mail },
   { to: '/automatisations', label: 'Automatisations', icon: Zap },
   { to: '/modele', label: 'Modèle IA', icon: BrainCircuit },
   { to: '/donnees', label: 'Données', icon: Database },
 ]
 
 export function Layout({ children }: { children: ReactNode }) {
-  const { training, dataset, campaign, scores } = useStore()
+  const { training, trainingStep, dataset, campaign, scores, modelVersion } = useStore()
   const [open, setOpen] = useState(false)
   const location = useLocation()
   const drafts = campaign.filter((c) => c.status === 'draft' || c.status === 'approved').length
@@ -58,15 +59,15 @@ export function Layout({ children }: { children: ReactNode }) {
       {nav}
       <div className="mt-auto rounded-xl bg-white/5 p-3 text-xs text-brand-100/70">
         <p className="font-medium text-white">{ORG_NAME}</p>
-        <p className="mt-0.5">{dataset.donors.length.toLocaleString('fr-FR')} donateurs · {dataset.source === 'demo' ? 'données de démo' : dataset.source === 'csv' ? 'import CSV' : 'Supabase'}</p>
+        <p className="mt-0.5">{dataset.donors.length.toLocaleString('fr-CA')} donateurs · {dataset.source === 'demo' ? 'données de démo' : dataset.source === 'csv' ? 'import CSV' : 'Supabase'}</p>
         <p className="mt-2 flex items-center gap-1.5">
           {training ? (
             <>
-              <Loader2 className="size-3 animate-spin" /> Entraînement du modèle…
+              <Loader2 className="size-3 animate-spin" /> Entraînement{trainingStep ? ` : ${trainingStep}` : '…'}
             </>
           ) : (
             <>
-              <span className="size-1.5 rounded-full bg-emerald-400" /> Modèle à jour · {formatDate(dataset.refDate)}
+              <span className="size-1.5 rounded-full bg-emerald-400" /> Modèle {modelVersion} · {formatDate(dataset.refDate)}
             </>
           )}
         </p>

@@ -1,6 +1,8 @@
 /**
  * Gradient boosting d'arbres de décision (perte logistique), écrit à la main.
- * Chaque arbre corrige les erreurs des précédents ; les seuils candidats sont des quantiles.
+ * - histogrammes : chaque variable est découpée en au plus 32 intervalles (quantiles), ce qui rend l'entraînement rapide ;
+ * - sous-échantillonnage des lignes à chaque arbre (boosting stochastique) ;
+ * - arrêt précoce sur un jeu de validation pour choisir le nombre d'arbres.
  */
 export interface TreeNode {
   feature?: number
@@ -14,7 +16,7 @@ export interface GbdtModel {
   base: number
   learningRate: number
   trees: TreeNode[]
-  /** Gain cumulé par variable (importance) */
+  /** Gain cumulé par variable */
   gain: number[]
 }
 
@@ -24,66 +26,38 @@ export interface GbdtOptions {
   learningRate?: number
   minLeaf?: number
   bins?: number
+  lambda?: number
+  subsample?: number
+  seed?: number
+  /** Jeu de validation pour l'arrêt précoce */
+  valX?: number[][]
+  valY?: number[]
+  patience?: number
 }
 
 const sigmoid = (z: number) => 1 / (1 + Math.exp(-z))
 
-function candidateThresholds(X: number[][], j: number, bins: number): number[] {
-  const values = [...new Set(X.map((x) => x[j]))].sort((a, b) => a - b)
-  if (values.length <= bins) return values.slice(0, -1).map((v, i) => (v + values[i + 1]) / 2)
-  const out: number[] = []
-  for (let b = 1; b < bins; b++) out.push(values[Math.floor((b * values.length) / bins)])
-  return [...new Set(out)]
+function quantileEdges(X: number[][], j: number, bins: number): number[] {
+  const values = X.map((x) => x[j]).sort((a, b) => a - b)
+  const edges: number[] = []
+  for (let b = 1; b < bins; b++) {
+    const v = values[Math.floor((b * values.length) / bins)]
+    if (!edges.length || v > edges[edges.length - 1]) edges.push(v)
+  }
+  // la dernière borne est exclue : on ne coupe jamais au-dessus du maximum
+  return edges.filter((e) => e < values[values.length - 1])
 }
 
-function buildTree(
-  X: number[][],
-  g: number[],
-  h: number[],
-  rows: number[],
-  depth: number,
-  thresholds: number[][],
-  minLeaf: number,
-  gain: number[],
-): TreeNode {
-  const lambda = 1
-  const G = rows.reduce((s, i) => s + g[i], 0)
-  const H = rows.reduce((s, i) => s + h[i], 0)
-  const leaf = { value: -G / (H + lambda) }
-  if (depth === 0 || rows.length < 2 * minLeaf) return leaf
-
-  const parentScore = (G * G) / (H + lambda)
-  let best = { gain: 1e-6, feature: -1, threshold: 0 }
-  for (let j = 0; j < thresholds.length; j++) {
-    for (const t of thresholds[j]) {
-      let GL = 0
-      let HL = 0
-      let nL = 0
-      for (const i of rows) {
-        if (X[i][j] <= t) {
-          GL += g[i]
-          HL += h[i]
-          nL++
-        }
-      }
-      const nR = rows.length - nL
-      if (nL < minLeaf || nR < minLeaf) continue
-      const GR = G - GL
-      const HR = H - HL
-      const score = (GL * GL) / (HL + lambda) + (GR * GR) / (HR + lambda) - parentScore
-      if (score > best.gain) best = { gain: score, feature: j, threshold: t }
-    }
+/** Index de l'intervalle : x <= edges[b] → b, sinon edges.length */
+function binOf(edges: number[], x: number): number {
+  let lo = 0
+  let hi = edges.length
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1
+    if (x <= edges[mid]) hi = mid
+    else lo = mid + 1
   }
-  if (best.feature < 0) return leaf
-  gain[best.feature] += best.gain
-  const L = rows.filter((i) => X[i][best.feature] <= best.threshold)
-  const R = rows.filter((i) => X[i][best.feature] > best.threshold)
-  return {
-    feature: best.feature,
-    threshold: best.threshold,
-    left: buildTree(X, g, h, L, depth - 1, thresholds, minLeaf, gain),
-    right: buildTree(X, g, h, R, depth - 1, thresholds, minLeaf, gain),
-  }
+  return lo
 }
 
 function treeValue(node: TreeNode, x: number[]): number {
@@ -91,29 +65,109 @@ function treeValue(node: TreeNode, x: number[]): number {
   return node.value!
 }
 
-export function trainGbdt(X: number[][], y: number[], opts: GbdtOptions = {}): GbdtModel {
-  const { rounds = 80, depth = 3, learningRate = 0.1, minLeaf = 20, bins = 16 } = opts
-  const p = X[0]?.length ?? 0
-  const rate = Math.min(0.99, Math.max(0.01, y.reduce((s, v) => s + v, 0) / y.length))
-  const base = Math.log(rate / (1 - rate))
-  const F = new Array(X.length).fill(base)
-  const thresholds = Array.from({ length: p }, (_, j) => candidateThresholds(X, j, bins))
-  const rows = X.map((_, i) => i)
-  const gain = new Array(p).fill(0)
-  const trees: TreeNode[] = []
-  for (let r = 0; r < rounds; r++) {
-    const prob = F.map(sigmoid)
-    const g = prob.map((pi, i) => pi - y[i])
-    const h = prob.map((pi) => Math.max(pi * (1 - pi), 1e-6))
-    const tree = buildTree(X, g, h, rows, depth, thresholds, minLeaf, gain)
-    trees.push(tree)
-    for (let i = 0; i < X.length; i++) F[i] += learningRate * treeValue(tree, X[i])
-  }
-  return { base, learningRate, trees, gain }
+export function predictGbdtRaw(model: GbdtModel, x: number[], nTrees = model.trees.length): number {
+  let z = model.base
+  for (let t = 0; t < nTrees; t++) z += model.learningRate * treeValue(model.trees[t], x)
+  return z
 }
 
 export function predictGbdt(model: GbdtModel, x: number[]): number {
-  let z = model.base
-  for (const t of model.trees) z += model.learningRate * treeValue(t, x)
-  return sigmoid(z)
+  return sigmoid(predictGbdtRaw(model, x))
+}
+
+export function trainGbdt(X: number[][], y: number[], opts: GbdtOptions = {}): GbdtModel & { bestRound: number; valLoss: number[] } {
+  const { rounds = 200, depth = 3, learningRate = 0.08, minLeaf = 20, bins = 32, lambda = 1, subsample = 0.8, seed = 1, patience = 25 } = opts
+  const n = X.length
+  const p = X[0]?.length ?? 0
+  const edges = Array.from({ length: p }, (_, j) => quantileEdges(X, j, bins))
+  const B = X.map((x) => x.map((v, j) => binOf(edges[j], v)))
+  const rate = Math.min(0.99, Math.max(0.01, y.reduce((s, v) => s + v, 0) / n))
+  const base = Math.log(rate / (1 - rate))
+  const F = new Float64Array(n).fill(base)
+  const g = new Float64Array(n)
+  const h = new Float64Array(n)
+  const gain = new Array(p).fill(0)
+  const trees: TreeNode[] = []
+  const valF = opts.valX ? new Float64Array(opts.valX.length).fill(base) : null
+  const valLoss: number[] = []
+  let best = { loss: Infinity, round: 0 }
+
+  let s = seed >>> 0
+  const rand = () => {
+    s = (s * 1664525 + 1013904223) >>> 0
+    return s / 4294967296
+  }
+
+  const build = (rows: number[], d: number): TreeNode => {
+    let G = 0
+    let H = 0
+    for (const i of rows) { G += g[i]; H += h[i] }
+    const leaf = { value: -G / (H + lambda) }
+    if (d === 0 || rows.length < 2 * minLeaf) return leaf
+    const parent = (G * G) / (H + lambda)
+    let bestSplit = { gain: 1e-6, feature: -1, bin: 0 }
+    for (let j = 0; j < p; j++) {
+      const nb = edges[j].length + 1
+      if (nb < 2) continue
+      const hg = new Float64Array(nb)
+      const hh = new Float64Array(nb)
+      const hc = new Int32Array(nb)
+      for (const i of rows) {
+        const b = B[i][j]
+        hg[b] += g[i]
+        hh[b] += h[i]
+        hc[b]++
+      }
+      let GL = 0, HL = 0, nL = 0
+      for (let b = 0; b < nb - 1; b++) {
+        GL += hg[b]; HL += hh[b]; nL += hc[b]
+        const nR = rows.length - nL
+        if (nL < minLeaf) continue
+        if (nR < minLeaf) break
+        const GR = G - GL
+        const HR = H - HL
+        const score = (GL * GL) / (HL + lambda) + (GR * GR) / (HR + lambda) - parent
+        if (score > bestSplit.gain) bestSplit = { gain: score, feature: j, bin: b }
+      }
+    }
+    if (bestSplit.feature < 0) return leaf
+    gain[bestSplit.feature] += bestSplit.gain
+    const L: number[] = []
+    const R: number[] = []
+    for (const i of rows) (B[i][bestSplit.feature] <= bestSplit.bin ? L : R).push(i)
+    return {
+      feature: bestSplit.feature,
+      threshold: edges[bestSplit.feature][bestSplit.bin],
+      left: build(L, d - 1),
+      right: build(R, d - 1),
+    }
+  }
+
+  for (let r = 0; r < rounds; r++) {
+    for (let i = 0; i < n; i++) {
+      const pi = sigmoid(F[i])
+      g[i] = pi - y[i]
+      h[i] = Math.max(pi * (1 - pi), 1e-6)
+    }
+    const rows: number[] = []
+    for (let i = 0; i < n; i++) if (subsample >= 1 || rand() < subsample) rows.push(i)
+    const tree = build(rows, depth)
+    trees.push(tree)
+    for (let i = 0; i < n; i++) F[i] += learningRate * treeValue(tree, X[i])
+
+    if (valF && opts.valX && opts.valY) {
+      let loss = 0
+      for (let i = 0; i < valF.length; i++) {
+        valF[i] += learningRate * treeValue(tree, opts.valX[i])
+        const pi = Math.min(1 - 1e-9, Math.max(1e-9, sigmoid(valF[i])))
+        loss -= opts.valY[i] ? Math.log(pi) : Math.log(1 - pi)
+      }
+      loss /= valF.length
+      valLoss.push(loss)
+      if (loss < best.loss - 1e-6) best = { loss, round: r + 1 }
+      else if (r + 1 - best.round >= patience) break
+    }
+  }
+  const bestRound = valF ? best.round : trees.length
+  return { base, learningRate, trees: trees.slice(0, bestRound), gain, bestRound, valLoss }
 }

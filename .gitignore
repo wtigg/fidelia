@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+data/kdd98/*
+!data/kdd98/.gitkeep
+verification/rows-*.csv
+.claude/

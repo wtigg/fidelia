@@ -6,8 +6,8 @@ import { ACTION_LABELS, ACTION_TONE } from '../lib/labels.ts'
 import type { CampaignItem } from '../lib/types.ts'
 import { useStore } from '../state/store.tsx'
 
-type Filter = 'todo' | 'sent' | 'dismissed'
-const timeFmt = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+type Filter = 'todo' | 'sent' | 'control' | 'dismissed'
+const timeFmt = new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 
 export default function Campaigns() {
   const { campaign, donorsById, updateItem, sendItems, resetCampaign } = useStore()
@@ -18,6 +18,7 @@ export default function Campaigns() {
     () => ({
       todo: campaign.filter((c) => c.status === 'draft' || c.status === 'approved'),
       sent: campaign.filter((c) => c.status === 'sent'),
+      control: campaign.filter((c) => c.status === 'control'),
       dismissed: campaign.filter((c) => c.status === 'dismissed'),
     }),
     [campaign],
@@ -30,12 +31,12 @@ export default function Campaigns() {
   return (
     <>
       <PageHeader
-        title="Emails"
-        subtitle="Chaque email est rédigé à partir de l'action recommandée et des raisons détectées par le modèle. Relisez, ajustez, envoyez."
+        title="Courriels"
+        subtitle="Chaque brouillon est rédigé à partir de l'action recommandée et des données du donateur, sans montant inventé. Un humain relit, ajuste et valide chaque envoi."
         actions={
           <>
             {campaign.length > 0 && (
-              <Button variant="ghost" onClick={() => confirm('Vider tout l\'historique des emails ?') && resetCampaign()}>
+              <Button variant="ghost" onClick={() => confirm('Vider tout l\'historique des courriels ?') && resetCampaign()}>
                 <Trash2 className="size-4" /> Vider
               </Button>
             )}
@@ -51,7 +52,8 @@ export default function Campaigns() {
 
       <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
         <Info className="mt-0.5 size-4 shrink-0" />
-        Envoi simulé : aucun email ne part réellement. Le branchement à un fournisseur (Brevo, Mailchimp, Resend…) est prévu dans une prochaine version.
+        Envoi simulé : aucun courriel ne part réellement dans le prototype. En production : fournisseur d'envoi (Brevo, Mailchimp…) et suivi des ouvertures.
+        Les donateurs du groupe témoin ne sont jamais contactés : comparer leurs dons à ceux des contactés mesure l'effet réel des actions.
       </div>
 
       <div className="mb-4">
@@ -61,6 +63,7 @@ export default function Campaigns() {
           items={[
             { value: 'todo', label: 'À envoyer', count: groups.todo.length },
             { value: 'sent', label: 'Envoyés', count: groups.sent.length },
+            { value: 'control', label: 'Groupe témoin', count: groups.control.length },
             { value: 'dismissed', label: 'Ignorés', count: groups.dismissed.length },
           ]}
         />
@@ -68,10 +71,10 @@ export default function Campaigns() {
 
       {!list.length ? (
         <Card>
-          <Empty icon={<Mail className="size-5" />} title={filter === 'todo' ? 'Aucun email en attente' : 'Rien ici pour le moment'}>
+          <Empty icon={<Mail className="size-5" />} title={filter === 'todo' ? 'Aucun courriel en attente' : 'Rien ici pour le moment'}>
             {filter === 'todo' && (
               <>
-                Préparez des emails depuis les <Link className="font-medium text-brand-600" to="/recommandations">recommandations</Link> ou lancez une{' '}
+                Préparez des courriels depuis les <Link className="font-medium text-brand-600" to="/recommandations">recommandations</Link> ou lancez une{' '}
                 <Link className="font-medium text-brand-600" to="/automatisations">automatisation</Link>.
               </>
             )}
@@ -130,7 +133,8 @@ export default function Campaigns() {
                     className="mt-1 w-full resize-y rounded-lg border border-stone-200 px-3 py-2 text-sm leading-relaxed outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:bg-stone-50"
                   />
                 </label>
-                {item.status !== 'sent' && (
+                {item.status === 'control' && <p className="rounded-lg bg-stone-50 px-3 py-2 text-sm text-stone-600">Groupe témoin : ce donateur n'est volontairement pas contacté.</p>}
+                {item.status !== 'sent' && item.status !== 'control' && (
                   <div className="flex flex-wrap justify-end gap-2">
                     {item.status !== 'dismissed' && (
                       <Button variant="ghost" onClick={() => updateItem(item.id, { status: 'dismissed' })}>

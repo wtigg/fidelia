@@ -1,0 +1,9 @@
+graine 1 ok
+graine 2 ok
+graine 3 ok
+graine 4 ok
+graine 5 ok
+churn         AUC-PR modèle 0.209 ± 0.032 | RFM 0.097 ± 0.007 | modèle gagne 5/5 | déployé (R1+R2) 5/5
+upgrade       AUC-PR modèle 0.103 ± 0.040 | RFM 0.057 ± 0.011 | modèle gagne 5/5 | déployé (R1+R2) 1/5
+conversion    AUC-PR modèle 0.106 ± 0.065 | RFM 0.042 ± 0.018 | modèle gagne 5/5 | déployé (R1+R2) 4/5
+reactivation  AUC-PR modèle 0.215 ± 0.032 | RFM 0.087 ± 0.012 | modèle gagne 5/5 | déployé (R1+R2) 5/5

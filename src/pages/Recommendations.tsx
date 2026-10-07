@@ -3,13 +3,13 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Check, Mail, MailX, SlidersHorizontal, Sparkles } from 'lucide-react'
 import { DonorDrawer } from '../components/DonorDrawer.tsx'
 import { Badge, Button, Card, Empty, PageHeader, ProbBar, Tabs, Td, Th } from '../components/ui.tsx'
-import { formatEur } from '../lib/dates.ts'
-import { ACTION_COLOR, ACTION_DESCRIPTIONS, ACTION_LABELS, ACTION_TONE, SEGMENT_LABELS } from '../lib/labels.ts'
+import { formatMoney } from '../lib/dates.ts'
+import { ACTION_COLOR, ACTION_DESCRIPTIONS, ACTION_LABELS, ACTION_TONE, ACTION_TYPES, SEGMENT_LABELS } from '../lib/labels.ts'
 import type { ActionType } from '../lib/types.ts'
 import { useStore } from '../state/store.tsx'
 
 type Filter = 'all' | ActionType
-const TYPES: ActionType[] = ['churn_prevention', 'upgrade_one_time', 'upgrade_annual', 'reactivation']
+const TYPES = ACTION_TYPES
 const PAGE = 40
 
 export default function Recommendations() {
@@ -41,7 +41,7 @@ export default function Recommendations() {
   const prepare = (ids: string[]) => {
     const n = createDrafts(ids)
     setSelected(new Set())
-    setToast(n ? `${n} email${n > 1 ? 's' : ''} préparé${n > 1 ? 's' : ''} dans l'onglet Emails` : 'Aucun nouvel email à préparer')
+    setToast(n ? `${n} courriel${n > 1 ? 's' : ''} préparé${n > 1 ? 's' : ''} dans l'onglet Courriels` : 'Aucun nouveau courriel à préparer')
     setTimeout(() => setToast(undefined), 3500)
   }
 
@@ -51,7 +51,7 @@ export default function Recommendations() {
     <>
       <PageHeader
         title="Recommandations"
-        subtitle="Qui relancer, qui convertir, qui retenir : le modèle classe vos donateurs par valeur attendue de l'action (probabilité × montant annuel)."
+        subtitle="Qui relancer, à qui proposer le mensuel, qui solliciter davantage, qui remercier : les donateurs sont classés par valeur attendue de l'action (probabilité × montant annuel)."
         actions={
           <>
             <Link to="/automatisations">
@@ -59,7 +59,7 @@ export default function Recommendations() {
             </Link>
             <Button variant="primary" disabled={!actionable.length} onClick={() => prepare(selected.size ? [...selected] : actionable.map((s) => s.donorId))}>
               <Mail className="size-4" />
-              {selected.size ? `Préparer ${selected.size} email${selected.size > 1 ? 's' : ''}` : `Préparer tous les emails (${actionable.length})`}
+              {selected.size ? `Préparer ${selected.size} courriel${selected.size > 1 ? 's' : ''}` : `Préparer tous les courriels (${actionable.length})`}
             </Button>
           </>
         }
@@ -86,7 +86,7 @@ export default function Recommendations() {
 
       {filter !== 'all' && (
         <p className="mb-4 text-sm text-stone-500">
-          {ACTION_DESCRIPTIONS[filter]} Seuil actuel : probabilité ≥ <b className="text-stone-700">{Math.round((auto?.threshold ?? 0) * 100)} %</b>.
+          {ACTION_DESCRIPTIONS[filter]} {filter !== 'thank' && <>Seuil actuel : probabilité ≥ <b className="text-stone-700">{Math.round((auto?.threshold ?? 0) * 100)} %</b>.</>}
         </p>
       )}
 
@@ -136,20 +136,21 @@ export default function Recommendations() {
                         <p className="font-medium text-stone-900">{d.firstName} {d.lastName}</p>
                         <p className="text-xs text-stone-500">
                           {SEGMENT_LABELS[s.segment]}
-                          {d.monthlyAmount && s.segment === 'monthly' ? ` · ${d.monthlyAmount} €/mois` : ''}
-                          {s.suggestedMonthly ? ` · suggérer ${s.suggestedMonthly} €/mois` : ''}
+                          {d.monthlyAmount && s.segment === 'monthly' ? ` · ${d.monthlyAmount} $/mois` : ''}
+                          {s.suggestedMonthly && s.action !== 'thank' && s.action !== 'churn_prevention' && s.action !== 'reactivation' ? ` · suggérer ${s.suggestedMonthly} $/mois` : ''}
                         </p>
                       </Td>
                       <Td><Badge className={ACTION_TONE[s.action!]}>{ACTION_LABELS[s.action!]}</Badge></Td>
-                      <Td><ProbBar value={s.actionProb} color={ACTION_COLOR[s.action!]} /></Td>
+                      <Td>{s.action === 'thank' ? <span className="text-xs text-stone-400">règle</span> : <ProbBar value={s.actionProb} color={ACTION_COLOR[s.action!]} />}</Td>
                       <Td>
                         <div className="flex flex-col items-start gap-1">
-                          {s.reasons.slice(0, 2).map((r) => (
+                          {s.action === 'thank' && <span className="whitespace-nowrap rounded-md bg-pink-50 px-1.5 py-0.5 text-xs text-pink-700">{s.thankReason}</span>}
+                          {s.action !== 'thank' && s.reasons.slice(0, 2).map((r) => (
                             <span key={r.feature} className="whitespace-nowrap rounded-md bg-stone-100 px-1.5 py-0.5 text-xs text-stone-600">{r.text}</span>
                           ))}
                         </div>
                       </Td>
-                      <Td className="text-right font-semibold tabular-nums text-stone-900">{formatEur(s.expectedValue)}</Td>
+                      <Td className="text-right font-semibold tabular-nums text-stone-900">{s.action === 'thank' ? '—' : formatMoney(s.expectedValue)}</Td>
                       <Td className="text-right">
                         {status ? (
                           <Badge className="bg-brand-50 text-brand-700 ring-brand-100"><Check className="size-3" />{status === 'sent' ? 'Envoyé' : 'Préparé'}</Badge>
