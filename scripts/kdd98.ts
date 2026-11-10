@@ -10,8 +10,10 @@ const t0 = performance.now()
 const lines = readFileSync(new URL('../data/kdd98/cup98LRN.txt', import.meta.url), 'utf8').split(/\r?\n/).filter(Boolean)
 const header = lines[0].split(',')
 const col = Object.fromEntries(header.map((h, i) => [h.trim(), i]))
+// Champ vide = manquant (NaN). Attention : Number('') vaut 0, d'où le test explicite.
 const num = (r: string[], k: string) => {
-  const v = Number(r[col[k]])
+  const s = (r[col[k]] ?? '').trim()
+  const v = s === '' ? NaN : Number(s)
   return Number.isFinite(v) ? v : NaN
 }
 const months = (yymm: number) => (Number.isFinite(yymm) && yymm > 0 ? Math.floor(yymm / 100) * 12 + (yymm % 100) : NaN)
@@ -26,6 +28,16 @@ const FEATURES = [
   'dernier_vs_moyen', 'anciennete_mois', 'taux_reponse_relances', 'taux_reponse_cartes', 'relances_12_mois',
   'tendance_nb_dons_96_vs_95', 'tendance_montant_96_vs_95', 'delai_premier_second_don', 'code_frequence', 'code_montant',
 ]
+
+// TIMELAG (mois entre le 1er et le 2e don) est vide quand il n'y a pas eu de 2e don (≈ donateurs à un seul don).
+// Choix assumé : codé 0, pas imputé par la médiane (la médiane inventerait un 2e don). Compté à part dans le journal.
+let timelagEmpty = 0
+const timelag = (r: string[]) => {
+  const v = num(r, 'TIMELAG')
+  if (Number.isFinite(v)) return v
+  timelagEmpty++
+  return 0
+}
 
 interface Raw { id: string; x: number[]; rfm: Row['rfm']; targetB: number; targetD: number; lastGift: number; ageBand: string; region: string }
 const raws: Raw[] = []
@@ -48,7 +60,7 @@ for (let k = 1; k < lines.length; k++) {
       recency, Math.log1p(nGifts), Math.log1p(avg), Math.log1p(num(r, 'RAMNTALL')), Math.log1p(lastGift), Math.log1p(num(r, 'MAXRAMNT')),
       Math.log((lastGift + 1) / (avg + 1)), Math.log1p(Math.max(0, tenure)), nGifts / Math.max(1, num(r, 'NUMPROM')),
       num(r, 'CARDGIFT') / Math.max(1, num(r, 'CARDPROM')), num(r, 'NUMPRM12'), g96 - g95, Math.log((a96 + 1) / (a95 + 1)),
-      num(r, 'TIMELAG'), num(r, 'RFA_2F'), ' DEFG'.indexOf((r[col.RFA_2A] ?? '').trim()),
+      timelag(r), num(r, 'RFA_2F'), ' DEFG'.indexOf((r[col.RFA_2A] ?? '').trim()),
     ],
     rfm: { recency, frequency: nGifts, monetary: avg },
     targetB: num(r, 'TARGET_B'),
@@ -66,6 +78,7 @@ const medians = FEATURES.map((_, j) => {
   return v[Math.floor(v.length / 2)] ?? 0
 })
 for (const r of raws) r.x = r.x.map((v, j) => (Number.isFinite(v) ? v : medians[j]))
+console.log(`TIMELAG vide (pas de 2e don) codé 0 : ${timelagEmpty} donateurs (${((timelagEmpty / raws.length) * 100).toFixed(1)} %)`)
 console.log(`${raws.length} donateurs lus en ${Math.round(performance.now() - t0)} ms ; manquants :`, FEATURES.map((f, j) => (missing[j] > 0 ? `${f}=${(missing[j] * 100).toFixed(1)}%` : '')).filter(Boolean).join(' ') || 'aucun')
 
 const toRows = (y: (r: Raw) => number): Row[] =>

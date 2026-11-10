@@ -43,7 +43,7 @@ export interface Dataset {
   refDate: string
   /** Mois correspondant à engagement[0] */
   historyStart: string
-  source: 'demo' | 'csv' | 'supabase'
+  source: 'demo' | 'csv'
 }
 
 export type Segment = 'monthly' | 'one_time' | 'annual' | 'lapsed'

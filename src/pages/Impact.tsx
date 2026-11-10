@@ -41,7 +41,7 @@ export default function Impact() {
     return src.map((p, i) => ({ x: Math.round(p.x * 100), Modèle: p.y, RFM: (rfm?.valueGain ?? rfm?.gain)?.[i]?.y, Hasard: p.x }))
   }, [r])
   const at10 = curves.find((c) => c.x >= 10)
-  const profit = (kdd as unknown as { reactivation: { profit: { modelTop20: { net: number }; rfmTop20: { net: number } } } }).reactivation.profit
+  const profit = (kdd as unknown as { reactivation: { profit: { nTest: number; modelTop20: { net: number }; rfmTop20: { net: number } } } }).reactivation.profit
 
   return (
     <>
@@ -184,8 +184,9 @@ export default function Impact() {
               <div className="text-sm text-stone-600">
                 <p className="font-semibold text-stone-900">Vérifié sur de vrais donateurs</p>
                 <p className="mt-1">
-                  Sur {kdd.n.toLocaleString('fr-CA')} donateurs réels (KDD Cup 1998), avec un budget limité à 20 % des envois, le ciblage par le modèle rapporte{' '}
+                  Sur {profit.nTest.toLocaleString('fr-CA')} donateurs réels de test (tirés de {kdd.n.toLocaleString('fr-CA')}, KDD Cup 1998), avec un budget limité à 20 % des envois, le ciblage par le modèle rapporte{' '}
                   <b>{formatMoney(profit.modelTop20.net)}</b> de profit net contre {formatMoney(profit.rfmTop20.net)} avec la règle RFM, soit <b>+{Math.round((profit.modelTop20.net / profit.rfmTop20.net - 1) * 100)} %</b>.
+                  {' '}Ce modèle de réactivation échoue toutefois au requis R1 : la méthode est validée, pas un modèle prêt à déployer.
                 </p>
                 <Link to="/modele" className="mt-2 inline-block font-medium text-brand-600">Voir la validation complète</Link>
               </div>

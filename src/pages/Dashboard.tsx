@@ -180,14 +180,22 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 gap-px bg-stone-100 sm:grid-cols-2 xl:grid-cols-4">
           {MODEL_KINDS.map((k) => {
             const r = reports[k]
-            const ev = r?.evaluations.find((e) => e.algorithm === r.selected)
+            const shown = r?.deployed === 'rfm' ? r.selected : r?.deployed
+            const ev = r?.evaluations.find((e) => e.algorithm === shown)
             const rfm = r?.evaluations.find((e) => e.algorithm === 'rfm')
             const max = Math.max(ev?.ap ?? 0, rfm?.ap ?? 0, 0.01)
             return (
               <div key={k} className="bg-white p-5">
-                <p className="text-sm font-medium text-stone-800">{MODEL_SPECS[k].title}</p>
+                <p className="flex items-center justify-between gap-2 text-sm font-medium text-stone-800">
+                  {MODEL_SPECS[k].title}
+                  {r && !r.deployedAuto ? (
+                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800" title="Algorithme imposé dans l'onglet Modèle IA, hors décision automatique R1/R2">Choix manuel</span>
+                  ) : r?.deployed === 'rfm' && (
+                    <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-600" title="Le modèle ne passe pas les requis R1 et R2 : la règle RFM sert au classement">RFM utilisée</span>
+                  )}
+                </p>
                 <p className="mt-1 text-2xl font-semibold tabular-nums text-stone-900">{ev ? `×${fx((ev.ap / Math.max(rfm?.ap ?? 1, 1e-6)), 1)}` : '—'}</p>
-                <p className="text-xs text-stone-500">{r?.deployed === 'rfm' ? 'ne bat pas RFM : règle RFM utilisée' : 'vs règle RFM · modèle déployé'}</p>
+                <p className="text-xs text-stone-500">vs règle RFM</p>
                 <div className="mt-3 space-y-1.5 text-xs">
                   <div className="flex items-center gap-2"><span className="w-12 text-stone-500">Modèle</span><div className="h-2 flex-1 rounded-full bg-stone-100"><div className="h-full rounded-full bg-brand-500" style={{ width: `${((ev?.ap ?? 0) / max) * 100}%` }} /></div><span className="w-10 text-right tabular-nums">{fx(ev?.ap, 2) ?? '—'}</span></div>
                   <div className="flex items-center gap-2"><span className="w-12 text-stone-500">RFM</span><div className="h-2 flex-1 rounded-full bg-stone-100"><div className="h-full rounded-full bg-stone-400" style={{ width: `${((rfm?.ap ?? 0) / max) * 100}%` }} /></div><span className="w-10 text-right tabular-nums">{fx(rfm?.ap, 2) ?? '—'}</span></div>

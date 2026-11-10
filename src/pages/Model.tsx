@@ -8,7 +8,7 @@ import { REQUIREMENTS } from '../lib/requirements.ts'
 import type { Features, ModelKind } from '../lib/types.ts'
 import type { Algorithm, Evaluation, ExperimentResult } from '../ml/experiment.ts'
 import { FEATURE_KEYS, FEATURE_LABELS, toVector } from '../ml/features.ts'
-import { ALGORITHM_LABELS, MODEL_KINDS, MODEL_SPECS, explain, predictReport, type ModelReport } from '../ml/pipeline.ts'
+import { ALGORITHM_LABELS, MODEL_KINDS, MODEL_SPECS, explain, governanceDecision, predictReport, type ModelReport } from '../ml/pipeline.ts'
 import { useStore, type AlgoChoice } from '../state/store.tsx'
 import kdd from '../data/kdd98.json'
 
@@ -66,18 +66,26 @@ export default function Model() {
 }
 
 function ModelDetail({ report, kind, choice, onChoice, trainMs }: { report: ModelReport; kind: ModelKind; choice: AlgoChoice; onChoice: (c: AlgoChoice) => void; trainMs?: number }) {
-  const sel = report.evaluations.find((e) => e.algorithm === report.selected)!
+  // algorithme réellement utilisé (choix manuel compris) ; en repli RFM, on montre le meilleur candidat
+  const shown = report.deployed === 'rfm' ? report.selected : report.deployed
+  const sel = report.evaluations.find((e) => e.algorithm === shown)!
   const rfm = report.evaluations.find((e) => e.algorithm === 'rfm')!
+  const auto = governanceDecision(report)
+  const usedHint = !report.deployedAuto
+    ? `choix manuel · décision automatique : ${ALGORITHM_LABELS[auto]}`
+    : report.deployed === 'rfm'
+      ? 'le modèle ne bat pas la règle : repli sur RFM'
+      : `meilleur sur la validation, R1 et R2 validés${trainMs ? ` · ${fx(trainMs / 1000, 1)} s` : ''}`
   return (
     <>
       <div className="mt-6 grid grid-cols-2 gap-4 xl:grid-cols-4">
         <Stat label="Exemples (entraîn. / valid. / test)" value={<span className="text-xl">{report.nTrain.toLocaleString('fr-CA')} / {report.nVal.toLocaleString('fr-CA')} / {report.nTest.toLocaleString('fr-CA')}</span>} hint={`${report.positivesTrain} cas positifs à l'entraînement`} />
         <Stat label="Taux de base" value={formatPct(report.baseRate)} hint="part des cas positifs : la cible est rare" />
         <Stat label="AUC-PR du modèle" value={fx(sel.ap, 3)} hint={`règle RFM : ${fx(rfm.ap, 3)} · ×${fx((sel.ap / Math.max(rfm.ap, 1e-6)), 1)}`} tone="good" />
-        <Stat label="Utilisé pour classer" value={<span className="text-xl">{ALGORITHM_LABELS[report.deployed]}</span>} hint={report.deployed === 'rfm' ? 'le modèle ne bat pas la règle : repli sur RFM' : `meilleur sur la validation, R1 et R2 validés${trainMs ? ` · ${fx(trainMs / 1000, 1)} s` : ''}`} icon={<Trophy className="size-4" />} tone={report.deployed === 'rfm' ? 'default' : 'gold'} />
+        <Stat label="Utilisé pour classer" value={<span className="text-xl">{ALGORITHM_LABELS[report.deployed]}</span>} hint={usedHint} icon={<Trophy className="size-4" />} tone={!report.deployedAuto || report.deployed === 'rfm' ? 'default' : 'gold'} />
       </div>
 
-      <Requirements report={report} />
+      <Requirements report={report} onAuto={() => onChoice('auto')} />
       <Comparison report={report} choice={choice} onChoice={onChoice} />
 
       <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
@@ -86,7 +94,7 @@ function ModelDetail({ report, kind, choice, onChoice, trainMs }: { report: Mode
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <Calibration evaluation={sel} color={ALGO_COLOR[report.selected]} />
+        <Calibration evaluation={sel} color={ALGO_COLOR[shown]} />
         <Validation report={report} />
       </div>
 
@@ -130,22 +138,36 @@ function Method({ kind }: { kind: ModelKind }) {
   )
 }
 
-function Requirements({ report }: { report: ModelReport }) {
+function Requirements({ report, onAuto }: { report: ModelReport; onAuto: () => void }) {
   const results = REQUIREMENTS.map((r) => ({ ...r, ...r.check(report) }))
   const passed = results.filter((r) => r.ok).length
-  const fallback = report.deployed === 'rfm'
+  const manual = !report.deployedAuto
+  const auto = governanceDecision(report)
+  const differs = manual && report.deployed !== auto
+  const fallback = !manual && report.deployed === 'rfm'
+  const status = (id: string) => `${id} ${results.find((r) => r.id === id)?.ok ? 'validé' : 'non validé'}`
   return (
     <Card className="mt-6" title="Requis de performance" subtitle={`Fixés avant l'entraînement, vérifiés à chaque réentraînement, pour le meilleur modèle candidat (${ALGORITHM_LABELS[report.selected]}).`} action={<Badge className={passed === results.length ? 'bg-brand-50 text-brand-700 ring-brand-100' : 'bg-amber-50 text-amber-800 ring-amber-200'}>{passed}/{results.length} validés</Badge>}>
-      <div className={cx('flex items-start gap-3 border-b px-5 py-3 text-sm', fallback ? 'border-amber-100 bg-amber-50 text-amber-900' : 'border-brand-100 bg-brand-50 text-brand-900')}>
-        {fallback ? <AlertTriangle className="mt-0.5 size-4 shrink-0" /> : <CheckCircle2 className="mt-0.5 size-4 shrink-0" />}
-        <p>
-          <b>Décision de déploiement : </b>
-          {fallback
-            ? 'le modèle ne bat pas nettement la règle RFM (R1 ou R2 non validé). Fidélia utilise donc la règle RFM pour cette liste, conformément à la règle de gouvernance de l\'équipe.'
-            : `le modèle bat la règle RFM (R1 et R2 validés) : ${ALGORITHM_LABELS[report.deployed]} est utilisé pour classer les donateurs.`}
-          {!report.deployedAuto && ' (Choix imposé manuellement.)'}
-        </p>
-      </div>
+      {manual ? (
+        <div className={cx('flex flex-wrap items-start gap-3 border-b px-5 py-3 text-sm', differs ? 'border-amber-100 bg-amber-50 text-amber-900' : 'border-stone-100 bg-stone-50 text-stone-700')}>
+          <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+          <p className="min-w-0 flex-1">
+            <b>Choix manuel : </b>{ALGORITHM_LABELS[report.deployed]}. <b>Décision automatique : </b>{ALGORITHM_LABELS[auto]} (meilleur candidat {ALGORITHM_LABELS[report.selected]} : {status('R1')}, {status('R2')}).
+            {differs && ' Le classement ne suit donc pas la règle de gouvernance de l\'équipe.'}
+          </p>
+          <button className="shrink-0 font-medium text-brand-700 underline-offset-2 hover:underline" onClick={onAuto}>Revenir au choix automatique</button>
+        </div>
+      ) : (
+        <div className={cx('flex items-start gap-3 border-b px-5 py-3 text-sm', fallback ? 'border-amber-100 bg-amber-50 text-amber-900' : 'border-brand-100 bg-brand-50 text-brand-900')}>
+          {fallback ? <AlertTriangle className="mt-0.5 size-4 shrink-0" /> : <CheckCircle2 className="mt-0.5 size-4 shrink-0" />}
+          <p>
+            <b>Décision de déploiement : </b>
+            {fallback
+              ? 'le modèle ne bat pas nettement la règle RFM (R1 ou R2 non validé). Fidélia utilise donc la règle RFM pour cette liste, conformément à la règle de gouvernance de l\'équipe.'
+              : `le modèle bat la règle RFM (R1 et R2 validés) : ${ALGORITHM_LABELS[report.deployed]} est utilisé pour classer les donateurs.`}
+          </p>
+        </div>
+      )}
       <ul className="divide-y divide-stone-100">
         {results.map((r) => (
           <li key={r.id} className="flex items-start gap-3 px-5 py-3">
@@ -471,6 +493,47 @@ const KDD_LABELS: Record<string, string> = {
   tendance_montant_96_vs_95: 'Tendance des montants', delai_premier_second_don: 'Délai entre 1er et 2e don', code_frequence: 'Code de fréquence (RFA)', code_montant: 'Code de montant (RFA)',
 }
 
+/** Même règle de gouvernance que dans l'application : R1 (AUC-PR ≥ 2 × taux de base) et R2 (IC de l'écart vs RFM au-dessus de 0) */
+function KddGovernance() {
+  const tasks = (['reactivation', 'hausse'] as const).map((key) => {
+    const t = (kdd as unknown as Record<string, KddTask>)[key]
+    const sel = t.evaluations.find((e) => e.algorithm === t.selected)!
+    const r1 = sel.ap >= 2 * t.baseRate
+    const r2 = (sel.apDiffVsRfmCI?.[0] ?? -1) > 0
+    return { key, t, sel, r1, r2 }
+  })
+  const ok = (v: boolean) => (v ? <span className="font-medium text-brand-700">validé</span> : <span className="font-medium text-rose-600">non validé</span>)
+  return (
+    <Card className="mt-6" title="Décision de déploiement sur KDD 98" subtitle="Les mêmes requis R1 et R2 que dans l'application, appliqués au meilleur candidat de chaque tâche.">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[640px] text-sm">
+          <thead className="border-b border-stone-100">
+            <tr>
+              <Th>Tâche</Th>
+              <Th>Meilleur candidat</Th>
+              <Th className="text-right">R1 : AUC-PR vs 2 × taux de base</Th>
+              <Th className="text-right">R2 : écart vs RFM [IC 95 %]</Th>
+              <Th className="text-right">Déployable</Th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-stone-100">
+            {tasks.map(({ key, t, sel, r1, r2 }) => (
+              <tr key={key}>
+                <Td className="font-medium text-stone-900">{key === 'reactivation' ? 'Réactivation' : 'Hausse du don'}</Td>
+                <Td>{ALGORITHM_LABELS[t.selected]}</Td>
+                <Td className="text-right tabular-nums">{fx(sel.ap, 3)} vs {fx(2 * t.baseRate, 3)} · {ok(r1)}</Td>
+                <Td className="text-right tabular-nums">{sel.apDiffVsRfmCI ? `[${fx(sel.apDiffVsRfmCI[0], 3)} ; ${fx(sel.apDiffVsRfmCI[1], 3)}]` : '—'} · {ok(r2)}</Td>
+                <Td className="text-right">{r1 && r2 ? <Badge className="bg-brand-50 text-brand-700 ring-brand-100">Oui</Badge> : <Badge className="bg-amber-50 text-amber-800 ring-amber-200">Non : règle RFM</Badge>}</Td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="border-t border-stone-100 px-5 py-3 text-xs text-stone-500">Un modèle peut battre la règle RFM (R2) sans être deux fois meilleur que le hasard (R1). Il n'est alors pas déployé, mais les chiffres de profit ci-dessous restent utiles pour juger la méthode.</p>
+    </Card>
+  )
+}
+
 function RealData() {
   const [task, setTask] = useState<'reactivation' | 'hausse'>('reactivation')
   const r = (kdd as unknown as Record<string, KddTask>)[task]
@@ -488,10 +551,12 @@ function RealData() {
               Jeu public (archive UCI) de <b>{kdd.n.toLocaleString('fr-CA')} donateurs inactifs</b> d'une organisation nationale de vétérans aux États-Unis, qui ont reçu une relance postale en juin 1997.
               On sait qui a répondu et combien il a donné. Mêmes algorithmes, même protocole, mêmes familles de variables que dans l'application (récence, fréquence, montant, tendance, engagement).
             </p>
-            <p className="mt-2 text-xs text-stone-400">Pas de dons mensuels dans ce jeu : il valide la réactivation et la hausse du don, pas l'attrition du mensuel. Données non incluses dans le dépôt (script de téléchargement fourni).</p>
+            <p className="mt-2 text-xs text-stone-500">Pas de dons mensuels dans ce jeu. Il valide la méthode sur deux tâches voisines (réactivation d'inactifs, don plus élevé que le dernier), pas le modèle de hausse du mensuel ni celui d'attrition. Données non incluses dans le dépôt (script de téléchargement fourni).</p>
           </div>
         </div>
       </Card>
+
+      <KddGovernance />
 
       <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
         <Stat label="Envoyer à tout le monde" value={formatMoney(profit.everyone.net)} hint={`profit net sur ${profit.everyone.mailed.toLocaleString('fr-CA')} envois (test), ${profit.cost} $US par envoi`} />
