@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Fidélia, fiche technique</title>
+<!--
+  Fiche technique pour les juges curieux : 1 page lettre, recto. Complète l'affiche.
+  Chiffres et graphique : générés entre les marqueurs par build_affiche.py, depuis reports/.
+  Rendu : python3 docs/affiche/build_affiche.py → Fiche-technique.pdf.
+-->
+<style>
+  @page { size: 8.5in 11in; margin: 0; }
+  :root { --encre: #1b2333; --gris: #5d6675; --pale: #f2f4f7; --bleu: #163e6e; --bleu-pale: #e7eef7; --ambre: #b8661a; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 816px; height: 1054px; background: #fff; }
+  body {
+    font-family: "Avenir Next", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: var(--encre); font-size: 10.8px; line-height: 1.34; overflow: hidden;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .page { padding: 32px 48px 24px; height: 1054px; display: flex; flex-direction: column; }
+  header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 3px solid var(--bleu); padding-bottom: 8px; }
+  h1 { font-size: 26px; color: var(--bleu); font-weight: 800; letter-spacing: -.5px; }
+  h1 span { font-weight: 500; color: var(--gris); font-size: 16px; letter-spacing: 0; margin-left: 8px; }
+  header .eq { font-size: 10.5px; color: var(--gris); text-align: right; }
+  .grille { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 28px; margin-top: 12px; }
+  .plein { grid-column: 1 / -1; }
+  h2 { font-size: 13.5px; color: var(--bleu); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  p + p, p + ul, ul + p { margin-top: 5px; }
+  ul { padding-left: 15px; }
+  li + li { margin-top: 2px; }
+  .cases { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .case { background: var(--pale); border-radius: 6px; padding: 6px 9px; }
+  .case b { display: block; font-size: 9.5px; letter-spacing: 1.2px; color: var(--bleu); }
+  .graph svg { width: 60%; height: auto; display: block; margin: 0 auto; }
+  .titre-graph { font-weight: 800; font-size: 12.5px; margin-bottom: 2px; }
+  .encadre { background: var(--bleu-pale); border-radius: 8px; padding: 9px 12px; }
+  .nuance { border-left: 4px solid var(--ambre); padding-left: 10px; }
+  .note { color: var(--gris); font-size: 10.5px; }
+  footer { margin-top: auto; border-top: 1px solid #dde2ea; padding-top: 8px; font-size: 9.8px; color: var(--gris); line-height: 1.4; }
+  footer b { color: var(--encre); }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>Fidélia<span>fiche technique, pour les curieux</span></h1>
+    <div class="eq">HEC Montréal · TECH 60711 · Automne 2026 · Équipe 4<br>G. Carel · J. Ponce · J. Violon · P. Soubigou</div>
+  </header>
+
+  <div class="grille">
+    <section>
+      <h2>Canevas d'IA : relancer</h2>
+      <div class="cases">
+        <div class="case"><b>PRÉDICTION</b>Risque qu'un mensuel arrête son don dans les 90 jours.</div>
+        <div class="case"><b>JUGEMENT</b>Rater un départ coûte environ 240 $ par an (don médian de 20 $ par mois). Relancer à tort coûte peu.</div>
+        <div class="case"><b>ACTION</b>Courriel de relance : carte expirée, impact du don, pause.</div>
+        <div class="case"><b>RÉSULTAT</b>Toujours mensuel 90 jours plus tard, comparé au groupe témoin.</div>
+      </div>
+      <p class="note" style="margin-top:5px">Quatre listes : Relancer (mensuels à risque), Proposer le mensuel, Solliciter (réactiver, hausser), Remercier. Canevas complet : <code>docs/canevas/</code>.</p>
+    </section>
+
+    <section>
+      <h2>Nos deux conditions</h2>
+      <!-- REGLE:debut -->
+<p>On n'utilise le modèle que s'il remplit les deux ; sinon l'outil garde la méthode habituelle (règle RFM : dernier don, fréquence, montant).</p><ul><li><b>R1</b> : précision (AUC-PR) ≥ 2 × le hasard (taux de base).</li><li><b>R2</b> : intervalle de confiance à 95 % (bootstrap) de l'écart avec RFM au-dessus de 0.</li></ul><p class="encadre" style="margin-top:6px">Attrition : AUC-PR <b>0,243</b> (IC 95 % : 0,162 à 0,377) contre 0,091 pour RFM. Seuil R1 : 0,134. Écart avec RFM : 0,058 à 0,255.</p>
+<!-- REGLE:fin -->
+    </section>
+
+    <section class="plein graph">
+      <h2>L'IA fait-elle mieux que la méthode habituelle ?</h2>
+      <!-- AUCPR:debut -->
+<p class="titre-graph">3 listes sur 4 : le modèle gagne.</p>
+<svg viewBox="0 0 1600 860" xmlns="http://www.w3.org/2000/svg" font-family="Avenir Next, Helvetica Neue, Helvetica, Arial, sans-serif" role="img" aria-label="Précision pour trouver les bons donateurs : Fidélia contre la méthode habituelle, quatre modèles">
+<rect x="120" y="14" width="56" height="56" rx="8" fill="#1f5fa8"/><text x="194" y="58" font-size="46" fill="#14213d" font-weight="700">Fidélia</text>
+<rect x="450" y="14" width="56" height="56" rx="8" fill="#9aa4b2"/><text x="524" y="58" font-size="46" fill="#14213d" font-weight="700">Méthode habituelle</text>
+<line x1="990" y1="42" x2="1070" y2="42" stroke="#14213d" stroke-width="6" stroke-dasharray="14 10"/><text x="1086" y="58" font-size="46" fill="#14213d" font-weight="700">2 × le hasard</text>
+<line x1="120" y1="610.0" x2="1590" y2="610.0" stroke="#e3e7ee" stroke-width="3"/>
+<text x="98" y="625.0" font-size="40" fill="#5b6472" text-anchor="end">0,0</text>
+<line x1="120" y1="507.5" x2="1590" y2="507.5" stroke="#e3e7ee" stroke-width="3"/>
+<text x="98" y="522.5" font-size="40" fill="#5b6472" text-anchor="end">0,1</text>
+<line x1="120" y1="405.0" x2="1590" y2="405.0" stroke="#e3e7ee" stroke-width="3"/>
+<text x="98" y="420.0" font-size="40" fill="#5b6472" text-anchor="end">0,2</text>
+<line x1="120" y1="302.5" x2="1590" y2="302.5" stroke="#e3e7ee" stroke-width="3"/>
+<text x="98" y="317.5" font-size="40" fill="#5b6472" text-anchor="end">0,3</text>
+<line x1="120" y1="200.0" x2="1590" y2="200.0" stroke="#e3e7ee" stroke-width="3"/>
+<text x="98" y="215.0" font-size="40" fill="#5b6472" text-anchor="end">0,4</text>
+<text transform="translate(34 405) rotate(-90)" font-size="40" fill="#5b6472" text-anchor="middle">Précision (plus haut = mieux)</text>
+<rect x="151.8" y="361.0" width="140" height="249.0" rx="6" fill="#1f5fa8"/>
+<line x1="221.8" y1="443.7" x2="221.8" y2="223.1" stroke="#14213d" stroke-width="5"/>
+<line x1="199.8" y1="443.7" x2="243.8" y2="443.7" stroke="#14213d" stroke-width="5"/>
+<line x1="199.8" y1="223.1" x2="243.8" y2="223.1" stroke="#14213d" stroke-width="5"/>
+<rect x="315.8" y="517.1" width="140" height="92.9" rx="6" fill="#9aa4b2"/>
+<line x1="385.8" y1="540.4" x2="385.8" y2="467.8" stroke="#14213d" stroke-width="5"/>
+<line x1="363.8" y1="540.4" x2="407.8" y2="540.4" stroke="#14213d" stroke-width="5"/>
+<line x1="363.8" y1="467.8" x2="407.8" y2="467.8" stroke="#14213d" stroke-width="5"/>
+<text x="303.8" y="138" font-size="76" font-weight="800" fill="#1f5fa8" text-anchor="middle">×2,7</text>
+<line x1="123.8" y1="472.1" x2="483.8" y2="472.1" stroke="#14213d" stroke-width="6" stroke-dasharray="14 10"/>
+<text x="303.8" y="668.0" font-size="48" font-weight="700" fill="#14213d" text-anchor="middle">Attrition</text>
+<rect x="125.8" y="748.0" width="356" height="66" rx="33" fill="#1e7a4c"/>
+<text x="303.8" y="794.0" font-size="38" font-weight="700" fill="#fff" text-anchor="middle">Modèle utilisé</text>
+<rect x="519.2" y="494.3" width="140" height="115.7" rx="6" fill="#1f5fa8"/>
+<line x1="589.2" y1="531.7" x2="589.2" y2="409.8" stroke="#14213d" stroke-width="5"/>
+<line x1="567.2" y1="531.7" x2="611.2" y2="531.7" stroke="#14213d" stroke-width="5"/>
+<line x1="567.2" y1="409.8" x2="611.2" y2="409.8" stroke="#14213d" stroke-width="5"/>
+<rect x="683.2" y="566.1" width="140" height="43.9" rx="6" fill="#9aa4b2"/>
+<line x1="753.2" y1="578.3" x2="753.2" y2="527.9" stroke="#14213d" stroke-width="5"/>
+<line x1="731.2" y1="578.3" x2="775.2" y2="578.3" stroke="#14213d" stroke-width="5"/>
+<line x1="731.2" y1="527.9" x2="775.2" y2="527.9" stroke="#14213d" stroke-width="5"/>
+<text x="671.2" y="138" font-size="76" font-weight="800" fill="#1f5fa8" text-anchor="middle">×2,6</text>
+<line x1="491.2" y1="572.6" x2="851.2" y2="572.6" stroke="#14213d" stroke-width="6" stroke-dasharray="14 10"/>
+<text x="671.2" y="668.0" font-size="48" font-weight="700" fill="#14213d" text-anchor="middle">Passage</text>
+<text x="671.2" y="720.0" font-size="48" font-weight="700" fill="#14213d" text-anchor="middle">au mensuel</text>
+<rect x="493.2" y="748.0" width="356" height="66" rx="33" fill="#1e7a4c"/>
+<text x="671.2" y="794.0" font-size="38" font-weight="700" fill="#fff" text-anchor="middle">Modèle utilisé</text>
+<rect x="886.8" y="484.0" width="140" height="126.0" rx="6" fill="#1f5fa8"/>
+<line x1="956.8" y1="528.4" x2="956.8" y2="362.6" stroke="#14213d" stroke-width="5"/>
+<line x1="934.8" y1="528.4" x2="978.8" y2="528.4" stroke="#14213d" stroke-width="5"/>
+<line x1="934.8" y1="362.6" x2="978.8" y2="362.6" stroke="#14213d" stroke-width="5"/>
+<rect x="1050.8" y="569.8" width="140" height="40.2" rx="6" fill="#9aa4b2"/>
+<line x1="1120.8" y1="582.0" x2="1120.8" y2="548.1" stroke="#14213d" stroke-width="5"/>
+<line x1="1098.8" y1="582.0" x2="1142.8" y2="582.0" stroke="#14213d" stroke-width="5"/>
+<line x1="1098.8" y1="548.1" x2="1142.8" y2="548.1" stroke="#14213d" stroke-width="5"/>
+<text x="1038.8" y="138" font-size="76" font-weight="800" fill="#1f5fa8" text-anchor="middle">×3,1</text>
+<line x1="858.8" y1="529.4" x2="1218.8" y2="529.4" stroke="#14213d" stroke-width="6" stroke-dasharray="14 10"/>
+<text x="1038.8" y="668.0" font-size="48" font-weight="700" fill="#14213d" text-anchor="middle">Réactivation</text>
+<rect x="860.8" y="748.0" width="356" height="66" rx="33" fill="#1e7a4c"/>
+<text x="1038.8" y="794.0" font-size="38" font-weight="700" fill="#fff" text-anchor="middle">Modèle utilisé</text>
+<rect x="1254.2" y="531.8" width="140" height="78.2" rx="6" fill="#1f5fa8"/>
+<line x1="1324.2" y1="561.9" x2="1324.2" y2="473.1" stroke="#14213d" stroke-width="5"/>
+<line x1="1302.2" y1="561.9" x2="1346.2" y2="561.9" stroke="#14213d" stroke-width="5"/>
+<line x1="1302.2" y1="473.1" x2="1346.2" y2="473.1" stroke="#14213d" stroke-width="5"/>
+<rect x="1418.2" y="542.6" width="140" height="67.4" rx="6" fill="#9aa4b2"/>
+<line x1="1488.2" y1="566.6" x2="1488.2" y2="494.1" stroke="#14213d" stroke-width="5"/>
+<line x1="1466.2" y1="566.6" x2="1510.2" y2="566.6" stroke="#14213d" stroke-width="5"/>
+<line x1="1466.2" y1="494.1" x2="1510.2" y2="494.1" stroke="#14213d" stroke-width="5"/>
+<text x="1406.2" y="138" font-size="76" font-weight="800" fill="#a85d00" text-anchor="middle">×1,2</text>
+<line x1="1226.2" y1="524.9" x2="1586.2" y2="524.9" stroke="#14213d" stroke-width="6" stroke-dasharray="14 10"/>
+<text x="1406.2" y="668.0" font-size="48" font-weight="700" fill="#14213d" text-anchor="middle">Hausse</text>
+<text x="1406.2" y="720.0" font-size="48" font-weight="700" fill="#14213d" text-anchor="middle">du don</text>
+<rect x="1228.2" y="748.0" width="356" height="66" rx="33" fill="#a85d00"/>
+<text x="1406.2" y="794.0" font-size="34" font-weight="700" fill="#fff" text-anchor="middle">Méthode habituelle</text>
+<text x="221.8" y="205.1" font-size="32" font-weight="600" fill="#1f5fa8" text-anchor="middle" stroke="#fff" stroke-width="10" paint-order="stroke">0,243</text>
+<text x="385.8" y="449.8" font-size="32" font-weight="600" fill="#5b6472" text-anchor="middle" stroke="#fff" stroke-width="10" paint-order="stroke">0,091</text>
+<text x="589.2" y="391.8" font-size="32" font-weight="600" fill="#1f5fa8" text-anchor="middle" stroke="#fff" stroke-width="10" paint-order="stroke">0,113</text>
+<text x="753.2" y="509.9" font-size="32" font-weight="600" fill="#5b6472" text-anchor="middle" stroke="#fff" stroke-width="10" paint-order="stroke">0,043</text>
+<text x="956.8" y="344.6" font-size="32" font-weight="600" fill="#1f5fa8" text-anchor="middle" stroke="#fff" stroke-width="10" paint-order="stroke">0,123</text>
+<text x="1120.8" y="513.4" font-size="32" font-weight="600" fill="#5b6472" text-anchor="middle" stroke="#fff" stroke-width="10" paint-order="stroke">0,039</text>
+<text x="1324.2" y="455.1" font-size="32" font-weight="600" fill="#1f5fa8" text-anchor="middle" stroke="#fff" stroke-width="10" paint-order="stroke">0,076</text>
+<text x="1488.2" y="476.1" font-size="32" font-weight="600" fill="#5b6472" text-anchor="middle" stroke="#fff" stroke-width="10" paint-order="stroke">0,066</text>
+<line x1="120" y1="610.0" x2="1590" y2="610.0" stroke="#14213d" stroke-width="4"/>
+<text x="120" y="856" font-size="34" fill="#5b6472">×N = Fidélia ÷ méthode habituelle. Donateurs fictifs de test. Traits noirs : incertitude.</text>
+</svg>
+<!-- AUCPR:fin -->
+    </section>
+
+    <section>
+      <h2>Ciblage mesuré</h2>
+      <!-- CIBLAGE:debut -->
+<p>À contacts égaux, valeur des dons à risque visée, Fidélia contre la méthode habituelle : <b>×4,8</b> avec 100 contacts, <b>×3</b> avec 300 (2,98 exactement).</p><p>Attrition : 10 % des mensuels contactés couvrent <b>41 %</b> des dons à risque.</p><p>Robustesse : 15 cas sur 20 retenus (5 autres jeux de données × 4 modèles).</p><p class="note">On mesure le ciblage, pas l'effet d'un courriel : il reste une hypothèse, qu'un groupe témoin mesurera.</p>
+<!-- CIBLAGE:fin -->
+    </section>
+
+    <section class="nuance">
+      <h2>Vrais donateurs (KDD Cup 1998)</h2>
+      <!-- KDDDETAIL:debut -->
+<p><b>Méthode validée, modèle non utilisé.</b> 18&nbsp;824 vrais donateurs américains inactifs (données publiques, 1998) : le modèle obtient une AUC-PR de 0,083, sous le seuil R1 (0,102). Il ne fait pas 2 fois mieux que le hasard.</p><p>À gros volume (12&nbsp;894 envois), la méthode habituelle fait même un peu mieux : 2&nbsp;422&nbsp;$ de profit net contre 2&nbsp;320&nbsp;$.</p><p>Seul signe positif : avec 20 % des envois, <b>+51 %</b> de profit net contre la méthode habituelle. Selon nos propres conditions, on garde la méthode habituelle.</p>
+<!-- KDDDETAIL:fin -->
+    </section>
+
+    <section>
+      <h2>Équité</h2>
+      <!-- EQUITE:debut -->
+<p>Pour proposer le don mensuel, le modèle choisit <b>1,8 fois</b> plus souvent les 70 ans et plus (ratio 1,80, IC 95 % : 1,51 à 2,10).</p><p>L'âge n'est pas utilisé, mais d'autres indices le reflètent. Écart à surveiller, à revérifier sur de vraies données.</p>
+<!-- EQUITE:fin -->
+    </section>
+
+    <section>
+      <h2>Garde-fous et limites</h2>
+      <ul>
+        <li>Un humain valide chaque envoi ; un courriel par 30 jours, au plus.</li>
+        <li>Ni âge ni région dans les modèles ; Loi 25 : droit de refuser le profilage.</li>
+        <li>Prédire n'est pas causer : l'effet des relances se mesure avec un groupe témoin.</li>
+        <li>Données fictives : elles valident la chaîne, pas la performance réelle.</li>
+        <li>Modèle d'affaires : 99 $ par mois par OBNL, rentable vers 35 clients (V1 : environ 27 000 $ en 2 mois).</li>
+      </ul>
+    </section>
+  </div>
+
+  <footer>
+    <b>Références :</b> Agrawal, Gans et Goldfarb (2018), <i>Prediction Machines</i> · Gebru et al. (2021), « Datasheets for Datasets » · Suresh et Guttag (2021), « A Framework for Understanding Sources of Harm » · Strong (1997), RFM · Fundraising Effectiveness Project (2025) · CanadaHelps, via Future of Good (2024) · Virtuous et Fundraising.AI (2026).<br>
+    <b>Données :</b> donateurs fictifs (graine 42), aucune donnée réelle d'organisation ; KDD Cup 1998 (UCI), données publiques. Tous les chiffres sont régénérés depuis <code>reports/</code> par <code>docs/affiche/build_affiche.py</code>.
+  </footer>
+</div>
+</body>
+</html>

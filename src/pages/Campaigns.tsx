@@ -10,7 +10,7 @@ type Filter = 'todo' | 'sent' | 'control' | 'dismissed'
 const timeFmt = new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 
 export default function Campaigns() {
-  const { campaign, donorsById, updateItem, sendItems, resetCampaign } = useStore()
+  const { campaign, donorsById, scoresById, updateItem, sendItems, resetCampaign } = useStore()
   const [filter, setFilter] = useState<Filter>('todo')
   const [current, setCurrent] = useState<string | null>(null)
 
@@ -26,6 +26,8 @@ export default function Campaigns() {
   const list = groups[filter]
   const item: CampaignItem | undefined = list.find((c) => c.id === current) ?? list[0]
   const donor = item ? donorsById.get(item.donorId) : undefined
+  const score = item ? scoresById.get(item.donorId) : undefined
+  const why = item?.type === 'thank' ? (score?.thankReason ? [score.thankReason] : []) : (score?.reasons.slice(0, 3).map((r) => r.text) ?? [])
   const approved = groups.todo.filter((c) => c.status === 'approved')
 
   return (
@@ -53,7 +55,7 @@ export default function Campaigns() {
       <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
         <Info className="mt-0.5 size-4 shrink-0" />
         Envoi simulé : aucun courriel ne part réellement dans le prototype. En production : fournisseur d'envoi (Brevo, Mailchimp…) et suivi des ouvertures.
-        Les donateurs du groupe témoin ne sont jamais contactés : comparer leurs dons à ceux des contactés mesure l'effet réel des actions.
+        Fidélia met de côté 10 % des donateurs ciblés : ils ne sont jamais contactés. Comparer leurs dons à ceux des contactés mesure l'effet réel des courriels.
       </div>
 
       <div className="mb-4">
@@ -63,7 +65,7 @@ export default function Campaigns() {
           items={[
             { value: 'todo', label: 'À envoyer', count: groups.todo.length },
             { value: 'sent', label: 'Envoyés', count: groups.sent.length },
-            { value: 'control', label: 'Groupe témoin', count: groups.control.length },
+            { value: 'control', label: 'Mis de côté pour mesurer (10 %)', count: groups.control.length },
             { value: 'dismissed', label: 'Ignorés', count: groups.dismissed.length },
           ]}
         />
@@ -112,6 +114,12 @@ export default function Campaigns() {
                   {item.sentAt && ` · envoyé le ${timeFmt.format(new Date(item.sentAt))}`}
                   {item.origin === 'auto' && ' · généré par une automatisation'}
                 </p>
+                {why.length > 0 && (
+                  <p className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-stone-500">
+                    Pourquoi ce contact :
+                    {why.map((w) => <span key={w} className="rounded-md bg-stone-100 px-1.5 py-0.5 text-stone-600">{w}</span>)}
+                  </p>
+                )}
               </div>
               <div className="space-y-4 p-6">
                 <label className="block">
@@ -133,9 +141,9 @@ export default function Campaigns() {
                     className="mt-1 w-full resize-y rounded-lg border border-stone-200 px-3 py-2 text-sm leading-relaxed outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:bg-stone-50"
                   />
                 </label>
-                {item.status === 'control' && <p className="rounded-lg bg-stone-50 px-3 py-2 text-sm text-stone-600">Groupe témoin : ce donateur n'est volontairement pas contacté.</p>}
+                {item.status === 'control' && <p className="rounded-lg bg-stone-50 px-3 py-2 text-sm text-stone-600">Mis de côté pour mesurer : ce donateur n'est volontairement pas contacté. Ses dons servent de comparaison.</p>}
                 {item.status !== 'sent' && item.status !== 'control' && (
-                  <div className="flex flex-wrap justify-end gap-2">
+                  <div id="courriel-actions" className="flex flex-wrap justify-end gap-2">
                     {item.status !== 'dismissed' && (
                       <Button variant="ghost" onClick={() => updateItem(item.id, { status: 'dismissed' })}>
                         <X className="size-4" /> Ignorer

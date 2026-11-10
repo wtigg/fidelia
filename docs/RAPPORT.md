@@ -38,6 +38,10 @@ L'équipe relit, ajuste et valide chaque envoi.
 
 **Moins d'un donateur sur deux redonne l'année suivante** : 43,3 % de rétention en 2025 selon le Fundraising Effectiveness Project, sur 15 102 OBNL américains (AFP et GivingTuesday, 2026). Acquérir un nouveau donateur coûte bien plus cher que d'en retenir un (Sargeant, 2001). Le don mensuel est le plus précieux : revenu prévisible, meilleure rétention, valeur à vie plus élevée.
 
+**Les petits OBNL manquent de moyens pour analyser leurs données.** Au Canada, 53 % des organismes de moins de 1 M$ de revenus confient la technologie et les données à des employés qui n'ont ni formation ni mandat dans ce domaine. Seuls 13 % des petits organismes ont une personne dédiée à la technologie et aux données, contre 25 % des grands (Gandhi, 2024, sondage de CanadaHelps auprès de 1 470 organismes). Un organisme sur quatre juge faibles ses compétences pour collecter, gérer et analyser ses données, et 23 % peinent à s'en servir pour décider (Nguyen, 2024). Enfin, la demande dépasse la capacité dans 65 % des organismes en 2026 (Charity Insights Canada Project, 2026).
+
+**L'IA est déjà là, mais pas pour cibler les donateurs.** 92 % des OBNL interrogés utilisent un outil d'IA, surtout pour écrire : 62 % pour les communications aux donateurs. L'usage prédictif, comme le classement des donateurs, reste rare, et 47 % n'ont aucune politique d'encadrement (Virtuous et Fundraising.AI, 2026, 346 OBNL interrogés en décembre 2025). Fidélia vise cet écart : une prédiction simple, encadrée par des règles, utilisable sans analyste.
+
 Une petite équipe ne peut pas analyser des milliers de fiches. Elle relance donc tout le monde avec le même message, ou personne. Fidélia concentre son peu de temps sur les bons donateurs, avec le bon message, au bon moment.
 
 ### 1.3 Pourquoi l'IA ?
@@ -101,7 +105,7 @@ Le canevas suit le gabarit du cours (`TECH 60711_S02_AI Canvas`) : sept cases, c
 | Case | Question du gabarit | Réponse pour l'attrition |
 |---|---|---|
 | **Prédiction** | Que faut-il savoir pour décider ? | La probabilité qu'un donateur mensuel arrête son don dans les 90 prochains jours. |
-| **Jugement** | Quelle valeur donner aux résultats et aux erreurs ? | Rater un départ coûte le don annuel (environ 240 $). Relancer à tort coûte peu, mais peut agacer. L'équipe fixe le seuil et le ton. |
+| **Jugement** | Quelle valeur donner aux résultats et aux erreurs ? | Rater un départ coûte le don annuel : environ 240 $ par an au don médian de 20 $ par mois. Relancer à tort coûte peu, mais peut agacer. L'équipe fixe le seuil et le ton. |
 | **Action** | Que cherche-t-on à faire ? | Envoyer un courriel de relance : mise à jour de la carte expirée, rappel de l'impact du don, option de pause. |
 | **Résultat** | Quelle mesure du succès ? | Le donateur est-il toujours mensuel 90 jours plus tard ? Comparaison avec un groupe témoin non contacté. |
 | **Entrée** | Quelles données pour prédire ? | Le comportement récent du donateur, par exemple : taux d'ouverture des courriels sur 3 mois, jours depuis le dernier don, échecs de paiement sur 90 jours, canal de recrutement (rue, Web, courrier), tendance de l'engagement. 18 variables au total (section 5). Ni âge, ni région. |
@@ -243,7 +247,7 @@ La solution cible suit le schéma du scénario 4 de la séance 5 : une API, un c
 | Authentification | Aucune | **Amazon Cognito** : un compte par personne, rattaché à une organisation ; double authentification ; journal des accès (RF20) |
 | Données | Générées localement ou importées en CSV, jamais envoyées | **Amazon RDS for PostgreSQL**, chiffré, une base par organisation |
 | Courriels | Simulés | **Amazon SES**, même région. Les données restent au Canada, mais quittent le Québec : ÉFVP avant la mise en service (section 8.3) |
-| Vérification | `npm test` (19 tests), contrôle de reproductibilité et script scikit-learn | Tests et contrôle de reproductibilité dans l'intégration continue (GitHub Actions, déjà en place) |
+| Vérification | `npm test` (24 tests), contrôle de reproductibilité et script scikit-learn | Tests et contrôle de reproductibilité dans l'intégration continue (GitHub Actions, déjà en place) |
 
 Le prototype exécute le modèle **côté client** (edge). Coût d'hébergement nul, et les données de l'organisation ne quittent jamais le poste. Contrepartie : maintenance et surveillance plus difficiles, ce qui justifie le passage à une tâche serveur en production.
 
@@ -308,19 +312,19 @@ Les contrôles mesurables sont **automatisés** dans la page **Données** : cour
 
 | Modèle | Exemples d'entraînement | Positifs (environ) | AUC-PR | Seuil R1 (2 × taux de base) |
 |---|---|---|---|---|
-| Attrition | 321 | 21 | 0,129 | 0,134 : **échoue** |
+| Attrition | 321 | 22 | 0,129 | 0,134 : **échoue** |
 | Attrition | 802 | 54 | 0,174 | réussit |
-| Attrition | 1 603 | 107 | 0,225 | réussit |
-| Attrition | 3 207 | 215 | 0,243 | réussit |
-| Réactivation | 464 | 18 | 0,063 | 0,078 : **échoue** |
-| Réactivation | 2 311 | 90 | 0,111 | réussit |
-| Réactivation | 4 624 | 180 | 0,123 | réussit |
+| Attrition | 1 603 | 108 | 0,225 | réussit |
+| Attrition | 3 207 | 216 | 0,243 | réussit |
+| Réactivation | 464 | 18 | 0,063 | 0,079 : **échoue** |
+| Réactivation | 2 311 | 91 | 0,111 | réussit |
+| Réactivation | 4 624 | 182 | 0,123 | réussit |
 
-**Requis de données (RD1).** Un modèle n'est entraîné que si l'historique contient **au moins 100 événements positifs** pour ce modèle (par exemple 100 départs de mensuels). Vers 100 positifs, l'attrition atteint 93 % de son AUC-PR finale (0,225 sur 0,243) et la réactivation 90 % (0,111 sur 0,123). Autour de 20 positifs, les deux échouent à R1. Ce seuil est une règle prudente tirée de nos courbes ; il sera revu avec les données du pilote.
+**Requis de données (RD1).** Un modèle n'est utilisé que si l'historique contient **au moins 100 événements positifs** pour ce modèle (par exemple 100 départs de mensuels). En dessous, Fidélia classe automatiquement avec la règle RFM (`governanceDecision`, `src/ml/pipeline.ts`). Sous un minimum technique (10 positifs à l'entraînement, 3 en validation et 3 en test), aucun modèle n'est entraîné : la liste n'est pas proposée et un message l'explique. Vers 100 positifs, l'attrition atteint 93 % de son AUC-PR finale (0,225 sur 0,243) et la réactivation 90 % (0,111 sur 0,123). Autour de 20 positifs, les deux échouent à R1. Ce seuil est une règle prudente tirée de nos courbes ; il sera revu avec les données du pilote.
 
 **Ce que cela veut dire pour un petit OBNL.** Avec 300 mensuels et un taux de départ de 6,7 % par 90 jours, on observe environ 20 départs par trimestre. Il faut donc environ 5 trimestres d'historique pour atteindre 100 départs.
 
-**Le même calcul vaut pour le groupe témoin.** « Y a rien de magique » s'applique aussi à notre propre mesure. Avec 300 mensuels, un témoin de 10 % compte 30 donateurs, soit environ 2 départs par trimestre (30 × 6,7 %). Supposons que la relance réduise les départs de 30 % (hypothèse par défaut de la page Impact) : le taux passerait de 6,7 % à 4,7 %. Pour détecter cet écart (test de deux proportions, risque de 5 %, puissance de 80 % ; calcul de l'équipe), il faut environ **2 100 mensuels par groupe** à parts égales. Avec un témoin de 10 %, il faut environ **1 160 mensuels témoins**, soit environ 11 600 mensuels suivis pendant un trimestre. Un OBNL seul n'y arrive pas, même en plusieurs années. La conversion est encore plus difficile à mesurer : taux de base de 1,8 % et horizon de 6 mois.
+**Le même calcul vaut pour le groupe témoin.** « Y a rien de magique » s'applique aussi à notre propre mesure. Avec 300 mensuels, un témoin de 10 % compte 30 donateurs, soit environ 2 départs par trimestre (30 × 6,7 %). Supposons que la relance réduise les départs de 30 % (hypothèse par défaut de la page Impact) : le taux passerait de 6,7 % à 4,7 %. Pour détecter cet écart (test de deux proportions, risque de 5 %, puissance de 80 % ; calcul de l'équipe), il faut environ **2 100 mensuels par groupe** à parts égales. Avec un témoin de 10 % (1 témoin pour 9 relancés), il faut environ **1 100 à 1 300 mensuels témoins** : 1 100 avec la variance commune sous l'hypothèse nulle, 1 300 avec les variances propres à chaque groupe (6,7 % et 4,7 %). Cela fait environ 11 000 à 13 000 mensuels suivis pendant un trimestre. Un OBNL seul n'y arrive pas, même en plusieurs années. La conversion est encore plus difficile à mesurer : taux de base de 1,8 % et horizon de 6 mois.
 
 Conséquence : le pilote ne peut pas prouver l'effet causal. Il faut **mettre en commun les témoins de plusieurs organisations**. Par exemple, environ 40 clients de 300 mensuels chacun, avec 10 % de témoin, donnent environ 1 200 témoins en un trimestre. Si l'effet réel est plus faible que 30 %, il en faut davantage. Agrandir le témoin pendant le pilote ne suffit pas : à 50 % chez 2 OBNL de 300 mensuels, il faudrait environ 7 trimestres.
 
@@ -328,7 +332,7 @@ Conséquence : le pilote ne peut pas prouver l'effet causal. Il faut **mettre en
 
 | # | Requis | Vérification | Vaut pour |
 |---|---|---|---|
-| RD1 | Au moins **100 événements positifs** par modèle dans l'historique | Compté avant chaque entraînement ; sinon repli sur RFM | Entraînement |
+| RD1 | Au moins **100 événements positifs** par modèle dans l'historique | Compté à chaque entraînement ; sinon repli automatique sur RFM. Sous 10 positifs à l'entraînement (ou 3 en validation ou en test) : liste non proposée, message affiché | Entraînement |
 | RD2 | **Schéma minimal** en CSV, dates au format AAAA-MM-JJ. Donateurs : `id` (obligatoire), `email`, `email_consent`, `kind`, `join_date`. Dons : `donor_id`, `date`, `amount` (obligatoires), `kind`, `status`. Ouvertures (facultatif) : `donor_id`, `month`, `open_rate` | Import : lignes illisibles ou mal datées écartées et comptées (`src/lib/csv.ts`) | Les deux |
 | RD3 | **Historique** assez long pour atteindre RD1 : environ 5 trimestres pour 300 mensuels. Les photos remontent au plus à 42 mois | Calculé à l'import | Entraînement |
 | RD4 | **Fraîcheur** : export hebdomadaire ; dernier don enregistré il y a moins de 31 jours | Contrôle « Actualité » de la page Données | Scoring |
@@ -417,10 +421,10 @@ Le modèle de réactivation bat RFM de façon significative, mais reste trop fai
 ```bash
 docker build -t fidelia . && docker run --rm -p 8080:80 fidelia     # application sur http://localhost:8080
 docker build --target eval -t fidelia-eval .
-docker run --rm fidelia-eval                                        # 19 tests, puis contrôle de reproductibilité
+docker run --rm fidelia-eval                                        # 24 tests, puis contrôle de reproductibilité
 ```
 
-La cible `eval` lance les 19 tests, puis le contrôle de reproductibilité (`npm run check:repro`). Celui-ci réentraîne la graine 42 dans un dossier temporaire et compare le résultat au rapport versionné `reports/synthetique-42.json`, à 1e-9 près (seuls l'horodatage et la durée sont ignorés). Message attendu : « Reproductible : rapport graine 42 identique à reports/synthetique-42.json ». Rien n'est écrit dans `reports/`.
+La cible `eval` lance les 24 tests, puis le contrôle de reproductibilité (`npm run check:repro`). Celui-ci réentraîne la graine 42 dans un dossier temporaire et compare le résultat au rapport versionné `reports/synthetique-42.json`, à 1e-9 près (seuls l'horodatage et la durée sont ignorés). Message attendu : « Reproductible : rapport graine 42 identique à reports/synthetique-42.json ». Rien n'est écrit dans `reports/`.
 
 Pour régénérer le rapport sur le poste, il faut une commande à part :
 
@@ -432,7 +436,7 @@ docker run --rm -v "$PWD/reports:/app/reports" fidelia-eval npm run evaluate 42
 
 ```bash
 npm ci                                             # dépendances exactes du package-lock.json
-npm test                                           # 19 tests : métriques, RFM, pipeline, requis, CSV
+npm test                                           # 24 tests : métriques, RFM, pipeline, requis, CSV, actions
 npm run check:repro                                # réentraîne la graine 42 et compare au rapport versionné
 npm run dev                                        # lance l'application
 npm run calibration > reports/calibration.txt      # compare le synthétique aux taux publiés
@@ -475,7 +479,7 @@ La solution cible reprend les mêmes variables et les mêmes algorithmes, rééc
 | Catégorie | Risque | Probabilité / gravité | Mesure |
 |---|---|---|---|
 | Données | Données réelles sales (doublons, montants saisis à la main) | Élevée / moyenne | Contrôles automatiques à l'import (RF2), rejet ou signalement |
-| Données | Historique trop court : moins de 100 événements positifs (petit OBNL, nouvelle organisation) | Élevée / moyenne | Requis RD1 (section 5.4) : repli automatique sur RFM ; modèle commun en V2 |
+| Données | Historique trop court : moins de 100 événements positifs (petit OBNL, nouvelle organisation) | Élevée / moyenne | Requis RD1 (section 5.4) : repli automatique sur RFM sous 100 positifs ; liste non proposée sous le minimum technique ; modèle commun en V2 |
 | Données | Pas d'historique d'ouvertures (organisation sans outil de courriels) | Moyenne / moyenne | Variable d'absence ; modèle utilisable sans, avec une performance moindre |
 | Modèle | Modèle appris sur synthétique, inadapté au réel | Élevée / élevée | Réentraînement obligatoire sur les données de l'organisation ; R1 et R2 bloquants ; alertes R3 à R6 examinées et levées par un humain avant mise en service (section 4.3) |
 | Modèle | Signal trop faible sur données réelles (comme la réactivation sur KDD 98, qui échoue à R1) | Moyenne / moyenne | Gouvernance R1 + R2 : la liste reste classée par RFM |
@@ -506,12 +510,12 @@ La consigne demande de couvrir tout le cycle de vie. La première colonne situe 
 | Étape du cycle | Source | Dans Fidélia | Mesure |
 |---|---|---|---|
 | Collecte | Suivi des ouvertures | La variable la plus utile au modèle d'attrition, le taux d'ouverture, vient d'un pixel invisible dans les courriels. Le donateur ne sait pas toujours qu'il est suivi | Ouvertures utilisées seulement pour les donateurs qui ont consenti au suivi ; mention dans l'avis de profilage (section 8.3) ; sinon, variable d'absence |
-| Données | Biais historique | Dans nos données, les aînés donnent et redonnent plus : le modèle les classe plus haut pour la conversion (ratio de sélection 1,80 chez les 70 ans et plus). **Attention :** cet effet vient d'une hypothèse du générateur, qui lie l'attachement à l'âge (`src/data/generate.ts`). Il ne prouve rien sur de vrais donateurs | Plafond de sollicitation, remerciement avant demande, suivi du ratio par âge ; audit à refaire sur les données réelles de l'organisation |
+| Données | Biais historique | Dans nos données, les aînés donnent et redonnent plus : le modèle les classe plus haut pour la conversion (ratio de sélection 1,80 chez les 70 ans et plus, IC 95 % [1,51 ; 2,10], `reports/impact-42.json`). **Attention :** cet effet vient d'une hypothèse du générateur, qui lie l'attachement à l'âge (`src/data/generate.ts`). Il ne prouve rien sur de vrais donateurs | Plafond de sollicitation, remerciement avant demande, suivi du ratio par âge ; audit à refaire sur les données réelles de l'organisation |
 | Collecte | Représentation | Synthétique = nos hypothèses ; KDD 98 = Américains, vétérans, 1997 | Réentraînement sur les données de l'organisation ; limites écrites |
 | Données | Mesure | « Inactif » = 12 ou 13 mois sans don : définition arbitraire | Documentée dans la datasheet, paramétrable |
 | Modèle | Agrégation | Un même modèle pour tous les donateurs d'une organisation | Modèles séparés par segment (mensuel, ponctuel, inactif) |
 | Modèle | Apprentissage | Sans l'âge en variable, le modèle de conversion **sous-estime** les 70 ans et plus (prédit / observé = 0,54, sur environ 38 conversions) et **sur-estime** les 35-54 ans (2,24, sur environ 8 conversions seulement) | Audit par sous-groupe (R6) ; options discutées en leçon 5 |
-| Évaluation | Évaluation | Petits jeux de test pour les mensuels ; petits effectifs par tranche d'âge | Intervalles de confiance par bootstrap pour les métriques globales, test temporel, 5 graines, données réelles. Les ratios par âge n'ont pas encore d'intervalle de confiance |
+| Évaluation | Évaluation | Petits jeux de test pour les mensuels ; petits effectifs par tranche d'âge | Intervalles de confiance par bootstrap pour les métriques globales, test temporel, 5 graines, données réelles. Ratios de sélection par âge : IC 95 % par bootstrap par donateur (`reports/impact-42.json`). Les ratios de calibration (R6) n'en ont pas encore |
 | Utilisation | Déploiement | Usage du score hors de son but (ex. retirer des services) | Fiche modèle : usages exclus ; aide à la décision seulement |
 | Maintenance | Boucle de rétroaction | Le modèle est réentraîné sur des données que ses propres relances ont changées. Un donateur relancé qui reste semble « peu à risque » ; le modèle apprend alors à ne plus le cibler. La dérive (crise, inflation) s'ajoute | Groupe témoin de 10 % jamais contacté (RF14) : seul échantillon non biaisé par les relances ; R5 et AUC-PR glissante (section 8.2) ; retour à la version précédente |
 
@@ -521,7 +525,7 @@ La consigne demande de couvrir tout le cycle de vie. La première colonne situe 
 
 | Composante | Attribut | Mesure (seuil) | Danger | Tort |
 |---|---|---|---|---|
-| Score de conversion | Équité par âge | Ratio de sélection des 70 ans et plus > 1,5 (mesuré : 1,80) ; calibration hors de [0,67 ; 1,5] (mesuré : 0,54 et 2,24, sur de petits effectifs) | Sur-sollicitation des aînés, montants mal calibrés par âge | Pression financière, perte de confiance |
+| Score de conversion | Équité par âge | Ratio de sélection des 70 ans et plus > 1,5 (mesuré : 1,80, IC 95 % [1,51 ; 2,10]) ; calibration hors de [0,67 ; 1,5] (mesuré : 0,54 et 2,24, sur de petits effectifs) | Sur-sollicitation des aînés, montants mal calibrés par âge | Pression financière, perte de confiance |
 | Score d'attrition | Calibration | Brier < constante (R4) | Probabilités trop optimistes | Mauvaise allocation du temps de l'équipe |
 | Brouillon de courriel (gabarits) | Fidélité aux données | 0 montant inventé | Message erroné | Atteinte à la réputation |
 | Brouillon de courriel (LLM, V2) | Fidélité et confidentialité | 0 montant ou fait absent des données ; 0 donnée nominative envoyée au fournisseur | Hallucination, fuite de données | Donateur trompé, atteinte à la vie privée, sanction (Loi 25) |
@@ -564,22 +568,23 @@ La séance 4 pose trois questions à partir de Varoquaux, Luccioni et Whittaker 
 
 ## 9. Estimations
 
-### 9.1 Ressources humaines (V1, 6 mois)
+### 9.1 Ressources humaines (V1, 2 mois)
+
+**Point de départ.** La V1 ne part pas de zéro : le prototype contient déjà les variables, les quatre modèles, l'évaluation, les règles de déploiement, l'interface et les tests. Il reste à porter le calcul côté serveur, à ajouter l'authentification, les vrais envois de courriels et les droits prévus par la Loi 25. Fidèles au principe KISS, nous visons un seul développeur à temps plein pendant 2 mois, appuyé à temps partiel.
 
 **Taux de référence.** Salaire horaire médian dans la région de Montréal, selon le Guichet-Emplois (données 2023-2024) :
 - scientifique de données (CNP 21211) : 45,64 $ ;
 - programmeur en développement de logiciels (CNP 21232) : 45,67 $.
 
-Nous retenons le même taux, 45,65 $, pour le chef de produit et le designer UX (hypothèse simplificatrice). Nous ajoutons 25 % pour les charges sociales et les avantages (hypothèse de l'équipe). Un ETP compte 1 820 heures par an (35 h × 52 semaines), soit 910 heures sur 6 mois.
+Nous retenons 45,65 $ pour le rôle combiné de chef de produit et designer UX (hypothèse simplificatrice). Nous ajoutons 25 % pour les charges sociales et les avantages (hypothèse de l'équipe). Un ETP compte 1 820 heures par an (35 h × 52 semaines), soit environ 303 heures sur 2 mois.
 
-| Rôle | Charge | Heures (6 mois) | Taux | Coût salarial | Tâches |
+| Rôle | Charge | Heures (2 mois) | Taux | Coût salarial | Tâches |
 |---|---|---|---|---|---|
-| Chef de produit | 0,5 ETP | 455 | 45,65 $ | 20 771 $ | Besoins des OBNL, priorités, tests utilisateurs |
-| Scientifique de données | 1 ETP | 910 | 45,64 $ | 41 532 $ | Variables, modèles, évaluation, surveillance, équité |
-| Développeur web | 1 ETP | 910 | 45,67 $ | 41 560 $ | Authentification, connecteurs CRM et courriels, base de données |
-| Designer UX | 0,3 ETP | 273 | 45,65 $ | 12 462 $ | Parcours des responsables des dons, accessibilité |
-| **Total** | **2,8 ETP** | **2 548** | | **116 325 $** | |
-| **Total chargé** (+ 25 %) | | | | **145 406 $** | |
+| Développeur web | 1 ETP | 303 | 45,67 $ | 13 838 $ | Serveur et tâche planifiée, authentification, connecteur CSV, courriels, droits Loi 25 |
+| Scientifique de données | 0,25 ETP | 76 | 45,64 $ | 3 469 $ | Portage des modèles en Python, surveillance, audit d'équité sur les données du pilote |
+| Chef de produit et designer UX | 0,15 ETP | 45 | 45,65 $ | 2 054 $ | Entrevues avec les OBNL, tests utilisateurs, accessibilité |
+| **Total** | **1,4 ETP** | **424** | | **19 361 $** | |
+| **Total chargé** (+ 25 %) | | | | **24 201 $** | |
 
 ### 9.2 Ressources matérielles
 
@@ -596,7 +601,7 @@ Nous retenons le même taux, 45,65 $, pour le chef de produit et le designer UX 
 
 **Stockage.** Le jeu de démonstration compte 4 000 donateurs et 17 909 dons (`reports/evaluate-42.txt`). Cela représente quelques mégaoctets. Nous prévoyons au plus 50 Mo par organisation, historique des scores et des envois compris, soit moins de 3 Go pour 50 organisations. Le stockage n'est donc pas un poste de coût important.
 
-**Au-delà de 50 organisations.** Le seuil de rentabilité (section 9.3) demande 90 à 330 clients. Nous supposons que l'infrastructure croît de façon à peu près linéaire : 2,10 à 7 $ par organisation et par mois, soit 2 268 à 7 560 $ par an pour 90 clients et 5 040 à 16 800 $ par an pour 200 clients (hypothèse de l'équipe). Le seuil de rentabilité ci-dessous utilise ce coût par client, pas le total pour 50.
+**Au-delà de 50 organisations.** Le seuil de rentabilité (section 9.3) demande 24 à 78 clients. Nous supposons que l'infrastructure croît de façon à peu près linéaire : 2,10 à 7 $ par organisation et par mois, soit 882 à 2 940 $ par an pour 35 clients et 1 966 à 6 552 $ par an pour 78 clients (hypothèse de l'équipe). Le seuil de rentabilité ci-dessous utilise ce coût par client, pas le total pour 50.
 
 **Calcul.** Aucune carte graphique n'est nécessaire : les modèles s'entraînent en quelques secondes sur un processeur.
 
@@ -604,47 +609,45 @@ Nous retenons le même taux, 45,65 $, pour le chef de produit et le designer UX 
 
 ### 9.3 Ressources financières
 
-**Coût de la V1 (6 mois) :**
+**Coût de la V1 (2 mois) :**
 
 | Poste | Montant | Source |
 |---|---|---|
-| Équipe, charges comprises | 145 406 $ | Section 9.1 |
-| Conseiller juridique (Loi 25), environ 20 h | 4 000 $ | Hypothèse : 200 $/h, à confirmer par soumission |
+| Équipe, charges comprises | 24 201 $ | Section 9.1 |
+| Conseiller juridique (Loi 25), environ 10 h | 2 000 $ | Hypothèse : 200 $/h, à confirmer par soumission |
 | Pilote avec 2 OBNL (3 mois d'hébergement et de courriels, borne haute) | 1 050 $ | 3 × 350 $ (section 9.2) |
-| **Sous-total V1** | **environ 150 000 $** | |
-| Réserve pour imprévus, 10 à 20 % | 15 000 à 30 000 $ | Hypothèse de l'équipe |
-| **Total V1** | **environ 165 000 à 180 000 $** | |
+| **Sous-total V1** | **environ 27 000 $** (27 251 $) | |
+| Réserve pour imprévus, 10 à 20 % | 2 700 à 5 500 $ | Hypothèse de l'équipe |
+| **Total V1** | **environ 30 000 à 33 000 $** | |
 
 **Coût annuel récurrent après le lancement :**
 
 | Poste | Montant par an | Calcul |
 |---|---|---|
-| Maintenance du modèle et corrections (0,5 ETP : scientifique de données et développeur) | 51 927 $ | 910 h × 45,65 $ × 1,25 |
-| Vente, acquisition de clients et support aux OBNL (0,5 ETP) | 51 927 $ | Hypothèse de l'équipe, même calcul |
+| Maintenance du modèle, corrections et support aux OBNL (0,25 ETP) | 25 963 $ | 455 h × 45,65 $ × 1,25 |
 | Obligations légales récurrentes : mise à jour de l'ÉFVP, appui au responsable de la protection des renseignements personnels, environ 10 h | 2 000 $ | Hypothèse : 200 $/h, comme en V1 |
 | Assurance responsabilité et cyberrisques | non chiffrée | À obtenir par soumission |
-| **Coûts fixes** | **environ 106 000 $** (8 821 $ par mois) | Hors assurance |
+| **Coûts fixes** | **environ 28 000 $** (2 330 $ par mois) | Hors assurance |
 | Infrastructure | 2,10 à 7 $ par client et par mois | Section 9.2, croissance linéaire supposée |
 
+La vente se fait d'abord par les fondateurs et par une fédération d'OBNL partenaire, sans poste dédié la première année (hypothèse de l'équipe).
+
 **Seuil de rentabilité.** Prix envisagé : abonnement de 49 à 99 $ par mois par OBNL. L'infrastructure coûte 2,10 à 7 $ par organisation et par mois. La marge par client est donc d'environ 42 à 47 $ par mois à 49 $, et 92 à 97 $ par mois à 99 $.
-- **Exploitation seule** (coûts fixes d'environ 8 821 $ par mois, hors assurance) : rentable à partir d'environ 90 à 100 clients à 99 $, ou 190 à 210 clients à 49 $.
-- **Avec amortissement de la V1 sur 3 ans** (165 000 à 180 000 $ ÷ 36 = 4 583 à 5 000 $ par mois, soit environ 13 400 à 13 800 $ de coûts fixes par mois) : rentable à partir d'environ 140 à 150 clients à 99 $, ou 290 à 330 clients à 49 $.
+- **Exploitation seule** (coûts fixes d'environ 2 330 $ par mois, hors assurance) : rentable à partir d'environ 24 à 26 clients à 99 $, ou 50 à 56 clients à 49 $.
+- **Avec amortissement de la V1 sur 3 ans** (30 000 à 33 000 $ ÷ 36 = 833 à 908 $ par mois, soit environ 3 160 à 3 240 $ de coûts fixes par mois) : rentable à partir d'environ 33 à 36 clients à 99 $, ou 67 à 78 clients à 49 $.
 
-Ces seuils restent optimistes : ils excluent l'assurance et supposent que 0,5 ETP suffit à vendre et à soutenir plus de 100 clients. Ils sont élevés pour un marché de niche. Une subvention ou un partenariat avec une fédération d'OBNL pourrait financer la V1 et offrir une version gratuite aux très petits OBNL.
+Ces seuils excluent l'assurance et supposent qu'un quart de poste suffit pour maintenir et soutenir une trentaine de clients ; au-delà, il faut ajouter du support. Une subvention ou un partenariat avec une fédération d'OBNL pourrait financer la V1 et offrir une version gratuite aux très petits OBNL.
 
-### 9.4 Échéancier de la V1 (6 mois)
+### 9.4 Échéancier de la V1 (2 mois, puis pilote)
 
 L'échéancier suit la logique de feuille de route d'Anderson et Coveyduc (2020), vue en séance 2 : partir du besoin d'affaires, valider les données, puis piloter avant de lancer.
 
-| Mois | Livrable | Requis |
+| Période | Livrable | Requis |
 |---|---|---|
-| 1 | Entrevues avec 5 OBNL, connecteurs CSV, schéma de données | RF1, RF2 |
-| 2 | Variables et modèles en Python et scikit-learn, tâche serveur planifiée, API | RF3 à RF9, RF18 |
-| 3 | Interface : authentification, listes, fiches, tableau de bord, pages Impact et Modèle. Opposition au profilage, accès et purge, prêts **avant** de scorer de vrais donateurs | RF15 à RF17, RF20 à RF24 |
-| 4 | Courriels réels, validation, plafond, consentement, groupe témoin, journal des envois. **Début du pilote** avec 2 OBNL sur leurs données (accord écrit) | RF11 à RF14, RF19, RD1 à RD6 |
-| 5 | Pilote (suite) : audit d'équité sur données réelles, R1 et R2 sur les données de chaque OBNL | RF17 (équité) |
-| 6 | Fin du pilote (3 mois), documentation Loi 25, corrections, lancement | |
-| Après le lancement | Suivi de la cohorte du pilote jusqu'à 6 mois, pour la conversion. Effet causal mesuré sur les témoins mis en commun (section 5.4) | RF14 |
+| Mois 1 | Entrevues avec 5 OBNL, connecteur CSV, schéma de données. Portage des variables et des modèles en Python et scikit-learn, tâche serveur planifiée, API. Authentification ; opposition au profilage, accès et purge, prêts **avant** de scorer de vrais donateurs | RF1 à RF9, RF15 à RF18, RF20 à RF24 |
+| Mois 2 | Interface reprise du prototype, courriels réels, validation, plafond, consentement, groupe témoin, journal des envois. Documentation Loi 25 | RF11 à RF14, RF19, RD1 à RD6 |
+| Mois 3 à 5 | **Pilote** avec 2 OBNL sur leurs données (accord écrit) : audit d'équité sur données réelles, R1 et R2 sur les données de chaque OBNL, corrections ; lancement à la fin du pilote | RF17 (équité) |
+| Après le lancement | Suivi de la cohorte jusqu'à 6 mois pour la conversion. Effet causal mesuré sur les témoins mis en commun (section 5.4) | RF14 |
 
 **V1 :** RF1 à RF9 et RF11 à RF24. RF18 y est en version simple : scoring hebdomadaire automatique, réentraînement trimestriel lancé à la main. R1 et R2 bloquent automatiquement ; une personne examine et lève les alertes R3 à R6 avant la mise en service. RF10 reste en gabarits.
 
@@ -701,14 +704,14 @@ L'échéancier suit la logique de feuille de route d'Anderson et Coveyduc (2020)
 
 **Trois menaces pour la pérennité.**
 1. **Le volume de données.** Un OBNL de 300 mensuels doit accumuler environ 5 trimestres d'historique avant qu'un modèle d'attrition soit utile (section 5.4). Les plus petits clients resteront sur RFM ; la valeur ajoutée de l'IA sera alors nulle pour eux.
-2. **Le seuil de rentabilité.** Il faut environ 140 à 150 clients à 99 $ par mois pour couvrir l'exploitation, la vente, le support et amortir la V1 (section 9.3). C'est beaucoup pour un marché de niche.
+2. **Le seuil de rentabilité.** Il faut environ 35 clients à 99 $ par mois pour couvrir l'exploitation et le support, et amortir la V1 sur 3 ans (section 9.3). C'est atteignable avec une fédération d'OBNL ; le risque est plutôt de trouver ces clients sur un marché de niche.
 3. **La Loi 25.** Profilage, opposition, ÉFVP, purge : ces obligations ajoutent du travail juridique et technique (RF23, RF24). Une organisation peut renoncer par prudence.
 
 **Dans la vraie vie**, Fidélia pourrait donc ne pas être réalisable comme produit vendu seul. Un financement par subvention ou par une fédération d'OBNL est plus réaliste.
 
-**Condition de poursuite.** Un pilote de 3 mois (mois 4 à 6 de la V1, section 9.4) avec 2 OBNL, sur leurs propres données. On continue seulement si, chez chacun, au moins un modèle valide R1 et R2, et si l'équipe utilise réellement les listes chaque semaine. Sinon, l'outil reste une aide RFM simple, ce qui a déjà une valeur.
+**Condition de poursuite.** Un pilote de 3 mois (mois 3 à 5, après les 2 mois de la V1, section 9.4) avec 2 OBNL, sur leurs propres données. On continue seulement si, chez chacun, au moins un modèle valide R1 et R2, et si l'équipe utilise réellement les listes chaque semaine. Sinon, l'outil reste une aide RFM simple, ce qui a déjà une valeur.
 
-**Ce que le pilote ne peut pas prouver.** L'effet causal des relances. Chez un OBNL de 300 mensuels, le témoin de 10 % compte 30 donateurs et environ 2 départs par trimestre. Pour détecter une baisse de 30 % des départs, il faut environ 1 160 mensuels témoins (section 5.4). La conversion se mesure sur 6 mois, au-delà du pilote. L'effet sera donc mesuré **après la V1**, en mettant en commun les témoins d'environ 40 organisations de 300 mensuels, avec leur accord. D'ici là, la page Impact reste une simulation fondée sur une hypothèse.
+**Ce que le pilote ne peut pas prouver.** L'effet causal des relances. Chez un OBNL de 300 mensuels, le témoin de 10 % compte 30 donateurs et environ 2 départs par trimestre. Pour détecter une baisse de 30 % des départs, il faut environ 1 100 à 1 300 mensuels témoins (section 5.4). La conversion se mesure sur 6 mois, au-delà du pilote. L'effet sera donc mesuré **après la V1**, en mettant en commun les témoins d'environ 40 organisations de 300 mensuels, avec leur accord. D'ici là, la page Impact reste une simulation fondée sur une hypothèse.
 
 ---
 
@@ -749,14 +752,18 @@ Format APA 7. Les DOI ont été vérifiés sur Crossref ; les pages Web ont ét�
 **Autres sources**
 27. AFP et GivingTuesday (2026). *Fundraising Effectiveness Project, Quarterly Report Q4 2025*. https://data.givingtuesday.org/fep-report/
 28. Bloomerang (s. d.). *Pricing*. Consulté le 9 novembre 2026, à https://bloomerang.com/pricing/
-29. Dataro (s. d.-a). *Plans and pricing*. Consulté le 9 novembre 2026, à https://dataro.io/pricing/
-30. Dataro (s. d.-b). *Available Dataro Predict models*. Consulté le 9 novembre 2026, à https://support.dataro.io/knowledge/available-dataro-predict-models
-31. Gouvernement du Canada (2025). *Guichet-Emplois : salaires des scientifiques de données (CNP 21211) et des programmeurs en développement de logiciels (CNP 21232), région de Montréal*. Consulté le 9 novembre 2026, à https://www.guichetemplois.gc.ca/rapportmarche/salaire-profession/17887/geo25154 et https://www.guichetemplois.gc.ca/rapportmarche/salaire-profession/22531/22446
-32. Huyen, C. (2022). *Designing machine learning systems*. O'Reilly (ch. 2 et 8).
-33. Keela (s. d.-a). *Pricing*. Consulté le 9 novembre 2026, à https://keela.co/pricing
-34. Keela (s. d.-b). *Nonprofit intelligence*. Consulté le 9 novembre 2026, à https://www.keela.co/solutions/nonprofit-intelligence
-35. *Loi modernisant des dispositions législatives en matière de protection des renseignements personnels*, L.Q. 2021, c. 25 (Loi 25). https://www.publicationsduquebec.gouv.qc.ca/fileadmin/Fichiers_client/lois_et_reglements/LoisAnnuelles/fr/2021/2021C25F.PDF
-36. Meta (2024). *Meta Llama responsible use guide: Resources and best practices for responsible development of products built with large language models*. https://ai.meta.com/static-resource/responsible-use-guide
-37. National Institute of Standards and Technology [NIST] (2023). *Artificial intelligence risk management framework (AI RMF 1.0)* (NIST AI 100-1). https://doi.org/10.6028/NIST.AI.100-1
-38. UCI KDD Archive (s. d.). *KDD Cup 1998 data*. https://kdd.ics.uci.edu/databases/kddcup98/kddcup98.html
-39. Université de Montréal (2018). *Déclaration de Montréal pour un développement responsable de l'intelligence artificielle*. https://declarationmontreal-iaresponsable.com/la-declaration/
+29. Charity Insights Canada Project (2026, 8 octobre). *Mind the gap: Demand and capacity in Canada's charitable sector*. Carleton University. https://carleton.ca/cicp-pcpob/2026/mind-the-gap-demand-and-capacity-in-canadas-charitable-sector/
+30. Dataro (s. d.-a). *Plans and pricing*. Consulté le 9 novembre 2026, à https://dataro.io/pricing/
+31. Dataro (s. d.-b). *Available Dataro Predict models*. Consulté le 9 novembre 2026, à https://support.dataro.io/knowledge/available-dataro-predict-models
+32. Gandhi, S. (2024, 26 mars). *More than half of small non-profits relying on 'accidental techies': CanadaHelps survey*. Future of Good. https://futureofgood.co/more-than-half-of-small-non-profits-relying-on-accidental-techies-canadahelps-survey
+33. Gouvernement du Canada (2025). *Guichet-Emplois : salaires des scientifiques de données (CNP 21211) et des programmeurs en développement de logiciels (CNP 21232), région de Montréal*. Consulté le 9 novembre 2026, à https://www.guichetemplois.gc.ca/rapportmarche/salaire-profession/17887/geo25154 et https://www.guichetemplois.gc.ca/rapportmarche/salaire-profession/22531/22446
+34. Huyen, C. (2022). *Designing machine learning systems*. O'Reilly (ch. 2 et 8).
+35. Keela (s. d.-a). *Pricing*. Consulté le 9 novembre 2026, à https://keela.co/pricing
+36. Keela (s. d.-b). *Nonprofit intelligence*. Consulté le 9 novembre 2026, à https://www.keela.co/solutions/nonprofit-intelligence
+37. *Loi modernisant des dispositions législatives en matière de protection des renseignements personnels*, L.Q. 2021, c. 25 (Loi 25). https://www.publicationsduquebec.gouv.qc.ca/fileadmin/Fichiers_client/lois_et_reglements/LoisAnnuelles/fr/2021/2021C25F.PDF
+38. Meta (2024). *Meta Llama responsible use guide: Resources and best practices for responsible development of products built with large language models*. https://ai.meta.com/static-resource/responsible-use-guide
+39. National Institute of Standards and Technology [NIST] (2023). *Artificial intelligence risk management framework (AI RMF 1.0)* (NIST AI 100-1). https://doi.org/10.6028/NIST.AI.100-1
+40. Nguyen, T. K. Q. (2024, 17 décembre). *The rising demand for data literacy and AI in charities*. Charity Insights Canada Project, Carleton University. https://carleton.ca/cicp-pcpob/2024/the-rising-demand-for-data-literacy-and-ai-in-charities/
+41. UCI KDD Archive (s. d.). *KDD Cup 1998 data*. https://kdd.ics.uci.edu/databases/kddcup98/kddcup98.html
+42. Université de Montréal (2018). *Déclaration de Montréal pour un développement responsable de l'intelligence artificielle*. https://declarationmontreal-iaresponsable.com/la-declaration/
+43. Virtuous et Fundraising.AI (2026). *The 2026 nonprofit AI adoption report*. https://virtuous.org/blog/the-2026-nonprofit-ai-adoption-report-blog/

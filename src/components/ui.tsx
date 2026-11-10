@@ -6,21 +6,21 @@ export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Bool
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: ReactNode; actions?: ReactNode }) {
   return (
     <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div>
+      <div className="min-w-0">
         <h1 className="font-display text-3xl font-semibold tracking-tight text-stone-900">{title}</h1>
         {subtitle && <p className="mt-1.5 max-w-2xl text-[15px] text-stone-500">{subtitle}</p>}
       </div>
-      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+      {actions && <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">{actions}</div>}
     </div>
   )
 }
 
-export function Card({ children, className, title, subtitle, action }: { children: ReactNode; className?: string; title?: ReactNode; subtitle?: ReactNode; action?: ReactNode }) {
+export function Card({ children, className, title, subtitle, action, id }: { children: ReactNode; className?: string; title?: ReactNode; subtitle?: ReactNode; action?: ReactNode; id?: string }) {
   return (
-    <section className={cx('rounded-2xl border border-stone-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)]', className)}>
+    <section id={id} className={cx('rounded-2xl border border-stone-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)]', className)}>
       {title && (
-        <header className="flex items-start justify-between gap-4 border-b border-stone-100 px-5 py-4">
-          <div>
+        <header className="flex flex-col gap-2 border-b border-stone-100 px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div className="min-w-0">
             <h2 className="text-[15px] font-semibold text-stone-900">{title}</h2>
             {subtitle && <p className="mt-0.5 text-sm text-stone-500">{subtitle}</p>}
           </div>
@@ -63,26 +63,28 @@ export function Button({ variant = 'secondary', size = 'md', className, ...rest 
 }
 
 /** Barre de probabilité colorée selon l'intensité */
-export function ProbBar({ value, color = '#1f7a4d', width = 'w-24' }: { value: number; color?: string; width?: string }) {
+export function ProbBar({ value, color = '#1f7a4d', width = 'w-24', word }: { value: number; color?: string; width?: string; word?: string }) {
   return (
     <div className="flex items-center gap-2">
-      <div className={cx('h-1.5 overflow-hidden rounded-full bg-stone-100', width)}>
+      <div className={cx('h-1.5 shrink-0 overflow-hidden rounded-full bg-stone-100', width)}>
         <div className="h-full rounded-full" style={{ width: `${Math.min(100, value * 100)}%`, background: color }} />
       </div>
-      <span className="w-9 text-right text-[13px] font-medium tabular-nums text-stone-700">{Math.round(value * 100)} %</span>
+      <span className="whitespace-nowrap text-[13px] font-medium tabular-nums text-stone-700">
+        {Math.round(value * 100)} %{word && <span className="font-normal text-stone-500"> {word}</span>}
+      </span>
     </div>
   )
 }
 
 export function Tabs<T extends string>({ value, onChange, items }: { value: T; onChange: (v: T) => void; items: { value: T; label: ReactNode; count?: number }[] }) {
   return (
-    <div className="flex gap-1 overflow-x-auto rounded-xl bg-stone-100 p-1">
+    <div className="flex flex-wrap gap-1 rounded-xl bg-stone-100 p-1">
       {items.map((it) => (
         <button
           key={it.value}
           onClick={() => onChange(it.value)}
           className={cx(
-            'flex items-center gap-2 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+            'flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors',
             value === it.value ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500 hover:text-stone-800',
           )}
         >

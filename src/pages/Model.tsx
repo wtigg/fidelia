@@ -2,6 +2,9 @@ import { useMemo, useState } from 'react'
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from 'recharts'
 import { AlertTriangle, BrainCircuit, CheckCircle2, Database, Loader2, RefreshCw, Shuffle, Trophy, XCircle } from 'lucide-react'
 import { Badge, Button, Card, PageHeader, Stat, Tabs, Td, Th, cx } from '../components/ui.tsx'
+import { TechDetails, WrapTabs } from '../components/plain/TechDetails.tsx'
+import { Term } from '../components/plain/Term.tsx'
+import { WHO, times } from '../components/plain/words.ts'
 import { formatMoney, formatPct, fx } from '../lib/dates.ts'
 import { MODEL_COLOR } from '../lib/labels.ts'
 import { REQUIREMENTS } from '../lib/requirements.ts'
@@ -27,7 +30,7 @@ export default function Model() {
     <>
       <PageHeader
         title="Modèle IA"
-        subtitle="Quatre modèles prédictifs entraînés sur l'historique des donateurs, dans le navigateur. Chaque modèle est comparé à la règle RFM, la méthode traditionnelle des collecteurs de fonds, et validé sur des donateurs jamais vus."
+        subtitle={<>Quatre <Term k="modele">modèles qui apprennent des dons passés</Term>. Chacun est testé sur des <Term k="jamaisVus">donateurs jamais vus</Term> et comparé à la <Term k="methode">méthode habituelle</Term> (dernier don, fréquence, montant).</>}
         actions={
           <>
             <Badge>Version {modelVersion}</Badge>
@@ -40,7 +43,7 @@ export default function Model() {
       />
 
       <div className="mb-6">
-        <Tabs<Tab>
+        <WrapTabs<Tab>
           value={tab}
           onChange={setTab}
           items={[...MODEL_KINDS.map((k) => ({ value: k as Tab, label: MODEL_SPECS[k].title })), { value: 'kdd', label: <span className="flex items-center gap-1.5"><Database className="size-3.5" />Données réelles</span> }]}
@@ -51,13 +54,12 @@ export default function Model() {
         <RealData />
       ) : (
         <>
-          <Method kind={tab} />
           {!report ? (
             <Card className="mt-6">
               <p className="px-6 py-16 text-center text-sm text-stone-500">{training ? 'Entraînement en cours…' : "Pas assez d'exemples pour entraîner ce modèle."}</p>
             </Card>
           ) : (
-            <ModelDetail report={report} kind={tab} choice={algoChoice[tab] ?? 'auto'} onChoice={(c) => setAlgo(tab, c)} trainMs={trainMs} />
+            <ModelDetail key={tab} report={report} kind={tab} choice={algoChoice[tab] ?? 'auto'} onChoice={(c) => setAlgo(tab, c)} trainMs={trainMs} />
           )}
         </>
       )}
@@ -76,30 +78,78 @@ function ModelDetail({ report, kind, choice, onChoice, trainMs }: { report: Mode
     : report.deployed === 'rfm'
       ? 'le modèle ne bat pas la règle : repli sur RFM'
       : `meilleur sur la validation, R1 et R2 validés${trainMs ? ` · ${fx(trainMs / 1000, 1)} s` : ''}`
+  const ratio = sel.ap / Math.max(rfm.ap, 1e-6)
+  const t = times(ratio)
+  const fallback = report.deployed === 'rfm'
+  const manual = !report.deployedAuto
   return (
     <>
-      <div className="mt-6 grid grid-cols-2 gap-4 xl:grid-cols-4">
-        <Stat label="Exemples (entraîn. / valid. / test)" value={<span className="text-xl">{report.nTrain.toLocaleString('fr-CA')} / {report.nVal.toLocaleString('fr-CA')} / {report.nTest.toLocaleString('fr-CA')}</span>} hint={`${report.positivesTrain} cas positifs à l'entraînement`} />
-        <Stat label="Taux de base" value={formatPct(report.baseRate)} hint="part des cas positifs : la cible est rare" />
-        <Stat label="AUC-PR du modèle" value={fx(sel.ap, 3)} hint={`règle RFM : ${fx(rfm.ap, 3)} · ×${fx((sel.ap / Math.max(rfm.ap, 1e-6)), 1)}`} tone="good" />
-        <Stat label="Utilisé pour classer" value={<span className="text-xl">{ALGORITHM_LABELS[report.deployed]}</span>} hint={usedHint} icon={<Trophy className="size-4" />} tone={!report.deployedAuto || report.deployed === 'rfm' ? 'default' : 'gold'} />
-      </div>
+      <Card>
+        <div className="p-6">
+          <div className="flex items-start gap-4">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl text-white" style={{ background: MODEL_COLOR[kind] }}>
+              <BrainCircuit className="size-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm text-stone-500">{MODEL_SPECS[kind].question}</p>
+              <h2 className="mt-1 font-display text-xl font-semibold leading-snug text-stone-900 sm:text-2xl">
+                {fallback
+                  ? <>Pour trouver {WHO[kind]}, le modèle ne fait pas assez nettement mieux que la méthode habituelle. Fidélia garde donc la méthode habituelle.</>
+                  : <>Parmi les 50 premiers noms proposés par Fidélia, <span className="text-brand-600">{formatPct(sel.p50)}</span> sont de vrais cas, contre {formatPct(rfm.p50)} avec la méthode habituelle.</>}
+              </h2>
+              <p className="mt-2 text-sm text-stone-500">Résultat mesuré sur {report.nTest.toLocaleString('fr-CA')} cas de <Term k="jamaisVus">donateurs jamais vus</Term> pendant l'apprentissage.</p>
+            </div>
+          </div>
+          <div className="mt-5">
+            <div className={cx('rounded-xl p-4', fallback || manual ? 'bg-amber-50' : 'bg-brand-50')}>
+              <p className="text-xs font-medium text-stone-500">Décision</p>
+              <p className={cx('mt-1 flex items-start gap-1.5 text-sm', fallback || manual ? 'text-amber-900' : 'text-brand-900')}>
+                {fallback || manual ? <AlertTriangle className="mt-0.5 size-4 shrink-0" /> : <CheckCircle2 className="mt-0.5 size-4 shrink-0" />}
+                <span>
+                  {manual
+                    ? <>Choix imposé à la main. <button className="font-medium underline underline-offset-2" onClick={() => onChoice('auto')}>Revenir au choix automatique</button></>
+                    : fallback
+                      ? <>Le modèle ne remplit pas <Term k="conditions">nos deux conditions</Term>. Fidélia garde la méthode habituelle pour cette liste.</>
+                      : <><Term k="conditions">Nos deux conditions</Term> sont remplies : Fidélia utilise le modèle pour classer vos donateurs.</>}
+                </span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </Card>
 
-      <Requirements report={report} onAuto={() => onChoice('auto')} />
-      <Comparison report={report} choice={choice} onChoice={onChoice} />
-
-      <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <Curves evaluations={report.evaluations} selected={report.deployed} baseRate={report.baseRate} />
+      <div className="mt-6">
         <Importance report={report} />
       </div>
-
-      <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <Calibration evaluation={sel} color={ALGO_COLOR[shown]} />
-        <Validation report={report} />
-      </div>
-
-      <Fairness report={report} />
       <Simulator key={kind} report={report} kind={kind} />
+
+      <TechDetails className="mt-6">
+        <Method kind={kind} />
+        <p className="mt-6 text-sm text-stone-600">
+          Autres façons de lire le même résultat : la <Term k="precision">précision pour trouver les bons donateurs</Term> est {t ? <><b>{t} fois</b> celle</> : 'proche de celle'} de la méthode habituelle (rapport des AUC-PR) ;
+          les 10 % de donateurs les mieux classés contiennent <b>{fx(sel.top10.lift, 1)} fois</b> plus de vrais cas qu'un tirage au hasard (lift).
+        </p>
+        <div className="mt-4 grid grid-cols-2 gap-4 xl:grid-cols-4">
+          <Stat label="Exemples (entraîn. / valid. / test)" value={<span className="text-xl">{report.nTrain.toLocaleString('fr-CA')} / {report.nVal.toLocaleString('fr-CA')} / {report.nTest.toLocaleString('fr-CA')}</span>} hint={`${report.positivesTrain} cas positifs à l'entraînement`} />
+          <Stat label="Taux de base" value={formatPct(report.baseRate)} hint="part des cas positifs : la cible est rare" />
+          <Stat label="AUC-PR du modèle" value={fx(sel.ap, 3)} hint={`règle RFM : ${fx(rfm.ap, 3)} · précision ×${t ?? fx(ratio, 1)} vs méthode habituelle`} tone="good" />
+          <Stat label="Utilisé pour classer" value={<span className="text-xl">{ALGORITHM_LABELS[report.deployed]}</span>} hint={usedHint} icon={<Trophy className="size-4" />} tone={!report.deployedAuto || report.deployed === 'rfm' ? 'default' : 'gold'} />
+        </div>
+
+        <Requirements report={report} onAuto={() => onChoice('auto')} />
+        <Comparison report={report} choice={choice} onChoice={onChoice} />
+
+        <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <Curves evaluations={report.evaluations} selected={report.deployed} baseRate={report.baseRate} />
+          <Calibration evaluation={sel} color={ALGO_COLOR[shown]} />
+        </div>
+
+        <div className="mt-6">
+          <Validation report={report} />
+        </div>
+
+        <Fairness report={report} />
+      </TechDetails>
     </>
   )
 }
@@ -163,7 +213,7 @@ function Requirements({ report, onAuto }: { report: ModelReport; onAuto: () => v
           <p>
             <b>Décision de déploiement : </b>
             {fallback
-              ? 'le modèle ne bat pas nettement la règle RFM (R1 ou R2 non validé). Fidélia utilise donc la règle RFM pour cette liste, conformément à la règle de gouvernance de l\'équipe.'
+              ? 'le modèle ne bat pas nettement la règle RFM (R1 ou R2 non validé, ou moins de 100 cas positifs dans l\'historique : requis RD1). Fidélia utilise donc la règle RFM pour cette liste, conformément à la règle de gouvernance de l\'équipe.'
               : `le modèle bat la règle RFM (R1 et R2 validés) : ${ALGORITHM_LABELS[report.deployed]} est utilisé pour classer les donateurs.`}
           </p>
         </div>
@@ -288,31 +338,20 @@ function Curves({ evaluations, selected, baseRate }: { evaluations: Evaluation[]
 }
 
 function Importance({ report }: { report: ModelReport }) {
-  const [algo, setAlgo] = useState<'logistic' | 'gbdt'>(report.selected === 'logistic' ? 'logistic' : 'gbdt')
-  const items = (report.importance.find((i) => i.algorithm === algo)?.values ?? []).slice(0, 10)
+  const algo: 'logistic' | 'gbdt' = report.selected === 'logistic' ? 'logistic' : 'gbdt'
+  const items = (report.importance.find((i) => i.algorithm === algo)?.values ?? []).slice(0, 8)
   const max = Math.max(...items.map((i) => Math.abs(i.drop)), 0.001)
   const coef = new Map(FEATURE_KEYS.map((k, j) => [k, report.logistic.weights[j]]))
   return (
-    <Card
-      title="Variables les plus importantes"
-      subtitle="Importance par permutation : de combien l'AUC baisse si l'on mélange la variable au hasard. Valable pour tout algorithme."
-      action={
-        <select value={algo} onChange={(e) => setAlgo(e.target.value as 'logistic' | 'gbdt')} className="rounded-lg border border-stone-200 bg-white px-2 py-1 text-xs">
-          <option value="logistic">Logistique</option>
-          <option value="gbdt">Boosting</option>
-        </select>
-      }
-    >
-      <ul className="space-y-3 p-5">
+    <Card title="Ce qui pèse le plus dans la prédiction" subtitle="Les signaux que le modèle regarde en premier. Plus la barre est longue, plus le signal compte.">
+      <ul className="grid grid-cols-1 gap-x-8 gap-y-3 p-5 md:grid-cols-2">
         {items.map((i) => {
           const w = coef.get(i.feature as keyof Features) ?? 0
           return (
-            <li key={i.feature}>
+            <li key={i.feature} title={`Importance par permutation : −${fx(i.drop, 3)} d'AUC`}>
               <div className="flex justify-between gap-2 text-sm">
                 <span className="text-stone-800">{FEATURE_LABELS[i.feature as keyof Features]}</span>
-                <span className="shrink-0 text-xs tabular-nums text-stone-500">
-                  −{fx(i.drop, 3)} AUC{algo === 'logistic' && <span className={cx('ml-2 font-medium', w >= 0 ? 'text-rose-600' : 'text-sky-700')}>{w >= 0 ? '↑ augmente' : '↓ diminue'}</span>}
-                </span>
+                {algo === 'logistic' && <span className={cx('shrink-0 text-xs font-medium', w >= 0 ? 'text-rose-600' : 'text-sky-700')}>{w >= 0 ? '↑ rend plus probable' : '↓ rend moins probable'}</span>}
               </div>
               <div className="mt-1.5 h-2 rounded-full bg-stone-100">
                 <div className="h-full rounded-full" style={{ width: `${(Math.max(0, i.drop) / max) * 100}%`, background: ALGO_COLOR[algo] }} />
@@ -441,6 +480,16 @@ const RANGES: Record<keyof Features, { min: number; max: number; step: number; f
   seasonQ4: { min: 0, max: 1, step: 1, fmt: (v) => (v ? 'oui' : 'non') },
 }
 
+/** Les curseurs du niveau principal : quatre ou cinq signaux en mots simples. Les autres restent dans « Voir les autres signaux ». */
+const SIMPLE_KEYS: (keyof Features)[] = ['recencyDays', 'failed90d', 'openRate3m', 'avgGift', 'gifts12m']
+const SIMPLE_LABELS: Partial<Record<keyof Features, string>> = {
+  recencyDays: 'Dernier don, il y a',
+  failed90d: 'Paiements refusés (3 derniers mois)',
+  openRate3m: 'Courriels ouverts',
+  avgGift: 'Montant habituel du don',
+  gifts12m: 'Dons sur la dernière année',
+}
+
 function Simulator({ report, kind }: { report: ModelReport; kind: ModelKind }) {
   const { scores } = useStore()
   const pool = useMemo(() => scores.filter((s) => (kind === 'churn' || kind === 'upgrade' ? s.segment === 'monthly' : kind === 'reactivation' ? s.segment === 'lapsed' : s.segment === 'one_time' || s.segment === 'annual')), [scores, kind])
@@ -449,24 +498,32 @@ function Simulator({ report, kind }: { report: ModelReport; kind: ModelKind }) {
   const x = toVector(f)
   const p = predictReport(report, x)
   const reasons = explain(report, x, f)
+  const slider = (k: keyof Features, label: string, size: string) => (
+    <label key={k} className="block">
+      <div className={cx('flex justify-between gap-2', size)}>
+        <span className="text-stone-600">{label}</span>
+        <span className="shrink-0 font-medium tabular-nums text-stone-900">{RANGES[k].fmt(f[k])}</span>
+      </div>
+      <input type="range" min={Math.min(RANGES[k].min, f[k])} max={Math.max(RANGES[k].max, f[k])} step={RANGES[k].step} value={f[k]} onChange={(e) => setF({ ...f, [k]: Number(e.target.value) })} className="w-full" />
+    </label>
+  )
 
   return (
-    <Card className="mt-6" title="Simulateur de prédiction" subtitle="Bougez les variables et observez la réaction du modèle en temps réel." action={
+    <Card className="mt-6" title="Essayez vous-même" subtitle="Changez quelques signaux d'un donateur et voyez son score réagir en direct." action={
       <Button size="sm" variant="secondary" onClick={() => pool.length && setF(pool[Math.floor(Math.random() * pool.length)].features)}>
         <Shuffle className="size-3.5" /> Donateur au hasard
       </Button>
     }>
       <div className="grid grid-cols-1 gap-8 p-6 xl:grid-cols-[1fr_300px]">
-        <div className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURE_KEYS.map((k) => (
-            <label key={k} className="block">
-              <div className="flex justify-between gap-2 text-[13px]">
-                <span className="truncate text-stone-600">{FEATURE_LABELS[k]}</span>
-                <span className="shrink-0 font-medium tabular-nums text-stone-900">{RANGES[k].fmt(f[k])}</span>
-              </div>
-              <input type="range" min={Math.min(RANGES[k].min, f[k])} max={Math.max(RANGES[k].max, f[k])} step={RANGES[k].step} value={f[k]} onChange={(e) => setF({ ...f, [k]: Number(e.target.value) })} className="w-full accent-brand-600" />
-            </label>
-          ))}
+        <div>
+          <div className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+            {SIMPLE_KEYS.map((k) => slider(k, SIMPLE_LABELS[k] ?? FEATURE_LABELS[k], 'text-sm'))}
+          </div>
+          <TechDetails label="Voir les autres signaux" className="mt-5">
+            <div className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
+              {FEATURE_KEYS.filter((k) => !SIMPLE_KEYS.includes(k)).map((k) => slider(k, FEATURE_LABELS[k], 'text-[13px]'))}
+            </div>
+          </TechDetails>
         </div>
         <div className="rounded-2xl bg-brand-900 p-6 text-white">
           <p className="text-sm text-brand-100/80">{MODEL_SPECS[kind].title}</p>
@@ -474,7 +531,7 @@ function Simulator({ report, kind }: { report: ModelReport; kind: ModelKind }) {
           <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
             <div className="h-full rounded-full bg-gold transition-all" style={{ width: `${p * 100}%` }} />
           </div>
-          <p className="mt-2 text-xs text-brand-100/70">Moyenne observée : {formatPct(report.baseRate)} · {ALGORITHM_LABELS[report.deployed]}</p>
+          <p className="mt-2 text-xs text-brand-100/70">En moyenne, chez les vrais donateurs : {formatPct(report.baseRate)}</p>
           <div className="mt-6 border-t border-white/10 pt-4">
             <p className="text-xs font-medium uppercase tracking-wide text-brand-100/60">Ce qui fait monter le score</p>
             <ul className="mt-2 space-y-1.5 text-sm">{reasons.length ? reasons.map((r) => <li key={r.feature}>• {r.text}</li>) : <li className="text-brand-100/70">Rien de notable</li>}</ul>
@@ -529,7 +586,7 @@ function KddGovernance() {
           </tbody>
         </table>
       </div>
-      <p className="border-t border-stone-100 px-5 py-3 text-xs text-stone-500">Un modèle peut battre la règle RFM (R2) sans être deux fois meilleur que le hasard (R1). Il n'est alors pas déployé, mais les chiffres de profit ci-dessous restent utiles pour juger la méthode.</p>
+      <p className="border-t border-stone-100 px-5 py-3 text-xs text-stone-500">Un modèle peut battre la règle RFM (R2) sans être deux fois meilleur que le hasard (R1). Il n'est alors pas déployé, mais les chiffres de profit ci-dessus restent utiles pour juger la méthode.</p>
     </Card>
   )
 }
@@ -540,6 +597,9 @@ function RealData() {
   const profit = (kdd as unknown as Record<string, KddTask>).reactivation.profit!
   const imp = r.importance.find((i) => i.algorithm === 'gbdt')!.values.slice(0, 8)
   const max = Math.max(...imp.map((i) => i.drop), 0.001)
+  const reac = (kdd as unknown as Record<string, KddTask>).reactivation
+  const reacSel = reac.evaluations.find((e) => e.algorithm === reac.selected)!
+  const reactivationReady = reacSel.ap >= 2 * reac.baseRate && (reacSel.apDiffVsRfmCI?.[0] ?? -1) > 0
   return (
     <>
       <Card>
@@ -556,17 +616,27 @@ function RealData() {
         </div>
       </Card>
 
-      <KddGovernance />
+      <div className="mt-6 rounded-2xl bg-brand-900 p-6 text-white">
+        <p className="text-sm text-brand-100/80">En bref</p>
+        <p className="mt-1 font-display text-xl font-semibold leading-snug sm:text-2xl">
+          Sur de vrais donateurs, avec le même budget, cibler avec le modèle rapporte <span className="text-gold">{Math.round((profit.modelTop20.net / profit.rfmTop20.net - 1) * 100)} % de profit en plus</span> que la méthode habituelle.
+        </p>
+        <p className="mt-2 text-sm text-brand-100/80">
+          Ce test valide la méthode. {reactivationReady ? 'Le modèle de réactivation remplit nos deux conditions.' : <>Le modèle de réactivation ne remplit pas encore <Term k="conditions" light>nos deux conditions</Term> : Fidélia ne l'utiliserait pas tel quel.</>}
+        </p>
+      </div>
 
       <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-        <Stat label="Envoyer à tout le monde" value={formatMoney(profit.everyone.net)} hint={`profit net sur ${profit.everyone.mailed.toLocaleString('fr-CA')} envois (test), ${profit.cost} $US par envoi`} />
-        <Stat label="Budget limité à 20 % : règle RFM" value={formatMoney(profit.rfmTop20.net)} hint={`${profit.rfmTop20.mailed.toLocaleString('fr-CA')} envois aux meilleurs scores RFM`} />
-        <Stat label="Budget limité à 20 % : modèle" value={formatMoney(profit.modelTop20.net)} hint={`+${Math.round((profit.modelTop20.net / profit.rfmTop20.net - 1) * 100)} % vs RFM, avec 5 fois moins d'envois que « tout le monde »`} tone="good" />
+        <Stat label="Envoyer à tout le monde" value={formatMoney(profit.everyone.net)} hint={`profit net sur ${profit.everyone.mailed.toLocaleString('fr-CA')} envois (test), ${fx(profit.cost, 2)} $ US par envoi`} />
+        <Stat label="Budget limité à 20 % : méthode habituelle" value={formatMoney(profit.rfmTop20.net)} hint={`${profit.rfmTop20.mailed.toLocaleString('fr-CA')} envois aux donateurs les mieux classés par cette méthode`} />
+        <Stat label="Budget limité à 20 % : modèle" value={formatMoney(profit.modelTop20.net)} hint={`+${Math.round((profit.modelTop20.net / profit.rfmTop20.net - 1) * 100)} % vs méthode habituelle, avec 5 fois moins d'envois que « tout le monde »`} tone="good" />
       </div>
       <p className="mt-2 text-xs text-stone-500">
-        Honnêtement : à gros volume ({profit.modelExpectedValue.mailed.toLocaleString('fr-CA')} envois), le modèle ({formatMoney(profit.modelExpectedValue.net)}) et la règle RFM ({formatMoney(profit.rfmSameVolume.net)}) font jeu égal. L'avantage du modèle est de bien classer les premiers noms, ce qui compte pour une petite équipe. Montants en dollars américains de 1997.
+        Honnêtement : à gros volume ({profit.modelExpectedValue.mailed.toLocaleString('fr-CA')} envois), le modèle ({formatMoney(profit.modelExpectedValue.net)}) et la méthode habituelle ({formatMoney(profit.rfmSameVolume.net)}) font jeu égal. L'avantage du modèle est de bien choisir les premiers noms, ce qui compte pour une petite équipe. Montants en dollars américains de 1997.
       </p>
 
+      <TechDetails className="mt-6">
+      <KddGovernance />
       <div className="mt-6">
         <Tabs<'reactivation' | 'hausse'> value={task} onChange={setTask} items={[{ value: 'reactivation', label: 'Réactivation' }, { value: 'hausse', label: 'Hausse du don' }]} />
       </div>
@@ -601,6 +671,7 @@ function RealData() {
         </Card>
       )}
       <Fairness report={r} />
+      </TechDetails>
     </>
   )
 }

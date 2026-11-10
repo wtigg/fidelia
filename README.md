@@ -42,7 +42,7 @@ Les implémentations maison donnent des résultats équivalents à scikit-learn 
 | `curl` et `unzip` | Toute version récente | Téléchargement de KDD Cup 1998 |
 
 ```bash
-python3 -m pip install scikit-learn==1.9.0 pandas==3.0.2 numpy==2.4.4
+python3 -m pip install -r verification/requirements.txt  # scikit-learn 1.9.0, pandas 3.0.2, numpy 2.4.4
 ```
 
 ## Lancer avec Docker (recommandé)
@@ -53,12 +53,12 @@ Seul Docker est requis. Le `Dockerfile` fige la version de Node et installe les 
 # Application sur http://localhost:8080
 docker build -t fidelia . && docker run --rm -p 8080:80 fidelia
 
-# 19 tests, puis contrôle de reproductibilité (graine 42)
+# 24 tests, puis contrôle de reproductibilité (graine 42)
 docker build --target eval -t fidelia-eval .
 docker run --rm fidelia-eval
 ```
 
-La cible `eval` lance les 19 tests, réentraîne la graine 42 dans un dossier temporaire et compare le résultat au rapport versionné `reports/synthetique-42.json` (tolérance 1e-9, horodatage et durée ignorés). Message attendu : « Reproductible : rapport graine 42 identique à reports/synthetique-42.json ». Rien n'est écrit dans `reports/`.
+La cible `eval` lance les 24 tests, réentraîne la graine 42 dans un dossier temporaire et compare le résultat au rapport versionné `reports/synthetique-42.json` (tolérance 1e-9, horodatage et durée ignorés). Message attendu : « Reproductible : rapport graine 42 identique à reports/synthetique-42.json ». Rien n'est écrit dans `reports/`.
 
 Pour régénérer le rapport sur le poste :
 
@@ -70,7 +70,7 @@ docker run --rm -v "$PWD/reports:/app/reports" fidelia-eval npm run evaluate 42
 
 ```bash
 npm ci        # dépendances exactes du package-lock.json
-npm test      # 19 tests
+npm test      # 24 tests
 npm run dev
 ```
 
@@ -79,9 +79,10 @@ npm run dev
 | Commande | Rôle |
 |---|---|
 | `npm run dev` | Application en local |
-| `npm test` | 19 tests unitaires : métriques, règle RFM, pipeline, requis R1, R2, R6 et gouvernance, CSV |
+| `npm test` | 24 tests unitaires : métriques, règle RFM, pipeline, requis R1, R2, R6 et gouvernance, CSV, comptes par action |
 | `npm run build` | Version de production (`dist/`, compatible GitHub Pages) |
 | `npm run check:repro` | Réentraîne la graine 42 dans un dossier temporaire et compare au rapport versionné `reports/synthetique-42.json` (tolérance 1e-9) |
+| `npm run check:browser` | Construit le site, ouvre la page Impact dans Chrome sans interface (profil neuf) et compare ses chiffres au bloc `app` de `reports/impact-42.json`. Garde-fou contre les écarts de `Math.log` d'un moteur JavaScript à l'autre (variables arrondies à 12 chiffres dans `src/ml/features.ts`) |
 | `npm run train` | Entraîne les 4 modèles et écrit le modèle versionné `src/data/model.json` |
 | `npm run evaluate 42 > reports/evaluate-42.txt` | Rapport détaillé : IC, test temporel, courbes d'apprentissage, équité. Écrit aussi `reports/synthetique-42.json` |
 | `npm run calibration > reports/calibration.txt` | Compare le jeu synthétique à des taux de rétention publiés |

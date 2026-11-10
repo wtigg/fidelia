@@ -1,0 +1,5 @@
+# Vérification indépendante (verify_sklearn.py) : versions exactes de l'environnement de l'équipe (Python 3.14.3).
+# Installation : python3 -m pip install -r verification/requirements.txt
+scikit-learn==1.9.0
+pandas==3.0.2
+numpy==2.4.4

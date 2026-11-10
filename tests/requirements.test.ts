@@ -74,14 +74,16 @@ test('R6 : tranche « Inconnu » et tranches de moins de 100 donateurs exclues ;
 const features = (over: Partial<Features>): Features =>
   ({ ...Object.fromEntries(FEATURE_KEYS.map((k) => [k, 0])), ...over }) as Features
 
-test('repli RFM : expm1(toVector) redonne les valeurs brutes de récence, fréquence et montant', () => {
+test('repli RFM : expm1(toVector), arrondi à l\'entier, redonne les valeurs brutes de récence, fréquence et montant', () => {
+  // ces trois variables sont entières (avgGift est arrondi dans computeFeatures) ; toVector arrondit log1p à 12 chiffres
   const idx = { recency: FEATURE_KEYS.indexOf('recencyDays'), frequency: FEATURE_KEYS.indexOf('giftsLifetime'), monetary: FEATURE_KEYS.indexOf('avgGift') }
-  for (const f of [features({ recencyDays: 47, giftsLifetime: 7, avgGift: 42.5 }), features({ recencyDays: 400, giftsLifetime: 1, avgGift: 10 }), features({ recencyDays: 3, giftsLifetime: 25, avgGift: 250 })]) {
+  for (const f of [features({ recencyDays: 47, giftsLifetime: 7, avgGift: 43 }), features({ recencyDays: 400, giftsLifetime: 1, avgGift: 10 }), features({ recencyDays: 1200, giftsLifetime: 25, avgGift: 250 })]) {
     const x = toVector(f)
-    const back = { recency: Math.expm1(x[idx.recency]), frequency: Math.expm1(x[idx.frequency]), monetary: Math.expm1(x[idx.monetary]) }
-    assert.ok(Math.abs(back.recency - f.recencyDays) < 1e-9)
-    assert.ok(Math.abs(back.frequency - f.giftsLifetime) < 1e-9)
-    assert.ok(Math.abs(back.monetary - f.avgGift) < 1e-9)
+    const back = { recency: Math.round(Math.expm1(x[idx.recency])), frequency: Math.round(Math.expm1(x[idx.frequency])), monetary: Math.round(Math.expm1(x[idx.monetary])) }
+    assert.ok(Math.abs(Math.expm1(x[idx.recency]) - f.recencyDays) < 1e-6)
+    assert.equal(back.recency, f.recencyDays)
+    assert.equal(back.frequency, f.giftsLifetime)
+    assert.equal(back.monetary, f.avgGift)
     const raw = { recency: f.recencyDays, frequency: f.giftsLifetime, monetary: f.avgGift }
     assert.equal(rfmScore(rule, back), rfmScore(rule, raw))
   }

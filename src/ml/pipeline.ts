@@ -25,7 +25,7 @@ const every = (from: number, to: number, step: number) => Array.from({ length: M
 export const MODEL_SPECS: Record<ModelKind, ModelSpec> = {
   churn: {
     kind: 'churn',
-    title: 'Risque d\'attrition',
+    title: "Risque d'arrêt",
     question: 'Ce donateur mensuel va-t-il arrêter son don dans les 90 jours ?',
     action: 'Relancer',
     segments: ['monthly'],
@@ -71,7 +71,7 @@ export const ALGORITHM_LABELS: Record<string, string> = {
   logistic: 'Régression logistique',
   gbdt: 'Gradient boosting d\'arbres',
   ensemble: 'Ensemble (moyenne des deux)',
-  rfm: 'Règle RFM (référence métier)',
+  rfm: 'Règle RFM (méthode habituelle)',
 }
 
 export interface ModelReport extends ExperimentResult {
@@ -87,8 +87,20 @@ export interface ModelReport extends ExperimentResult {
   deployedAuto: boolean
 }
 
-/** Décision de déploiement : le meilleur modèle (choisi sur la validation) s'il passe R1 et R2, sinon la règle RFM */
+/** Requis de données RD1 (RAPPORT §5.4) : au moins 100 cas positifs dans l'historique, sinon la règle RFM */
+export const MIN_POSITIVES = 100
+
+/** Nombre de cas positifs dans l'historique (toutes photos, entraînement + validation + test) */
+export const positivesOf = (r: Pick<ExperimentResult, 'baseRate' | 'nTrain' | 'nVal' | 'nTest'>) => Math.round(r.baseRate * (r.nTrain + r.nVal + r.nTest))
+
+/**
+ * Décision de déploiement : le meilleur modèle (choisi sur la validation) s'il y a au moins 100 cas positifs (RD1)
+ * et s'il passe R1 et R2 ; sinon la règle RFM, automatiquement.
+ * Sous le minimum technique (10 positifs à l'entraînement, 3 en validation et en test), aucun modèle n'est entraîné :
+ * voir trainModel et l'avertissement de Layout.
+ */
 export function governanceDecision(r: ExperimentResult & { kind: ModelKind }): Algorithm {
+  if (positivesOf(r) < MIN_POSITIVES) return 'rfm'
   const asReport = { ...r, deployed: r.selected, deployedAuto: true, trainedAt: '', ms: 0 } as ModelReport
   const pass = REQUIREMENTS.filter((q) => q.id === 'R1' || q.id === 'R2').every((q) => q.check(asReport).ok)
   return pass ? r.selected : 'rfm'
@@ -171,7 +183,9 @@ const IDX = { recency: FEATURE_KEYS.indexOf('recencyDays'), frequency: FEATURE_K
 
 export function predictReport(r: ModelReport, x: number[]): number {
   if (r.deployed === 'rfm') {
-    const raw = { recency: Math.expm1(x[IDX.recency]), frequency: Math.expm1(x[IDX.frequency]), monetary: Math.expm1(x[IDX.monetary]) }
+    // valeurs entières à l'origine : l'arrondi évite qu'un écart au dernier chiffre de expm1 change la note RFM
+    const back = (i: number) => Math.round(Math.expm1(x[i]))
+    const raw = { recency: back(IDX.recency), frequency: back(IDX.frequency), monetary: back(IDX.monetary) }
     return predictLogistic(r.rfmModel, [r.rfmSign * rfmScore(r.rfm, raw)])
   }
   return predictLearned(r, r.deployed, x)
@@ -227,7 +241,9 @@ export function explain(report: ModelReport, x: number[], f: Features): Reason[]
 
 export const DEFAULT_AUTOMATIONS: Automation[] = [
   { type: 'churn_prevention', enabled: true, threshold: 0.12, requireApproval: true },
-  { type: 'upgrade_amount', enabled: true, threshold: 0.1, requireApproval: true },
+  // Solliciter plus : le modèle de hausse ne bat pas la méthode habituelle (repli RFM), dont les chances restent sous 5 %.
+  // Seuil à 4,3 % : la liste garde les mensuels les mieux notés (une vingtaine dans la démo), au lieu d'une liste vide à 10 %.
+  { type: 'upgrade_amount', enabled: true, threshold: 0.043, requireApproval: true },
   { type: 'upgrade_one_time', enabled: true, threshold: 0.06, requireApproval: true },
   { type: 'upgrade_annual', enabled: true, threshold: 0.06, requireApproval: true },
   { type: 'reactivation', enabled: true, threshold: 0.25, requireApproval: true },

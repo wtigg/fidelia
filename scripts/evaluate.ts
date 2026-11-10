@@ -1,5 +1,8 @@
 // Évalue les modèles sur les données synthétiques : npm run evaluate [graine] [fichier de sortie]
 import { writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { impactReport } from './impact.ts'
 import { generateDemo } from '../src/data/generate.ts'
 import { MODEL_KINDS, scoreAll, trainModel, type ModelReport } from '../src/ml/pipeline.ts'
 import type { ModelKind } from '../src/lib/types.ts'
@@ -26,5 +29,10 @@ console.log('\nsegments', count(scores, (s) => s.segment))
 console.log('actions', count(scores.filter((s) => s.action), (s) => s.action!))
 const light = Object.fromEntries(Object.entries(reports).map(([k, r]) => { const { logistic, gbdt, ...rest } = r!; return [k, { ...rest, logistic, gbdtTrees: gbdt.trees.length }] }))
 // Second argument facultatif : autre fichier de sortie (utilisé par npm run check:repro pour ne pas écraser le rapport versionné)
-const out = process.argv[3] ?? new URL(`../reports/synthetique-${seed}.json`, import.meta.url)
+const out = process.argv[3] ?? fileURLToPath(new URL(`../reports/synthetique-${seed}.json`, import.meta.url))
 writeFileSync(out, JSON.stringify(light, null, 1))
+// Chiffres d'impact (capacités 100 et 300) et IC des ratios d'équité par âge, à côté du rapport : impact-<graine>.json
+const impact = impactReport(ds, reports, seed)
+writeFileSync(join(dirname(out), `impact-${seed}.json`), JSON.stringify(impact, null, 1))
+for (const c of impact.impact)
+  console.log(`impact ${c.capacity} contacts : modèle ${c.total.model.toFixed(0)} $ · RFM ${c.total.rfm.toFixed(0)} $ · hasard ${c.total.random.toFixed(0)} $ · ×${c.total.multiplierVsRfm} vs RFM · ×${c.total.multiplierVsRandom} vs hasard`)

@@ -34,6 +34,8 @@ interface Store {
   campaign: CampaignItem[]
   algoChoice: Record<ModelKind, AlgoChoice>
   modelVersion: string
+  /** Date de l'entraînement du modèle (ISO), distincte de la date des données */
+  modelTrainedAt: string
   retrain: () => void
   setAlgo: (kind: ModelKind, choice: AlgoChoice) => void
   loadDataset: (ds: Dataset) => void
@@ -70,12 +72,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [rawReports, setRawReports] = useState<Reports>(BUNDLED.reports)
   const [training, setTraining] = useState(false)
   const [version, setVersion] = useState(BUNDLED.version)
+  const [trainedAt, setTrainedAt] = useState(BUNDLED.trainedAt)
   const [trainingStep, setTrainingStep] = useState<ModelKind>()
   const [trainMs, setTrainMs] = useState<number>()
   const [trainError, setTrainError] = useState<string>()
   const [trainSkipped, setTrainSkipped] = useState<ModelKind[]>([])
   const [automations, setAutomations] = useState<Automation[]>(() => {
-    const saved = load<Automation[]>('automations', DEFAULT_AUTOMATIONS)
+    // clé « automations-2 » : les réglages enregistrés avant le nouveau seuil de « Solliciter plus » (10 %, liste vide) sont ignorés
+    const saved = load<Automation[]>('automations-2', DEFAULT_AUTOMATIONS)
     return DEFAULT_AUTOMATIONS.map((d) => saved.find((s) => s.type === d.type) ?? d)
   })
   const [campaign, setCampaign] = useState<CampaignItem[]>(() => load('campaign', []))
@@ -83,7 +87,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [algoChoice, setAlgoChoice] = useState<Record<ModelKind, AlgoChoice>>({ churn: 'auto', upgrade: 'auto', conversion: 'auto', reactivation: 'auto' })
   const worker = useRef<Worker | null>(null)
 
-  useEffect(() => save('automations', automations), [automations])
+  useEffect(() => save('automations-2', automations), [automations])
   useEffect(() => save('campaign', campaign), [campaign])
   useEffect(() => {
     try {
@@ -121,6 +125,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setTrainSkipped(e.data.skipped)
       setTrainMs(e.data.ms)
       const t = new Date().toISOString()
+      setTrainedAt(t)
       setVersion(`v${t.slice(0, 10).replace(/-/g, '')}.${t.slice(11, 16).replace(':', '')}-local`)
       setTraining(false)
       setTrainingStep(undefined)
@@ -199,6 +204,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     campaign,
     algoChoice,
     modelVersion,
+    modelTrainedAt: trainedAt,
     retrain: () => train(dataset),
     setAlgo: (kind, choice) => setAlgoChoice((a) => ({ ...a, [kind]: choice })),
     loadDataset: (ds) => {

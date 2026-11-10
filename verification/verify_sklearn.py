@@ -6,7 +6,7 @@ et les mêmes découpages entraînement / validation / test que Fidélia, puis c
 l'AUC-PR et l'AUC obtenues. But : montrer que nos implémentations « maison »
 (régression logistique, gradient boosting) se comportent comme les implémentations de référence.
 
-Prérequis : python3 -m pip install scikit-learn pandas
+Prérequis : python3 -m pip install -r verification/requirements.txt (versions exactes)
 Lancement : npm run export-rows && python3 verification/verify_sklearn.py
 """
 import json

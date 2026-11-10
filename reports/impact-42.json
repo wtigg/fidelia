@@ -1,0 +1,477 @@
+{
+ "seed": 42,
+ "donors": 4000,
+ "refDate": "2026-10-01",
+ "note": "Valeur captée en $ par an, à effort égal (même nombre de contacts). Part captée lue sur la courbe de valeur mesurée sur le jeu de test ; effet de l'action = hypothèse (effectAssumed), identique pour les trois stratégies, donc sans effet sur les multiplicateurs.",
+ "effectAssumed": {
+  "churn": 0.3,
+  "upgrade": 0.25,
+  "conversion": 0.15,
+  "reactivation": 0.15
+ },
+ "impact": [
+  {
+   "capacity": 100,
+   "byModel": [
+    {
+     "kind": "churn",
+     "deployed": "gbdt",
+     "population": 489,
+     "contacted": 37,
+     "atStake": 8405.98,
+     "model": 850.94,
+     "rfm": 140.38,
+     "random": 190.81,
+     "multiplierVsRfm": 6.0617,
+     "multiplierVsRandom": 4.4596
+    },
+    {
+     "kind": "upgrade",
+     "deployed": "rfm",
+     "population": 489,
+     "contacted": 7,
+     "atStake": 1564.86,
+     "model": 3.13,
+     "rfm": 3.13,
+     "random": 5.6,
+     "multiplierVsRfm": 1,
+     "multiplierVsRandom": 0.5587
+    },
+    {
+     "kind": "conversion",
+     "deployed": "ensemble",
+     "population": 1168,
+     "contacted": 21,
+     "atStake": 4809,
+     "model": 113.98,
+     "rfm": 76.42,
+     "random": 12.97,
+     "multiplierVsRfm": 1.4915,
+     "multiplierVsRandom": 8.7882
+    },
+    {
+     "kind": "reactivation",
+     "deployed": "gbdt",
+     "population": 2343,
+     "contacted": 35,
+     "atStake": 7854,
+     "model": 133.44,
+     "rfm": 11.7,
+     "random": 17.6,
+     "multiplierVsRfm": 11.4083,
+     "multiplierVsRandom": 7.5824
+    }
+   ],
+   "total": {
+    "contacted": 100,
+    "model": 1101.48,
+    "rfm": 231.62,
+    "random": 226.98,
+    "multiplierVsRfm": 4.7555,
+    "multiplierVsRandom": 4.8528
+   }
+  },
+  {
+   "capacity": 300,
+   "byModel": [
+    {
+     "kind": "churn",
+     "deployed": "gbdt",
+     "population": 489,
+     "contacted": 111,
+     "atStake": 8405.98,
+     "model": 1525.89,
+     "rfm": 487.08,
+     "random": 572.43,
+     "multiplierVsRfm": 3.1327,
+     "multiplierVsRandom": 2.6656
+    },
+    {
+     "kind": "upgrade",
+     "deployed": "rfm",
+     "population": 489,
+     "contacted": 21,
+     "atStake": 1564.86,
+     "model": 9.39,
+     "rfm": 9.39,
+     "random": 16.8,
+     "multiplierVsRfm": 1,
+     "multiplierVsRandom": 0.5587
+    },
+    {
+     "kind": "conversion",
+     "deployed": "ensemble",
+     "population": 1168,
+     "contacted": 64,
+     "atStake": 4809,
+     "model": 329.03,
+     "rfm": 227.36,
+     "random": 39.53,
+     "multiplierVsRfm": 1.4472,
+     "multiplierVsRandom": 8.3244
+    },
+    {
+     "kind": "reactivation",
+     "deployed": "gbdt",
+     "population": 2343,
+     "contacted": 104,
+     "atStake": 7854,
+     "model": 396.5,
+     "rfm": 34.76,
+     "random": 52.29,
+     "multiplierVsRfm": 11.4083,
+     "multiplierVsRandom": 7.5824
+    }
+   ],
+   "total": {
+    "contacted": 300,
+    "model": 2260.81,
+    "rfm": 758.58,
+    "random": 681.05,
+    "multiplierVsRfm": 2.9803,
+    "multiplierVsRandom": 3.3196
+   }
+  }
+ ],
+ "app": {
+  "version": "v20261110.0138",
+  "note": "Chiffres affichés par l'application (modèle versionné, paramètres de prédiction en pleine précision). Ils doivent être identiques à ceux de « impact ».",
+  "impact": [
+   {
+    "capacity": 100,
+    "byModel": [
+     {
+      "kind": "churn",
+      "deployed": "gbdt",
+      "population": 489,
+      "contacted": 37,
+      "atStake": 8405.98,
+      "model": 850.93,
+      "rfm": 140.38,
+      "random": 190.81,
+      "multiplierVsRfm": 6.0617,
+      "multiplierVsRandom": 4.4596
+     },
+     {
+      "kind": "upgrade",
+      "deployed": "rfm",
+      "population": 489,
+      "contacted": 7,
+      "atStake": 1564.86,
+      "model": 3.13,
+      "rfm": 3.13,
+      "random": 5.6,
+      "multiplierVsRfm": 1,
+      "multiplierVsRandom": 0.5587
+     },
+     {
+      "kind": "conversion",
+      "deployed": "ensemble",
+      "population": 1168,
+      "contacted": 21,
+      "atStake": 4809,
+      "model": 113.98,
+      "rfm": 76.42,
+      "random": 12.97,
+      "multiplierVsRfm": 1.4915,
+      "multiplierVsRandom": 8.7882
+     },
+     {
+      "kind": "reactivation",
+      "deployed": "gbdt",
+      "population": 2343,
+      "contacted": 35,
+      "atStake": 7854,
+      "model": 133.44,
+      "rfm": 11.7,
+      "random": 17.6,
+      "multiplierVsRfm": 11.4085,
+      "multiplierVsRandom": 7.5823
+     }
+    ],
+    "total": {
+     "contacted": 100,
+     "model": 1101.48,
+     "rfm": 231.62,
+     "random": 226.98,
+     "multiplierVsRfm": 4.7555,
+     "multiplierVsRandom": 4.8528
+    }
+   },
+   {
+    "capacity": 300,
+    "byModel": [
+     {
+      "kind": "churn",
+      "deployed": "gbdt",
+      "population": 489,
+      "contacted": 111,
+      "atStake": 8405.98,
+      "model": 1525.89,
+      "rfm": 487.08,
+      "random": 572.43,
+      "multiplierVsRfm": 3.1327,
+      "multiplierVsRandom": 2.6656
+     },
+     {
+      "kind": "upgrade",
+      "deployed": "rfm",
+      "population": 489,
+      "contacted": 21,
+      "atStake": 1564.86,
+      "model": 9.39,
+      "rfm": 9.39,
+      "random": 16.8,
+      "multiplierVsRfm": 1,
+      "multiplierVsRandom": 0.5587
+     },
+     {
+      "kind": "conversion",
+      "deployed": "ensemble",
+      "population": 1168,
+      "contacted": 64,
+      "atStake": 4809,
+      "model": 329.03,
+      "rfm": 227.36,
+      "random": 39.53,
+      "multiplierVsRfm": 1.4472,
+      "multiplierVsRandom": 8.3244
+     },
+     {
+      "kind": "reactivation",
+      "deployed": "gbdt",
+      "population": 2343,
+      "contacted": 104,
+      "atStake": 7854,
+      "model": 396.5,
+      "rfm": 34.76,
+      "random": 52.29,
+      "multiplierVsRfm": 11.4085,
+      "multiplierVsRandom": 7.5823
+     }
+    ],
+    "total": {
+     "contacted": 300,
+     "model": 2260.81,
+     "rfm": 758.58,
+     "random": 681.05,
+     "multiplierVsRfm": 2.9803,
+     "multiplierVsRandom": 3.3196
+    }
+   }
+  ]
+ },
+ "fairnessAge": {
+  "method": "bootstrap par donateur, 1000 tirages, graine 42, percentiles 2,5 et 97,5",
+  "models": [
+   {
+    "kind": "churn",
+    "algorithm": "gbdt",
+    "nTest": 808,
+    "donorsTest": 147,
+    "groups": [
+     {
+      "group": "35 à 54 ans",
+      "n": 316,
+      "selectionRatio": 1.3658,
+      "ci95": [
+       1.1018,
+       1.6203
+      ],
+      "includesOne": false,
+      "rounds": 1000
+     },
+     {
+      "group": "55 à 69 ans",
+      "n": 133,
+      "selectionRatio": 0.4151,
+      "ci95": [
+       0.1261,
+       0.6823
+      ],
+      "includesOne": false,
+      "rounds": 1000
+     },
+     {
+      "group": "70 ans et plus",
+      "n": 126,
+      "selectionRatio": 0.478,
+      "ci95": [
+       0.2242,
+       0.7967
+      ],
+      "includesOne": false,
+      "rounds": 1000
+     },
+     {
+      "group": "Moins de 35 ans",
+      "n": 233,
+      "selectionRatio": 1.12,
+      "ci95": [
+       0.8747,
+       1.5311
+      ],
+      "includesOne": true,
+      "rounds": 1000
+     }
+    ]
+   },
+   {
+    "kind": "upgrade",
+    "algorithm": "ensemble",
+    "nTest": 704,
+    "donorsTest": 133,
+    "groups": [
+     {
+      "group": "35 à 54 ans",
+      "n": 281,
+      "selectionRatio": 0.5011,
+      "ci95": [
+       0.2118,
+       0.795
+      ],
+      "includesOne": false,
+      "rounds": 1000
+     },
+     {
+      "group": "55 à 69 ans",
+      "n": 119,
+      "selectionRatio": 1.2255,
+      "ci95": [
+       0.5943,
+       1.938
+      ],
+      "includesOne": true,
+      "rounds": 1000
+     },
+     {
+      "group": "70 ans et plus",
+      "n": 95,
+      "selectionRatio": 2.8583,
+      "ci95": [
+       1.9656,
+       3.9148
+      ],
+      "includesOne": false,
+      "rounds": 1000
+     },
+     {
+      "group": "Moins de 35 ans",
+      "n": 209,
+      "selectionRatio": 0.6977,
+      "ci95": [
+       0.309,
+       1.1489
+      ],
+      "includesOne": true,
+      "rounds": 1000
+     }
+    ]
+   },
+   {
+    "kind": "conversion",
+    "algorithm": "ensemble",
+    "nTest": 3541,
+    "donorsTest": 605,
+    "groups": [
+     {
+      "group": "35 à 54 ans",
+      "n": 1290,
+      "selectionRatio": 0.535,
+      "ci95": [
+       0.3915,
+       0.7052
+      ],
+      "includesOne": false,
+      "rounds": 1000
+     },
+     {
+      "group": "55 à 69 ans",
+      "n": 859,
+      "selectionRatio": 1.2926,
+      "ci95": [
+       1.0076,
+       1.559
+      ],
+      "includesOne": false,
+      "rounds": 1000
+     },
+     {
+      "group": "70 ans et plus",
+      "n": 729,
+      "selectionRatio": 1.8044,
+      "ci95": [
+       1.5117,
+       2.1047
+      ],
+      "includesOne": false,
+      "rounds": 1000
+     },
+     {
+      "group": "Moins de 35 ans",
+      "n": 663,
+      "selectionRatio": 0.6412,
+      "ci95": [
+       0.3695,
+       0.9417
+      ],
+      "includesOne": false,
+      "rounds": 1000
+     }
+    ]
+   },
+   {
+    "kind": "reactivation",
+    "algorithm": "gbdt",
+    "nTest": 1199,
+    "donorsTest": 431,
+    "groups": [
+     {
+      "group": "35 à 54 ans",
+      "n": 480,
+      "selectionRatio": 0.972,
+      "ci95": [
+       0.7861,
+       1.2054
+      ],
+      "includesOne": true,
+      "rounds": 1000
+     },
+     {
+      "group": "55 à 69 ans",
+      "n": 245,
+      "selectionRatio": 1.0648,
+      "ci95": [
+       0.7454,
+       1.3897
+      ],
+      "includesOne": true,
+      "rounds": 1000
+     },
+     {
+      "group": "70 ans et plus",
+      "n": 169,
+      "selectionRatio": 1.128,
+      "ci95": [
+       0.7185,
+       1.5502
+      ],
+      "includesOne": true,
+      "rounds": 1000
+     },
+     {
+      "group": "Moins de 35 ans",
+      "n": 305,
+      "selectionRatio": 0.9211,
+      "ci95": [
+       0.6484,
+       1.1786
+      ],
+      "includesOne": true,
+      "rounds": 1000
+     }
+    ]
+   }
+  ]
+ }
+}

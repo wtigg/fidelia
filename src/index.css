@@ -15,3 +15,54 @@
 body {
   @apply bg-stone-50 text-stone-900 antialiased;
 }
+
+/*
+ * Curseurs : piste claire (stone-200) et pastille colorée.
+ * Sans ce style, Chrome dessine une piste noire quand la couleur d'accent est claire (orange) : on croyait à un bogue.
+ * Couleur de la pastille : variable --range (par défaut le vert de la marque).
+ */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 20px;
+  background: transparent;
+  cursor: pointer;
+}
+input[type='range']:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+input[type='range']::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--color-stone-200, #e7e5e4);
+}
+input[type='range']::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--color-stone-200, #e7e5e4);
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -5px;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #fff;
+  border-radius: 9999px;
+  background: var(--range, var(--color-brand-600, #17663f));
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+}
+input[type='range']::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #fff;
+  border-radius: 9999px;
+  background: var(--range, var(--color-brand-600, #17663f));
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+}
+input[type='range']:focus-visible {
+  outline: 2px solid var(--color-brand-500, #1f7a4d);
+  outline-offset: 2px;
+  border-radius: 9999px;
+}
