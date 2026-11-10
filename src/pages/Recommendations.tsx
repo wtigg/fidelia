@@ -39,9 +39,10 @@ export default function Recommendations() {
   })
 
   const prepare = (ids: string[]) => {
-    const n = createDrafts(ids)
+    const { drafted: n, control } = createDrafts(ids)
     setSelected(new Set())
-    setToast(n ? `${n} courriel${n > 1 ? 's' : ''} préparé${n > 1 ? 's' : ''} dans l'onglet Courriels` : 'Aucun nouveau courriel à préparer')
+    const ctrl = control ? ` · ${control} placé${control > 1 ? 's' : ''} dans le groupe témoin` : ''
+    setToast(n || control ? `${n} courriel${n > 1 ? 's' : ''} préparé${n > 1 ? 's' : ''} dans l'onglet Courriels${ctrl}` : 'Aucun nouveau courriel à préparer')
     setTimeout(() => setToast(undefined), 3500)
   }
 

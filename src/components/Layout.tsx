@@ -1,8 +1,9 @@
 import { useState, type ReactNode } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
-import { BrainCircuit, Database, HeartHandshake, LayoutDashboard, Loader2, Mail, Menu, Sparkles, TrendingUp, Users, Zap } from 'lucide-react'
+import { AlertTriangle, BrainCircuit, Database, HeartHandshake, LayoutDashboard, Loader2, Mail, Menu, Sparkles, TrendingUp, Users, Zap } from 'lucide-react'
 import { formatDate } from '../lib/dates.ts'
 import { ORG_NAME } from '../lib/emails.ts'
+import { MODEL_SPECS } from '../ml/pipeline.ts'
 import { useStore } from '../state/store.tsx'
 import { cx } from './ui.tsx'
 
@@ -18,7 +19,7 @@ const NAV = [
 ]
 
 export function Layout({ children }: { children: ReactNode }) {
-  const { training, trainingStep, dataset, campaign, scores, modelVersion } = useStore()
+  const { training, trainingStep, trainError, trainSkipped, dataset, campaign, scores, modelVersion } = useStore()
   const [open, setOpen] = useState(false)
   const location = useLocation()
   const drafts = campaign.filter((c) => c.status === 'draft' || c.status === 'approved').length
@@ -91,6 +92,22 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
       )}
       <main key={location.pathname} className="mx-auto max-w-7xl px-4 py-8 sm:px-8 lg:py-10">
+        {trainError && (
+          <p role="alert" className="mb-6 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+            <span>
+              <b>L'entraînement a échoué.</b> Le fichier importé est peut-être trop petit ou mal formé. Aucun score n'est affiché. Vérifiez les colonnes dans l'onglet Données, puis importez de nouveau. <span className="text-rose-700">Détail : {trainError}</span>
+            </span>
+          </p>
+        )}
+        {!training && !trainError && trainSkipped.length > 0 && (
+          <p role="status" className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+            <span>
+              <b>Données insuffisantes pour : {trainSkipped.map((k) => MODEL_SPECS[k].title).join(', ')}.</b> Ce modèle n'est pas entraîné et ses actions ne sont pas proposées. Minimum technique : 100 exemples, dont 10 cas positifs à l'entraînement, et 3 cas positifs en validation comme en test. Le requis RD1 vise 100 cas positifs dans l'historique.
+            </span>
+          </p>
+        )}
         {children}
       </main>
     </div>

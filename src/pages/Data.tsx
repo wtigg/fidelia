@@ -90,8 +90,8 @@ export default function Data() {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <Card title="Importer vos données (CSV)" subtitle="Export depuis votre CRM ou votre outil de dons. Le modèle se réentraîne automatiquement.">
           <div className="space-y-3 p-5">
-            {fileInput('donors', 'Donateurs', 'id, first_name, last_name, email, city, join_date, kind, monthly_amount, churn_date, converted_at, converted_from, email_consent, age, channel')}
-            {fileInput('donations', 'Dons', 'donor_id, date, amount, kind, status')}
+            {fileInput('donors', 'Donateurs', 'id, first_name, last_name, email, city, join_date, kind, monthly_amount, churn_date, converted_at, converted_from, email_consent, age, channel · dates AAAA-MM-JJ')}
+            {fileInput('donations', 'Dons', 'donor_id, date (AAAA-MM-JJ), amount, kind, status')}
             {fileInput('engagement', 'Engagement email', 'donor_id, month (AAAA-MM), open_rate', false)}
             {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
             {ok && <p className="rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-800">{ok}</p>}

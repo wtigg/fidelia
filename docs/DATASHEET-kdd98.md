@@ -43,7 +43,10 @@
 | Engagement | taux de réponse aux relances et aux cartes, relances reçues sur 12 mois |
 | Profil | ancienneté, délai entre le 1er et le 2e don |
 
-- Valeurs manquantes : imputation par la médiane calculée hors jeu de test. Seul le délai entre le 1er et le 2e don est concerné.
+- Valeurs manquantes :
+  - délai entre le 1er et le 2e don (`TIMELAG`) : vide pour les donateurs sans 2e don, codé 0. Il n'est pas imputé par la médiane, qui inventerait un 2e don ;
+  - ancienneté : imputée par la médiane calculée hors jeu de test (0,002 % des donateurs, `reports/kdd98.json`).
+  - Le script compte désormais à part les `TIMELAG` vides. Ce compte n'apparaît pas encore dans `reports/kdd98.txt`, produit avant cet ajout ; il faut relancer `npm run kdd98 > reports/kdd98.txt` pour l'obtenir.
 - Deux tâches :
   - **réactivation** : `TARGET_B = 1` ;
   - **hausse** : `TARGET_D > LASTGIFT`, soit 1,73 % des cas.
@@ -55,7 +58,7 @@
 |---|---|
 | Exactitude, crédibilité | Élevées : données transactionnelles réelles, très utilisées en recherche |
 | Actualité | **Faible** : 1997, comportements et canaux datés (poste plutôt que courriel) |
-| Pertinence | Partielle : pas de dons mensuels ni de courriels ; valide la réactivation et la hausse, pas l'attrition du mensuel |
+| Pertinence | Partielle : pas de dons mensuels ni de courriels. Valide la méthode sur deux tâches voisines (réactivation d'inactifs ; don plus élevé que le dernier, chez des inactifs). Ne valide ni l'attrition du mensuel ni le modèle de hausse du mensuel |
 | Représentativité | États-Unis, cause unique, donateurs âgés : différent d'un OBNL québécois |
 | Complétude | Bonne sur l'historique ; âge manquant pour environ 25 % des donateurs |
 | Accessibilité | Publique, conditions d'usage ci-dessus ; 117 Mo non compressé |

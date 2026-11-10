@@ -93,25 +93,40 @@ const asKind = (s: string, fallback: GiftKind = 'one_time'): GiftKind => {
   if (v.startsWith('ponc') || v === 'unique') return 'one_time'
   return fallback
 }
-const asDate = (s: string) => (s ? iso(new Date(s)) : undefined)
+// seul le format AAAA-MM-JJ est accepté : « 03/04/2024 » serait lu au format américain (4 mars), sans erreur
+const validDate = (s: string | undefined) => !!s && /^\d{4}-\d{2}-\d{2}/.test(s) && !Number.isNaN(Date.parse(s.slice(0, 10)))
+const asDate = (s: string | undefined) => (validDate(s) ? s!.slice(0, 10) : undefined)
+// nombre avec point ou virgule décimale (export Excel québécois) ; undefined si illisible, jamais NaN
+const num = (s?: string) => {
+  const v = Number((s ?? '').trim().replace(',', '.'))
+  return s?.trim() && Number.isFinite(v) ? v : undefined
+}
 
 /** Construit un jeu de données à partir des fichiers CSV de l'association */
 export function importCsv(donorsCsv: string, donationsCsv: string, engagementCsv?: string): Dataset {
   const donationRows = parseCsv(donationsCsv)
-  const donations: Donation[] = donationRows
-    .filter((r) => r.donor_id && r.date && r.amount)
+  const readable = donationRows.filter((r) => r.donor_id && r.date && r.amount)
+  // une date illisible ferait planter iso() : on écarte la ligne et on la compte
+  const rejected = readable.filter((r) => !validDate(r.date)).length
+  const donations: Donation[] = readable
+    .filter((r) => validDate(r.date))
     .map((r, i) => ({
       id: `g${i + 1}`,
       donorId: r.donor_id,
-      date: iso(new Date(r.date)),
-      amount: Number(r.amount.replace(',', '.')) || 0,
+      date: r.date.slice(0, 10),
+      amount: num(r.amount) ?? 0,
       kind: asKind(r.kind ?? ''),
       status: /fail|échou|echou|refus/i.test(r.status ?? '') ? 'failed' : 'paid',
     }))
   donations.sort((a, b) => a.date.localeCompare(b.date))
-  if (!donations.length) throw new Error('Aucun don lisible : colonnes attendues donor_id, date, amount, kind, status')
+  if (!donations.length)
+    throw new Error(
+      `Aucun don lisible : colonnes attendues donor_id, date, amount, kind, status${rejected ? ` (${rejected} ligne(s) écartée(s) : dates au format AAAA-MM-JJ)` : ''}`,
+    )
+  if (rejected) console.warn(`${rejected} don(s) écarté(s) : dates au format AAAA-MM-JJ`)
 
-  const refDate = iso(new Date())
+  // date de référence = dernier don du fichier (et non la date du jour) : le même CSV donne toujours le même résultat
+  const refDate = donations[donations.length - 1].date
   const first = new Date(donations[0].date)
   const historyStart = iso(new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), 1)))
   const months = monthIndex(new Date(refDate), new Date(historyStart)) + 1
@@ -122,7 +137,9 @@ export function importCsv(donorsCsv: string, donationsCsv: string, engagementCsv
       const m = monthIndex(new Date(`${r.month}-01`.slice(0, 10)), new Date(historyStart))
       if (m < 0 || m >= months) continue
       const arr = engagement.get(r.donor_id) ?? new Array(months).fill(-1)
-      arr[m] = Number(r.open_rate.replace(',', '.'))
+      const rate = num(r.open_rate)
+      if (rate === undefined) continue
+      arr[m] = rate
       engagement.set(r.donor_id, arr)
     }
   }
@@ -149,10 +166,10 @@ export function importCsv(donorsCsv: string, donationsCsv: string, engagementCsv
         churnDate,
         convertedAt: asDate(r.converted_at),
         convertedFrom: r.converted_from ? asKind(r.converted_from) : undefined,
-        monthlyAmount: r.monthly_amount ? Number(r.monthly_amount) : undefined,
+        monthlyAmount: num(r.monthly_amount),
         engagement: engagement.get(r.id) ?? new Array(months).fill(-1),
         emailConsent: !/^(non|no|false|0)$/i.test(r.email_consent ?? 'oui'),
-        age: r.age ? Number(r.age) || undefined : undefined,
+        age: num(r.age) || undefined,
         channel: (['web', 'evenement', 'rue', 'courrier'] as const).find((c) => c === r.channel),
       }
     })

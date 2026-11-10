@@ -1,4 +1,4 @@
-// Évalue les modèles sur les données synthétiques : npm run evaluate
+// Évalue les modèles sur les données synthétiques : npm run evaluate [graine] [fichier de sortie]
 import { writeFileSync } from 'node:fs'
 import { generateDemo } from '../src/data/generate.ts'
 import { MODEL_KINDS, scoreAll, trainModel, type ModelReport } from '../src/ml/pipeline.ts'
@@ -25,4 +25,6 @@ const count = <T,>(xs: T[], key: (x: T) => string) => xs.reduce<Record<string, n
 console.log('\nsegments', count(scores, (s) => s.segment))
 console.log('actions', count(scores.filter((s) => s.action), (s) => s.action!))
 const light = Object.fromEntries(Object.entries(reports).map(([k, r]) => { const { logistic, gbdt, ...rest } = r!; return [k, { ...rest, logistic, gbdtTrees: gbdt.trees.length }] }))
-writeFileSync(new URL(`../reports/synthetique-${seed}.json`, import.meta.url), JSON.stringify(light, null, 1))
+// Second argument facultatif : autre fichier de sortie (utilisé par npm run check:repro pour ne pas écraser le rapport versionné)
+const out = process.argv[3] ?? new URL(`../reports/synthetique-${seed}.json`, import.meta.url)
+writeFileSync(out, JSON.stringify(light, null, 1))

@@ -3,7 +3,7 @@ import { generateDemo } from '../data/generate.ts'
 import { draftEmail } from '../lib/emails.ts'
 import type { ActionType, Automation, CampaignItem, Dataset, Donor, DonorScore, ModelKind } from '../lib/types.ts'
 import { DEFAULT_AUTOMATIONS, scoreAll, type Algorithm, type ModelReport } from '../ml/pipeline.ts'
-import type { TrainRequest } from '../ml/worker.ts'
+import type { TrainMessage, TrainRequest } from '../ml/worker.ts'
 import bundled from '../data/model.json'
 
 /** Modèle pré-entraîné et versionné (npm run train), chargé instantanément pour le jeu de démonstration */
@@ -24,6 +24,10 @@ interface Store {
   training: boolean
   trainingStep?: ModelKind
   trainMs?: number
+  /** Échec de l'entraînement (CSV trop petit ou mal formé) : message en français */
+  trainError?: string
+  /** Modèles non entraînés faute d'exemples : aucun score pour ces actions */
+  trainSkipped: ModelKind[]
   scores: DonorScore[]
   scoresById: Map<string, DonorScore>
   automations: Automation[]
@@ -34,7 +38,7 @@ interface Store {
   setAlgo: (kind: ModelKind, choice: AlgoChoice) => void
   loadDataset: (ds: Dataset) => void
   setAutomation: (type: ActionType, patch: Partial<Automation>) => void
-  createDrafts: (donorIds: string[]) => number
+  createDrafts: (donorIds: string[]) => { drafted: number; control: number }
   updateItem: (id: string, patch: Partial<CampaignItem>) => void
   sendItems: (ids: string[]) => number
   runCycle: () => { drafted: number; sent: number; skipped: number; control: number }
@@ -68,31 +72,53 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [version, setVersion] = useState(BUNDLED.version)
   const [trainingStep, setTrainingStep] = useState<ModelKind>()
   const [trainMs, setTrainMs] = useState<number>()
+  const [trainError, setTrainError] = useState<string>()
+  const [trainSkipped, setTrainSkipped] = useState<ModelKind[]>([])
   const [automations, setAutomations] = useState<Automation[]>(() => {
     const saved = load<Automation[]>('automations', DEFAULT_AUTOMATIONS)
     return DEFAULT_AUTOMATIONS.map((d) => saved.find((s) => s.type === d.type) ?? d)
   })
   const [campaign, setCampaign] = useState<CampaignItem[]>(() => load('campaign', []))
-  const [algoChoice, setAlgoChoice] = useState<Record<ModelKind, AlgoChoice>>(() =>
-    load('algo', { churn: 'auto', upgrade: 'auto', conversion: 'auto', reactivation: 'auto' }),
-  )
+  // Choix d'algorithme gardé en mémoire seulement : chaque ouverture repart de la décision automatique (gouvernance R1/R2)
+  const [algoChoice, setAlgoChoice] = useState<Record<ModelKind, AlgoChoice>>({ churn: 'auto', upgrade: 'auto', conversion: 'auto', reactivation: 'auto' })
   const worker = useRef<Worker | null>(null)
 
   useEffect(() => save('automations', automations), [automations])
   useEffect(() => save('campaign', campaign), [campaign])
-  useEffect(() => save('algo', algoChoice), [algoChoice])
+  useEffect(() => {
+    try {
+      localStorage.removeItem('fidelia:v2:algo') // ancienne version : choix persistant
+    } catch {
+      // stockage indisponible
+    }
+  }, [])
 
   // Un worker par entraînement : le calcul ne bloque pas l'interface
   const train = useCallback((ds: Dataset) => {
     worker.current?.terminate()
     const w = new Worker(new URL('../ml/worker.ts', import.meta.url), { type: 'module' })
     worker.current = w
-    w.onmessage = (e: MessageEvent<{ type: 'progress'; kind: ModelKind } | { type: 'done'; reports: Reports; ms: number }>) => {
+    const fail = (message: string) => {
+      setTrainError(message)
+      setTraining(false)
+      setTrainingStep(undefined)
+      w.terminate()
+    }
+    w.onerror = (e) => {
+      e.preventDefault()
+      fail(e.message || 'erreur inconnue')
+    }
+    w.onmessage = (e: MessageEvent<TrainMessage>) => {
       if (e.data.type === 'progress') {
         setTrainingStep(e.data.kind)
         return
       }
+      if (e.data.type === 'error') {
+        fail(e.data.message)
+        return
+      }
       setRawReports(e.data.reports)
+      setTrainSkipped(e.data.skipped)
       setTrainMs(e.data.ms)
       const t = new Date().toISOString()
       setVersion(`v${t.slice(0, 10).replace(/-/g, '')}.${t.slice(11, 16).replace(':', '')}-local`)
@@ -100,6 +126,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setTrainingStep(undefined)
       w.terminate()
     }
+    // Les rapports de l'ancien jeu ne valent pas pour le nouveau : aucun score tant que l'entraînement n'est pas fini
+    setRawReports({})
+    setTrainError(undefined)
+    setTrainSkipped([])
     setTraining(true)
     const msg: TrainRequest = { dataset: ds }
     w.postMessage(msg)
@@ -130,7 +160,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const makeDrafts = useCallback(
     (ids: string[], existing: CampaignItem[], origin: CampaignItem['origin']): { items: CampaignItem[]; skipped: number } => {
-      const busy = new Set(existing.filter((c) => c.status === 'draft' || c.status === 'approved').map((c) => c.donorId))
+      // un donateur du groupe témoin n'est jamais recontacté, même à la main
+      const busy = new Set(existing.filter((c) => c.status === 'draft' || c.status === 'approved' || c.status === 'control').map((c) => c.donorId))
       const cutoff = Date.now() - CONTACT_COOLDOWN_DAYS * 86_400_000
       const recent = new Set(existing.filter((c) => c.status === 'sent' && c.sentAt && Date.parse(c.sentAt) > cutoff).map((c) => c.donorId))
       const items: CampaignItem[] = []
@@ -144,7 +175,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           continue
         }
         const { subject, body } = draftEmail(s.action, d, s)
-        items.push({ id: uid(), donorId: id, type: s.action, subject, body, status: 'draft', createdAt: new Date().toISOString(), origin })
+        // tirage stable par donateur, quelle que soit l'origine : 10 % des ciblés forment le groupe témoin (jamais pour un remerciement)
+        const control = s.action !== 'thank' && (parseInt(id.replace(/\D/g, ''), 10) * 2654435761) % 100 < CONTROL_SHARE * 100
+        items.push({ id: uid(), donorId: id, type: s.action, subject, body, status: control ? 'control' : 'draft', createdAt: new Date().toISOString(), origin })
       }
       return { items, skipped }
     },
@@ -158,6 +191,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     training,
     trainingStep,
     trainMs,
+    trainError,
+    trainSkipped,
     scores,
     scoresById,
     automations,
@@ -174,7 +209,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     createDrafts: (ids) => {
       const { items } = makeDrafts(ids, campaign, 'manual')
       setCampaign((c) => [...items, ...c])
-      return items.length
+      const control = items.filter((i) => i.status === 'control').length
+      return { drafted: items.length - control, control }
     },
     updateItem: (id, patch) => setCampaign((c) => c.map((i) => (i.id === id ? { ...i, ...patch } : i))),
     sendItems: (ids) => {
@@ -191,14 +227,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const { items, skipped } = makeDrafts(targets, campaign, 'auto')
       const now = new Date().toISOString()
       let sent = 0
-      let control = 0
+      const control = items.filter((d) => d.status === 'control').length
       const processed = items.map((d) => {
+        if (d.status === 'control') return d
         const auto = automations.find((a) => a.type === d.type)
-        // tirage stable par donateur : 10 % des ciblés forment le groupe témoin (jamais pour un remerciement)
-        if (d.type !== 'thank' && (parseInt(d.donorId.replace(/\D/g, ''), 10) * 2654435761) % 100 < CONTROL_SHARE * 100) {
-          control++
-          return { ...d, status: 'control' as const }
-        }
         if (auto && !auto.requireApproval) {
           sent++
           return { ...d, status: 'sent' as const, sentAt: now }

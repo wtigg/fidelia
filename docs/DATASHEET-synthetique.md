@@ -65,18 +65,18 @@ Elles pilotent :
 
 Le modèle doit retrouver ces variables cachées à partir des seuls signaux observables. C'est ce qui rend l'exercice non trivial.
 
-**Calibration** (`npm run calibration`), comparée à des ordres de grandeur publiés :
+**Calibration** (`npm run calibration`), comparée au Fundraising Effectiveness Project (FEP, rapport du 4e trimestre 2025 ; AFP et GivingTuesday, 2026, voir les références du rapport) quand un chiffre publié existe, sinon à des hypothèses de l'équipe :
 
 | Indicateur | Jeu synthétique | Repère |
 |---|---|---|
 | Rétention globale d'une année sur l'autre | 42,9 % | 43,3 % (Fundraising Effectiveness Project, 2025) |
-| Rétention des nouveaux donateurs | 29,6 % | environ 20 % (ordre de grandeur, à vérifier) |
-| Rétention des donateurs réguliers | 68,6 % | 60 à 70 % (ordre de grandeur, à vérifier) |
-| Rétention des mensuels sur 12 mois | 77,2 % | 75 à 85 % (ordre de grandeur) |
+| Rétention des nouveaux donateurs | 29,6 % | 18,9 % (FEP, 2025) |
+| Rétention des donateurs réguliers | 68,6 % | 59,3 % (FEP, 2025) |
+| Rétention des mensuels sur 12 mois | 77,2 % | 75 à 85 % (hypothèse de l'équipe, non sourcée) |
 | Part des dons ponctuels en décembre | 16,1 % | pic de fin d'année documenté |
 | Taux d'échec des prélèvements | 3,1 % | quelques % |
 
-La rétention des nouveaux donateurs reste plus haute que le repère. C'est une **limite connue** : les nouveaux donateurs mensuels, très fidèles, tirent la moyenne vers le haut.
+La rétention des nouveaux donateurs (29,6 % contre 18,9 %) et celle des donateurs réguliers (68,6 % contre 59,3 %) restent plus hautes que le FEP. C'est une **limite connue** : les donateurs mensuels, très fidèles, tirent la moyenne vers le haut. Les repères FEP sont aussi américains, et non propres aux petits OBNL québécois.
 
 ## 4. Prétraitement et variables
 
