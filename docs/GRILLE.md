@@ -35,8 +35,8 @@ Chaque élément exigé par la consigne du travail d'équipe (`TECH 60711_A2026_
 | | Pérennité et réalisme | RAPPORT §11 (conclusion et viabilité : trois menaces, condition de poursuite) | ✅ |
 | **Estimations** | Ressources humaines, matérielles, financières | RAPPORT §9.1 à 9.3 (V1 allégée : 1,4 ETP sur 2 mois, environ 27 000 $ ; taux du Guichet-Emplois, réserve de 10 à 20 %, support et légal récurrents, seuil de rentabilité vers 35 clients) | ✅ Hypothèses signalées (charges 25 %, conseiller juridique, vente et support, réserve) ; assurance non chiffrée |
 | | Temps et sous-ensemble de la V1 | RAPPORT §9.4 (V1 en 2 mois, requis par mois ; pilote aux mois 3 à 5, suivi après lancement ; V1 = RF1 à RF9 et RF11 à RF24) | ✅ |
-| **Réflexion** | Au moins 3 leçons apprises | RAPPORT §10 (8 leçons) | ✅ |
-| **Commentaires généraux** | Au moins 10 références, dont au moins la moitié académiques | RAPPORT, Références (43 au total, dont 20 académiques ; 6 lectures du cours en revues professionnelles ou ouvrages), APA 7 avec DOI | ✅ |
+| **Réflexion** | Au moins 3 leçons apprises | RAPPORT §10 (9 leçons, dont les tentatives d'amélioration de l'IA, §6.5) | ✅ |
+| **Commentaires généraux** | Au moins 10 références, dont au moins la moitié académiques | RAPPORT, Références (45 au total, dont 20 académiques ; 6 lectures du cours en revues professionnelles ou ouvrages), APA 7 avec DOI | ✅ |
 | | Cohérence et intégration | Mêmes chiffres dans l'application, le rapport et la fiche modèle (sources : `reports/`) | ✅ |
 | **Présentation** | Affiche, démonstration, vidéo de secours | `docs/PRESENTATION.md` (plan inspiré de `files/Poster_Exemple 1.pdf` et `2.pdf`) ; affiche finale `docs/affiche/Affiche-Fidelia.pdf` (48 × 36 po paysage, simplifiée : 5 blocs, 168 mots ; source `affiche.html`, aperçu `apercu.png`) ; fiche technique pour les juges `docs/affiche/Fiche-technique.pdf` (lettre, 1 page : canevas, graphique AUC-PR, deux conditions, KDD 98, équité, références) ; tout est régénéré depuis `reports/` par `build_affiche.py` | 🟡 Affiche, fiche technique et canevas faits ; vidéo à enregistrer |
 

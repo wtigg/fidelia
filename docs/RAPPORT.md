@@ -36,7 +36,7 @@ L'équipe relit, ajuste et valide chaque envoi.
 
 ### 1.2 Motivation
 
-**Moins d'un donateur sur deux redonne l'année suivante** : 43,3 % de rétention en 2025 selon le Fundraising Effectiveness Project, sur 15 102 OBNL américains (AFP et GivingTuesday, 2026). Acquérir un nouveau donateur coûte bien plus cher que d'en retenir un (Sargeant, 2001). Le don mensuel est le plus précieux : revenu prévisible, meilleure rétention, valeur à vie plus élevée.
+**Moins d'un donateur sur deux redonne l'année suivante** : 43,3 % de rétention en 2025 selon le Fundraising Effectiveness Project, sur 15 102 OBNL américains (AFP et GivingTuesday, 2026). Garder un donateur rapporte bien plus que d'en trouver un nouveau (Sargeant, 2001). Recruter coûte jusqu'à 1,50 $ par dollar recueilli, contre 0,20 $ ou moins auprès des donateurs existants, soit environ 7 fois moins cher (Johnson, 2023). Et un donateur qui a déjà redonné revient bien plus souvent : 59,3 % des donateurs réguliers redonnent l'année suivante, contre 18,9 % des nouveaux (Bloomerang, s. d., d'après le FEP du 4e trimestre 2025). Le don mensuel est le plus précieux : revenu prévisible, meilleure rétention, valeur à vie plus élevée.
 
 **Les petits OBNL manquent de moyens pour analyser leurs données.** Au Canada, 53 % des organismes de moins de 1 M$ de revenus confient la technologie et les données à des employés qui n'ont ni formation ni mandat dans ce domaine. Seuls 13 % des petits organismes ont une personne dédiée à la technologie et aux données, contre 25 % des grands (Gandhi, 2024, sondage de CanadaHelps auprès de 1 470 organismes). Un organisme sur quatre juge faibles ses compétences pour collecter, gérer et analyser ses données, et 23 % peinent à s'en servir pour décider (Nguyen, 2024). Enfin, la demande dépasse la capacité dans 65 % des organismes en 2026 (Charity Insights Canada Project, 2026).
 
@@ -458,6 +458,18 @@ python3 verification/verify_sklearn.py > reports/sklearn.txt
 
 Une étape qui échoue bloque la publication. Le contrôle ne dépend pas de git : il fonctionne aussi dans le conteneur.
 
+### 6.5 Peut-on rendre l'IA meilleure ? Trois tentatives
+
+Après la v3, nous avons cherché à améliorer les modèles, avec une règle stricte : toute décision se prend sur la validation, le jeu de test n'est évalué qu'une fois à la fin, et ni les seuils R1 et R2, ni la séparation des données, ni le générateur ne changent.
+
+| Tentative | Ce qui a été essayé | Avant (test) | Après (test) | Conclusion |
+|---|---|---|---|---|
+| KDD 98, plus de variables | 74 variables candidates connues avant juin 1997 (historique des codes RFA, cartes, relances, richesse du quartier…), sélection par familles et élagage sur la validation | AUC-PR 0,0825 | 0,0825 (configuration inchangée) | Aucune famille ne gagne en validation ; les 16 variables actuelles captent déjà le signal |
+| KDD 98, réglage du modèle | Environ 30 réglages : profondeur et nombre d'arbres, taux d'apprentissage, pondération des classes, interactions, ensembles | AUC-PR 0,0825 | 0,0813 | Léger recul dans le bruit ; le modèle plafonne vers 0,085 en validation |
+| Données synthétiques, « hausse du don » | 12 nouvelles variables d'historique (tendance, régularité, ratio au don médian, saison) | AUC-PR 0,076 | 0,084 sur la graine 42 | Le gain ne tient pas sur les 5 autres jeux générés ; R2 échoue toujours, la règle RFM reste utilisée |
+
+Sur KDD 98, même la borne haute de l'intervalle de confiance (0,094) reste sous le seuil R1 de 0,102. Ce que contient ce jeu de données (historique postal) limite la performance plus que le choix du modèle. Les signaux qui comptent le plus dans notre jeu synthétique, comme les ouvertures de courriels et les paiements échoués, n'existent pas dans KDD 98.
+
 ### 6.4 Différences entre le prototype et la solution cible
 
 Déclarées en toute transparence :
@@ -694,6 +706,8 @@ L'échéancier suit la logique de feuille de route d'Anderson et Coveyduc (2020)
 
 8. **Pré-entraîner et versionner le modèle simplifie tout.** L'entraînement complet prend environ 20 s dans le navigateur. Sérialiser un modèle versionné (`model.json`) donne une application instantanée, un retour arrière simple et une traçabilité. Ce sont des pratiques MLOps vues en séance 7 (Kreuzberger, Kühl et Hirschl, 2023).
 
+9. **De meilleures données valent mieux qu'un meilleur modèle.** Plus de 100 configurations testées honnêtement (variables, réglages, ensembles) n'ont pas battu la version actuelle (section 6.5). Gonfler les chiffres aurait été facile : choisir la meilleure configuration sur le test, ou baisser le seuil R1. Nous avons préféré documenter ce résultat négatif. Pour progresser, il faut des données plus riches (ouvertures de courriels, paiements échoués), ce qui rejoint Jarrahi et al. (2023) sur l'IA centrée sur les données.
+
 ---
 
 ## 11. Conclusion et viabilité
@@ -751,19 +765,21 @@ Format APA 7. Les DOI ont été vérifiés sur Crossref ; les pages Web ont ét�
 
 **Autres sources**
 27. AFP et GivingTuesday (2026). *Fundraising Effectiveness Project, Quarterly Report Q4 2025*. https://data.givingtuesday.org/fep-report/
-28. Bloomerang (s. d.). *Pricing*. Consulté le 9 novembre 2026, à https://bloomerang.com/pricing/
-29. Charity Insights Canada Project (2026, 8 octobre). *Mind the gap: Demand and capacity in Canada's charitable sector*. Carleton University. https://carleton.ca/cicp-pcpob/2026/mind-the-gap-demand-and-capacity-in-canadas-charitable-sector/
-30. Dataro (s. d.-a). *Plans and pricing*. Consulté le 9 novembre 2026, à https://dataro.io/pricing/
-31. Dataro (s. d.-b). *Available Dataro Predict models*. Consulté le 9 novembre 2026, à https://support.dataro.io/knowledge/available-dataro-predict-models
-32. Gandhi, S. (2024, 26 mars). *More than half of small non-profits relying on 'accidental techies': CanadaHelps survey*. Future of Good. https://futureofgood.co/more-than-half-of-small-non-profits-relying-on-accidental-techies-canadahelps-survey
-33. Gouvernement du Canada (2025). *Guichet-Emplois : salaires des scientifiques de données (CNP 21211) et des programmeurs en développement de logiciels (CNP 21232), région de Montréal*. Consulté le 9 novembre 2026, à https://www.guichetemplois.gc.ca/rapportmarche/salaire-profession/17887/geo25154 et https://www.guichetemplois.gc.ca/rapportmarche/salaire-profession/22531/22446
-34. Huyen, C. (2022). *Designing machine learning systems*. O'Reilly (ch. 2 et 8).
-35. Keela (s. d.-a). *Pricing*. Consulté le 9 novembre 2026, à https://keela.co/pricing
-36. Keela (s. d.-b). *Nonprofit intelligence*. Consulté le 9 novembre 2026, à https://www.keela.co/solutions/nonprofit-intelligence
-37. *Loi modernisant des dispositions législatives en matière de protection des renseignements personnels*, L.Q. 2021, c. 25 (Loi 25). https://www.publicationsduquebec.gouv.qc.ca/fileadmin/Fichiers_client/lois_et_reglements/LoisAnnuelles/fr/2021/2021C25F.PDF
-38. Meta (2024). *Meta Llama responsible use guide: Resources and best practices for responsible development of products built with large language models*. https://ai.meta.com/static-resource/responsible-use-guide
-39. National Institute of Standards and Technology [NIST] (2023). *Artificial intelligence risk management framework (AI RMF 1.0)* (NIST AI 100-1). https://doi.org/10.6028/NIST.AI.100-1
-40. Nguyen, T. K. Q. (2024, 17 décembre). *The rising demand for data literacy and AI in charities*. Charity Insights Canada Project, Carleton University. https://carleton.ca/cicp-pcpob/2024/the-rising-demand-for-data-literacy-and-ai-in-charities/
-41. UCI KDD Archive (s. d.). *KDD Cup 1998 data*. https://kdd.ics.uci.edu/databases/kddcup98/kddcup98.html
-42. Université de Montréal (2018). *Déclaration de Montréal pour un développement responsable de l'intelligence artificielle*. https://declarationmontreal-iaresponsable.com/la-declaration/
-43. Virtuous et Fundraising.AI (2026). *The 2026 nonprofit AI adoption report*. https://virtuous.org/blog/the-2026-nonprofit-ai-adoption-report-blog/
+28. Bloomerang (s. d.). *Donor retention* [glossaire, données du Fundraising Effectiveness Project, 4e trimestre 2025]. Consulté le 9 novembre 2026, à https://bloomerang.com/nonprofit-glossary/donor-retention
+29. Bloomerang (s. d.). *Pricing*. Consulté le 9 novembre 2026, à https://bloomerang.com/pricing/
+30. Charity Insights Canada Project (2026, 8 octobre). *Mind the gap: Demand and capacity in Canada's charitable sector*. Carleton University. https://carleton.ca/cicp-pcpob/2026/mind-the-gap-demand-and-capacity-in-canadas-charitable-sector/
+31. Dataro (s. d.-a). *Plans and pricing*. Consulté le 9 novembre 2026, à https://dataro.io/pricing/
+32. Dataro (s. d.-b). *Available Dataro Predict models*. Consulté le 9 novembre 2026, à https://support.dataro.io/knowledge/available-dataro-predict-models
+33. Gandhi, S. (2024, 26 mars). *More than half of small non-profits relying on 'accidental techies': CanadaHelps survey*. Future of Good. https://futureofgood.co/more-than-half-of-small-non-profits-relying-on-accidental-techies-canadahelps-survey
+34. Gouvernement du Canada (2025). *Guichet-Emplois : salaires des scientifiques de données (CNP 21211) et des programmeurs en développement de logiciels (CNP 21232), région de Montréal*. Consulté le 9 novembre 2026, à https://www.guichetemplois.gc.ca/rapportmarche/salaire-profession/17887/geo25154 et https://www.guichetemplois.gc.ca/rapportmarche/salaire-profession/22531/22446
+35. Huyen, C. (2022). *Designing machine learning systems*. O'Reilly (ch. 2 et 8).
+36. Johnson, L. (2023, 2 août). *How nonprofits can use donor retention strategies to ensure success*. ASU Lodestar Center for Philanthropy and Nonprofit Innovation. https://lodestar.asu.edu/blog/2023/08/how-nonprofits-can-use-donor-retention-strategies-ensure-success
+37. Keela (s. d.-a). *Pricing*. Consulté le 9 novembre 2026, à https://keela.co/pricing
+38. Keela (s. d.-b). *Nonprofit intelligence*. Consulté le 9 novembre 2026, à https://www.keela.co/solutions/nonprofit-intelligence
+39. *Loi modernisant des dispositions législatives en matière de protection des renseignements personnels*, L.Q. 2021, c. 25 (Loi 25). https://www.publicationsduquebec.gouv.qc.ca/fileadmin/Fichiers_client/lois_et_reglements/LoisAnnuelles/fr/2021/2021C25F.PDF
+40. Meta (2024). *Meta Llama responsible use guide: Resources and best practices for responsible development of products built with large language models*. https://ai.meta.com/static-resource/responsible-use-guide
+41. National Institute of Standards and Technology [NIST] (2023). *Artificial intelligence risk management framework (AI RMF 1.0)* (NIST AI 100-1). https://doi.org/10.6028/NIST.AI.100-1
+42. Nguyen, T. K. Q. (2024, 17 décembre). *The rising demand for data literacy and AI in charities*. Charity Insights Canada Project, Carleton University. https://carleton.ca/cicp-pcpob/2024/the-rising-demand-for-data-literacy-and-ai-in-charities/
+43. UCI KDD Archive (s. d.). *KDD Cup 1998 data*. https://kdd.ics.uci.edu/databases/kddcup98/kddcup98.html
+44. Université de Montréal (2018). *Déclaration de Montréal pour un développement responsable de l'intelligence artificielle*. https://declarationmontreal-iaresponsable.com/la-declaration/
+45. Virtuous et Fundraising.AI (2026). *The 2026 nonprofit AI adoption report*. https://virtuous.org/blog/the-2026-nonprofit-ai-adoption-report-blog/
