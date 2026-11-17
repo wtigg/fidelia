@@ -9,7 +9,7 @@ Format inspiré des *Model Cards* (Mitchell et al., 2019).
 | **Modèles** | 4 classifieurs binaires (attrition, hausse, passage au mensuel, réactivation) et une règle de remerciement sans IA |
 | **Algorithmes** | Régression logistique (Adam, L2), gradient boosting d'arbres (histogrammes, sous-échantillonnage, arrêt précoce), ensemble des deux. Codés en TypeScript sans bibliothèque de ML et vérifiés contre scikit-learn (`verification/`) |
 | **Choix de l'algorithme** | Le meilleur modèle est choisi sur le jeu de validation, par AUC-PR. **Il n'est déployé que s'il fait au moins 2 fois mieux que le hasard (R1) et bat la règle RFM de façon significative sur le test (R2)** ; sinon, la liste est classée par la règle RFM calibrée. L'équipe peut forcer un choix dans l'interface |
-| **Version** | Inscrite dans `src/data/model.json` (ex. `v20261006.2353`) et affichée dans l'application. Réentraînement : `npm run train` |
+| **Version** | Inscrite dans `src/data/model.json` (version actuelle : `v20261110.0138`) et affichée dans l'application. Réentraînement : `npm run train` |
 | **Référence de comparaison** | Règle RFM (récence, fréquence, montant, quintiles), la méthode traditionnelle des collecteurs de fonds |
 
 ## Usage prévu
@@ -103,12 +103,12 @@ La méthode de classement fait donc **+51 % par rapport à RFM, avec 5 fois moin
 ## Équité
 
 L'âge et la région ne sont **pas** des variables du modèle. Pourtant :
-- **Passage au mensuel :** le modèle sous-estime les 70 ans et plus (prédit / observé = 0,54, environ 38 conversions) et sur-estime les 35-54 ans (2,24, environ 8 conversions sur 1 290 cas). R6 n'est pas validé. Les 70 ans et plus restent sur-représentés dans les 20 % mieux classés (ratio de sélection 1,80).
+- **Passage au mensuel :** le modèle sous-estime les 70 ans et plus (prédit / observé = 0,54, environ 38 conversions) et sur-estime les 35-54 ans (2,24, environ 8 conversions sur 1 290 cas). R6 n'est pas validé. Les 70 ans et plus restent sur-représentés dans les 20 % mieux classés (ratio de sélection 1,80, IC 95 % [1,51 ; 2,10]).
 - **Réactivation :** sur-estimation des 35-54 ans (2,03).
 - **Attrition :** R6 validé dans les tranches mesurables ; la tranche 55-69 ans est à la limite (0,68). Les 70 ans et plus (126 cas, 2 départs observés) sont exclus faute d'effectif ; leur ratio vaudrait 2,28. Les 70 ans et plus sont peu ciblés (ratio de sélection 0,48) parce qu'ils arrêtent moins (1,6 % de départs observés). Les 55-69 ans le sont aussi (0,42), alors que leur taux de départ (6,0 %) est proche de la moyenne (6,7 %) : le modèle les sous-estime (prédit 4,1 % / observé 6,0 % = 0,68, à la limite de R6). Source : `reports/synthetique-42.json`.
 - **KDD 98 :** ratio de sélection de 1,47 pour les 75 ans et plus.
 
-**Prudence.** Ces ratios reposent sur peu de positifs et n'ont pas encore d'intervalle de confiance. Surtout, les données sont synthétiques : le générateur lie l'attachement à l'âge (`src/data/generate.ts`). Les écarts reflètent donc d'abord nos hypothèses. L'audit doit être refait sur les données réelles de l'organisation.
+**Prudence.** Les ratios de calibration (R6) reposent sur peu de positifs et n'ont pas encore d'intervalle de confiance. Les ratios de sélection en ont un (bootstrap par donateur, 1 000 tirages, `reports/impact-42.json`). Surtout, les données sont synthétiques : le générateur lie l'attachement à l'âge (`src/data/generate.ts`). Les écarts reflètent donc d'abord nos hypothèses. L'audit doit être refait sur les données réelles de l'organisation.
 
 **Explication.** Dans le générateur, l'âge influence la fidélité. Sans accès à l'âge, le modèle ne peut pas corriger cet écart : « l'équité par ignorance » ne garantit pas la calibration.
 

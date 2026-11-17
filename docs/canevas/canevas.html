@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Canevas d'IA Fidélia</title>
+<style>
+  :root {
+    --ink: #1b1f24;
+    --muted: #5a6370;
+    --line: #1b1f24;
+    --paper: #ffffff;
+    --decision: #e8f0fb;
+    --decision-ink: #1d4e89;
+    --data: #eaf5ee;
+    --data-ink: #1f6b3d;
+    --soft: #f5f6f8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--paper); color: var(--ink); }
+  body {
+    width: 1200px;
+    padding: 28px 40px 30px;
+    font-family: "Segoe UI", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.38;
+  }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+  h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.2px; }
+  h1 span { color: var(--decision-ink); }
+  .ref { color: var(--muted); font-size: 13px; white-space: nowrap; }
+  .row { display: grid; gap: 14px; }
+  .row.top { grid-template-columns: repeat(4, 1fr); }
+  .row.bottom { grid-template-columns: repeat(3, 1fr); margin-top: 22px; }
+  .case { border: 2px solid var(--line); display: flex; flex-direction: column; background: var(--paper); }
+  .case h2 {
+    font-size: 15px; font-weight: 700; letter-spacing: 1.2px; text-align: center;
+    padding: 6px 8px; border-bottom: 2px solid var(--line);
+  }
+  .top .case h2 { background: var(--decision); color: var(--decision-ink); }
+  .bottom .case h2 { background: var(--data); color: var(--data-ink); }
+  .case .body { padding: 10px 12px 14px; }
+  .top .case .body { min-height: 196px; }
+  .bottom .case .body { min-height: 196px; }
+  .q { font-style: italic; color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+  .case p { margin-bottom: 6px; }
+  .case ul { list-style: none; margin: 2px 0 6px; }
+  .case li { padding-left: 14px; position: relative; margin-bottom: 2px; }
+  .case li::before { content: ""; position: absolute; left: 3px; top: 0.6em; width: 5px; height: 5px; border-radius: 50%; background: var(--data-ink); }
+  .top .case li::before { background: var(--decision-ink); }
+  strong { font-weight: 700; }
+  .lecture { margin-top: 14px; font-size: 14px; color: var(--muted); }
+  .lecture strong { color: var(--ink); }
+  .autres { margin-top: 20px; border-top: 2px solid var(--line); padding-top: 14px; }
+  .autres h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .autres .note { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+  table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 13.5px; line-height: 1.32; }
+  th, td { border: 1px solid #c5cad1; padding: 6px 9px; text-align: left; vertical-align: top; }
+  thead th { background: var(--soft); font-weight: 700; }
+  tbody th { width: 120px; font-size: 12px; letter-spacing: 1px; color: var(--decision-ink); background: var(--decision); vertical-align: middle; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Fidélia · Canevas d'IA : <span>relancer les donateurs mensuels à risque</span></h1>
+    <div class="ref">Agrawal, Gans et Goldfarb (2018), gabarit S02</div>
+  </header>
+
+  <section class="row top">
+    <article class="case">
+      <h2>PRÉDICTION</h2>
+      <div class="body">
+        <p class="q">Que faut-il savoir pour décider&nbsp;?</p>
+        <p>La probabilité qu'un donateur mensuel <strong>arrête son don dans les 90&nbsp;prochains jours</strong>.</p>
+      </div>
+    </article>
+    <article class="case">
+      <h2>JUGEMENT</h2>
+      <div class="body">
+        <p class="q">Quelle valeur donner aux résultats et aux erreurs&nbsp;?</p>
+        <p>Rater un départ coûte le don annuel&nbsp;: environ 240&nbsp;$ par an au don médian de 20&nbsp;$ par mois.</p>
+        <p>Relancer à tort coûte peu, mais peut agacer.</p>
+        <p><strong>L'équipe fixe le seuil et le ton.</strong></p>
+      </div>
+    </article>
+    <article class="case">
+      <h2>ACTION</h2>
+      <div class="body">
+        <p class="q">Que cherche-t-on à faire&nbsp;?</p>
+        <p>Envoyer un courriel de relance&nbsp;:</p>
+        <ul>
+          <li>mise à jour de la carte expirée&nbsp;;</li>
+          <li>rappel de l'impact du don&nbsp;;</li>
+          <li>option de pause.</li>
+        </ul>
+      </div>
+    </article>
+    <article class="case">
+      <h2>RÉSULTAT</h2>
+      <div class="body">
+        <p class="q">Quelle mesure du succès&nbsp;?</p>
+        <p>Le donateur est-il <strong>toujours mensuel 90&nbsp;jours plus tard</strong>&nbsp;?</p>
+        <p>Comparaison avec un groupe témoin non contacté.</p>
+      </div>
+    </article>
+  </section>
+
+  <section class="row bottom">
+    <article class="case">
+      <h2>ENTRÉE</h2>
+      <div class="body">
+        <p class="q">Quelles données pour prédire&nbsp;?</p>
+        <p>Le comportement récent du donateur, par exemple&nbsp;:</p>
+        <ul>
+          <li>ouvertures de courriels sur 3&nbsp;mois&nbsp;;</li>
+          <li>jours depuis le dernier don&nbsp;;</li>
+          <li>échecs de paiement sur 90&nbsp;jours&nbsp;;</li>
+          <li>canal de recrutement (rue, Web, courrier)&nbsp;;</li>
+          <li>tendance de l'engagement.</li>
+        </ul>
+        <p>18 variables au total. <strong>Ni âge, ni région.</strong></p>
+      </div>
+    </article>
+    <article class="case">
+      <h2>ENTRAÎNEMENT</h2>
+      <div class="body">
+        <p class="q">Quelles données pour entraîner&nbsp;?</p>
+        <p>L'historique des dons et des ouvertures de l'organisation, sur 3,5&nbsp;ans.</p>
+        <p>Des photos tous les 2 à 6&nbsp;mois, selon le modèle.</p>
+        <p>Pour chaque photo&nbsp;: le donateur est-il parti dans les 90&nbsp;jours suivants&nbsp;?</p>
+      </div>
+    </article>
+    <article class="case">
+      <h2>RÉTROACTION</h2>
+      <div class="body">
+        <p class="q">Comment les résultats améliorent-ils le modèle&nbsp;?</p>
+        <p>Les résultats des relances et du groupe témoin (10&nbsp;%) s'ajoutent à l'historique.</p>
+        <p><strong>Réentraînement chaque trimestre.</strong></p>
+      </div>
+    </article>
+  </section>
+
+  <p class="lecture">L'IA rend la <strong>prédiction</strong> bon marché. L'équipe garde le <strong>jugement</strong>&nbsp;: seuils, ton, validation. Les <strong>résultats</strong> des campagnes réalimentent le modèle.</p>
+
+  <section class="autres">
+    <h3>Les trois autres canevas&nbsp;: ce qui change</h3>
+    <p class="note">Les cases Entrée, Entraînement et Rétroaction sont les mêmes pour les quatre canevas.</p>
+    <table>
+      <colgroup><col style="width:130px"><col><col><col></colgroup>
+      <thead>
+        <tr><th></th><th>Passage au mensuel</th><th>Hausse du don mensuel</th><th>Réactivation</th></tr>
+      </thead>
+      <tbody>
+        <tr><th>PRÉDICTION</th>
+          <td>Probabilité qu'un donateur ponctuel ou annuel passe au mensuel dans les 6&nbsp;mois.</td>
+          <td>Probabilité qu'un mensuel augmente son don dans les 6&nbsp;mois. <strong>Modèle évalué, règle RFM conservée</strong> tant que R1 et R2 échouent.</td>
+          <td>Probabilité qu'un inactif redonne dans les 6&nbsp;mois.</td></tr>
+        <tr><th>JUGEMENT</th>
+          <td>Solliciter trop tôt peut faire fuir. Le montant suggéré doit rester raisonnable.</td>
+          <td>Ne jamais demander plus à un donateur à risque de départ.</td>
+          <td>Coût d'un envoi contre le don moyen espéré.</td></tr>
+        <tr><th>ACTION</th>
+          <td>Proposition de don mensuel, avec un montant suggéré.</td>
+          <td>Demande de hausse de 5 ou 10&nbsp;$.</td>
+          <td>Courriel «&nbsp;vous nous manquez&nbsp;».</td></tr>
+        <tr><th>RÉSULTAT</th>
+          <td>Conversion ou non en 6&nbsp;mois.</td>
+          <td>Hausse ou non en 6&nbsp;mois.</td>
+          <td>Nouveau don ou non en 6&nbsp;mois.</td></tr>
+      </tbody>
+    </table>
+  </section>
+</body>
+</html>

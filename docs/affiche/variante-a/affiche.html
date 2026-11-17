@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Affiche Fidélia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+  @page { size: 48in 36in; margin: 0 }
+  :root {
+    --forest: #0a2f1e; --g500: #1f7a4d; --g600: #17663f; --g700: #0f5132;
+    --g50: #eef7f1; --g100: #d5ecdd; --gold: #f4c95d; --bg: #fafaf9;
+    --ink: #1c1917; --mute: #57534e; --line: #e7e5e4;
+    --rose: #e11d48; --sky: #0284c7; --violet: #7c3aed; --amber: #d97706;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0 }
+  html, body { width: 4608px; height: 3456px; background: var(--bg); color: var(--ink);
+    font-family: Inter, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact }
+  body { position: relative; overflow: hidden }
+  .serif { font-family: Fraunces, Georgia, serif; font-weight: 600 }
+  svg.lucide { stroke-width: 2 }
+
+  /* ---------- en-tête ---------- */
+  header { height: 640px; background: var(--forest); color: #fff; padding: 90px 130px 0;
+    display: flex; justify-content: space-between; position: relative; overflow: hidden }
+  header::after { content: ""; position: absolute; right: -260px; top: -340px; width: 1100px; height: 1100px;
+    border-radius: 50%; background: radial-gradient(circle, rgba(244,201,93,.16), rgba(244,201,93,0) 65%) }
+  .brand { display: flex; align-items: center; gap: 56px }
+  .logo { width: 230px; height: 230px; border-radius: 52px; background: var(--gold); color: var(--forest);
+    display: grid; place-items: center; flex: none }
+  .logo svg { width: 140px; height: 140px; stroke-width: 2.2 }
+  .name { font-size: 240px; line-height: .9; letter-spacing: -2px }
+  .tag { font-size: 72px; color: var(--g100); margin-top: 26px; font-weight: 500 }
+  .tag b { color: var(--gold); font-weight: 700 }
+  .team { text-align: right; position: relative; z-index: 1; padding-top: 18px }
+  .team .hec { font-size: 56px; font-weight: 800; letter-spacing: 3px; color: var(--gold) }
+  .team p { font-size: 44px; color: var(--g100); margin-top: 16px; line-height: 1.3 }
+
+  /* ---------- chiffres-chocs ---------- */
+  .stats { position: absolute; top: 500px; left: 130px; right: 130px; display: grid;
+    grid-template-columns: repeat(3, 1fr); gap: 64px }
+  .stat { background: #fff; border: 2px solid var(--line); border-radius: 56px; padding: 44px 56px;
+    display: flex; align-items: center; gap: 48px; box-shadow: 0 14px 40px rgba(10,47,30,.10) }
+  .stat .n { font-size: 180px; line-height: 1; letter-spacing: -4px; flex: none }
+  .stat p { font-size: 46px; line-height: 1.22; font-weight: 600 }
+  .stat small { display: block; font-size: 32px; color: var(--mute); font-weight: 500; margin-top: 10px }
+
+  /* ---------- grille ---------- */
+  main { position: absolute; top: 900px; left: 130px; right: 130px; height: 1690px;
+    display: grid; grid-template-columns: 1040px 1fr 1040px; gap: 64px }
+  .col { display: flex; flex-direction: column; gap: 64px; min-height: 0 }
+  .card { background: #fff; border: 2px solid var(--line); border-radius: 56px; padding: 60px 64px;
+    box-shadow: 0 10px 30px rgba(28,25,23,.06); position: relative; min-height: 0 }
+  h2 { font-size: 80px; line-height: 1; display: flex; align-items: center; gap: 30px; margin-bottom: 44px; color: var(--forest) }
+  h2 .ic { width: 112px; height: 112px; border-radius: 30px; display: grid; place-items: center; flex: none }
+  h2 .ic svg { width: 62px; height: 62px }
+  .t { font-size: 44px; line-height: 1.3 }
+  .mute { color: var(--mute) }
+
+  /* Sophie */
+  .sophie { background: var(--g50); border-color: var(--g100); flex: none }
+  .who { display: flex; align-items: center; gap: 40px; margin-bottom: 40px }
+  .avatar { width: 190px; height: 190px; border-radius: 50%; background: var(--g500); color: #fff;
+    display: grid; place-items: center; font-size: 84px; font-weight: 700; flex: none; border: 10px solid #fff;
+    box-shadow: 0 0 0 4px var(--g100) }
+  .who .r { font-size: 42px; color: var(--g700); font-weight: 600; line-height: 1.25 }
+  .who .r b { display: block; font-size: 64px; color: var(--forest) }
+  .quote { font-size: 70px; line-height: 1.15; color: var(--forest); position: relative; padding-left: 40px;
+    border-left: 14px solid var(--gold) }
+  .quote em { font-style: normal; color: var(--g500) }
+
+  /* listes */
+  .lists { flex: 1; display: flex; flex-direction: column }
+  .pills { display: grid; grid-template-columns: 1fr 1fr; gap: 26px }
+  .pill { border-radius: 28px; padding: 30px 32px; font-size: 44px; font-weight: 700; display: flex; align-items: center; gap: 22px; line-height: 1.1 }
+  .pill svg { width: 56px; height: 56px; flex: none }
+  .p-rose { background: #fff1f2; color: #be123c; box-shadow: inset 0 0 0 3px #fecdd3 }
+  .p-sky { background: #f0f9ff; color: #0369a1; box-shadow: inset 0 0 0 3px #bae6fd }
+  .p-violet { background: #f5f3ff; color: #6d28d9; box-shadow: inset 0 0 0 3px #ddd6fe }
+  .p-amber { background: #fffbeb; color: #b45309; box-shadow: inset 0 0 0 3px #fde68a }
+  .shot { border-radius: 32px; overflow: hidden; border: 2px solid var(--line); box-shadow: 0 18px 44px rgba(28,25,23,.14); background: #fff }
+  .shot img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: left top }
+  .lists .shot { flex: 1; margin-top: 40px }
+
+  /* fonctionnement */
+  .how { flex: 1; display: flex; flex-direction: column }
+  .steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; margin-bottom: 52px }
+  .step { text-align: center; position: relative; padding: 0 12px }
+  .step .dot { width: 160px; height: 160px; border-radius: 50%; margin: 0 auto 26px; display: grid; place-items: center;
+    background: var(--g50); color: var(--g600); box-shadow: inset 0 0 0 4px var(--g100); position: relative }
+  .step .dot svg { width: 80px; height: 80px }
+  .step.ai .dot { background: var(--forest); color: var(--gold); box-shadow: 0 0 0 10px var(--gold) }
+  .step .num { position: absolute; top: -8px; right: -8px; width: 58px; height: 58px; border-radius: 50%; background: var(--gold);
+    color: var(--forest); font-size: 34px; font-weight: 800; display: grid; place-items: center; border: 5px solid #fff }
+  .step p { font-size: 42px; font-weight: 700; line-height: 1.18 }
+  .step:not(:last-child)::after { content: ""; position: absolute; top: 80px; right: -34px; width: 68px; height: 8px;
+    background: var(--gold); border-radius: 4px }
+  .step:not(:last-child)::before { content: ""; position: absolute; top: 66px; right: -40px; border: 18px solid transparent;
+    border-left: 24px solid var(--gold); border-right: 0; z-index: 1 }
+  .gallery { flex: 1; display: grid; grid-template-columns: 1.42fr 1fr; grid-template-rows: 1fr 1fr; gap: 40px; min-height: 0 }
+  .gallery .big { grid-row: 1 / 3 }
+  .fig { position: relative; min-height: 0; display: flex; flex-direction: column; gap: 22px }
+  .fig .shot { flex: 1; min-height: 0 }
+  .cap { align-self: flex-start; order: -1; background: var(--forest); color: #fff; font-size: 40px; font-weight: 700;
+    border-radius: 999px; padding: 16px 36px 16px 18px; display: flex; align-items: center; gap: 18px; }
+  .cap i { font-style: normal; width: 56px; height: 56px; border-radius: 50%; background: var(--gold); color: var(--forest);
+    display: grid; place-items: center; font-size: 32px; font-weight: 800 }
+
+  /* résultat */
+  .result { background: var(--forest); border-color: var(--forest); color: #fff; flex: none }
+  .result h2 { color: #fff }
+  .x3 { display: flex; align-items: center; gap: 44px }
+  .x3 .n { font-size: 300px; line-height: .85; color: var(--gold); letter-spacing: -6px }
+  .x3 p { font-size: 54px; font-weight: 700; line-height: 1.18 }
+  .result small { display: block; font-size: 40px; color: var(--g100); margin-top: 34px; line-height: 1.3 }
+  .honest { margin-top: 40px; background: rgba(255,255,255,.08); border-radius: 36px; padding: 36px 40px; display: flex; gap: 30px; align-items: flex-start }
+  .honest svg { width: 70px; height: 70px; color: var(--gold); flex: none; margin-top: 4px }
+  .honest p { font-size: 42px; line-height: 1.28 }
+  .honest b { color: var(--gold) }
+
+  /* garde-fous */
+  .guards { flex: 1; display: flex; flex-direction: column }
+  .guards ul { list-style: none; display: flex; flex-direction: column; justify-content: space-between; flex: 1 }
+  .guards li { display: flex; align-items: center; gap: 36px; font-size: 44px; font-weight: 600; line-height: 1.2 }
+  .guards li span.ic { width: 104px; height: 104px; border-radius: 28px; background: var(--g50); color: var(--g600); display: grid; place-items: center; flex: none }
+  .guards li span.ic svg { width: 56px; height: 56px }
+
+  /* affaires */
+  .biz { position: absolute; top: 2654px; left: 130px; right: 130px; height: 640px; display: grid;
+    grid-template-columns: 1fr 1fr 1.25fr 1040px; gap: 64px }
+  .biz .card { display: flex; flex-direction: column }
+  .big-n { font-size: 160px; line-height: 1; letter-spacing: -4px; color: var(--forest) }
+  .big-n sub { font-size: 60px; vertical-align: baseline; letter-spacing: 0; color: var(--g600); font-family: Inter; font-weight: 700 }
+  .biz .t { margin-top: 20px; font-weight: 600 } .biz .t.mute { font-weight: 500; margin-top: 12px }
+  .road { display: flex; align-items: stretch; gap: 22px; flex: 1 }
+  .road .s { flex: 1; border-radius: 32px; padding: 30px 30px; background: var(--g50); box-shadow: inset 0 0 0 3px var(--g100); display: flex; flex-direction: column; gap: 14px }
+  .road .s b { font-size: 50px; color: var(--forest); font-family: Fraunces; font-weight: 600 }
+  .road .s span { font-size: 40px; line-height: 1.22; font-weight: 500 }
+  .road .s.now { background: var(--forest); box-shadow: none }
+  .road .s.now b { color: var(--gold) } .road .s.now span { color: #fff }
+  .road .arr { align-self: center; color: var(--gold) } .road .arr svg { width: 56px; height: 56px; stroke-width: 3 }
+  .demo { background: var(--gold); border-color: var(--gold); flex-direction: row !important; align-items: center; gap: 48px; padding: 60px 56px }
+  .demo .qr { width: 420px; height: 420px; background: #fff; border-radius: 36px; padding: 26px; flex: none }
+  .demo .qr img { width: 100%; height: 100% }
+  .demo h3 { font-size: 96px; line-height: 1; color: var(--forest) }
+  .demo p { font-size: 42px; color: var(--forest); margin-top: 26px; font-weight: 600; line-height: 1.25 }
+
+  footer { position: absolute; left: 130px; right: 130px; bottom: 50px; font-size: 30px; color: var(--mute) }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="brand">
+      <span class="logo"><i data-lucide="heart-handshake"></i></span>
+      <div>
+        <div class="name serif">Fidélia</div>
+        <div class="tag">Qui <b>relancer</b>, <b>remercier</b> ou <b>solliciter</b> ? L'IA répond aux petits OBNL.</div>
+      </div>
+    </div>
+  </div>
+  <div class="team">
+    <div class="hec">HEC MONTRÉAL · TECH 60711</div>
+    <p>Équipe 4 · Geoffrey Carel · Juliette Ponce<br>Juliette Violon · Paul Soubigou</p>
+  </div>
+</header>
+
+<section class="stats">
+  <div class="stat"><span class="n serif" style="color:var(--rose)">43,3 %</span>
+    <p>des donateurs seulement redonnent l'année suivante<small>FEP, 2025</small></p></div>
+  <div class="stat"><span class="n serif" style="color:var(--amber)">53 %</span>
+    <p>des OBNL de moins de 1 M$ confient tech et données à des employés sans formation<small>CanadaHelps, 2024</small></p></div>
+  <div class="stat"><span class="n serif" style="color:var(--violet)">92 %</span>
+    <p>des OBNL utilisent déjà l'IA… pour écrire, rarement pour cibler<small>Virtuous et Fundraising.AI, 2026</small></p></div>
+</section>
+
+<main>
+  <!-- gauche -->
+  <div class="col">
+    <div class="card sophie">
+      <div class="who">
+        <span class="avatar">S</span>
+        <div class="r"><b>Sophie</b>responsable des dons,<br>petit OBNL québécois</div>
+      </div>
+      <p class="quote serif">« J'ai 2 heures par semaine pour 4 000 donateurs. <em>Par qui je commence ?</em> »</p>
+    </div>
+    <div class="card lists">
+      <h2 class="serif"><span class="ic" style="background:var(--g50);color:var(--g600)"><i data-lucide="list-checks"></i></span>4 listes d'action</h2>
+      <div class="pills">
+        <span class="pill p-rose"><i data-lucide="alarm-clock"></i>Relancer</span>
+        <span class="pill p-sky"><i data-lucide="repeat"></i>Proposer le mensuel</span>
+        <span class="pill p-violet"><i data-lucide="trending-up"></i>Solliciter plus</span>
+        <span class="pill p-amber"><i data-lucide="rotate-ccw"></i>Réactiver</span>
+      </div>
+      <div class="shot"><img src="capture-recos.png" alt="Liste des recommandations dans Fidélia" ></div>
+    </div>
+  </div>
+
+  <!-- centre -->
+  <div class="col">
+    <div class="card how">
+      <h2 class="serif"><span class="ic" style="background:var(--gold);color:var(--forest)"><i data-lucide="workflow"></i></span>Comment ça marche</h2>
+      <div class="steps">
+        <div class="step"><div class="dot"><i data-lucide="database"></i><span class="num">1</span></div><p>Historique des dons</p></div>
+        <div class="step ai"><div class="dot"><i data-lucide="sparkles"></i><span class="num">2</span></div><p>L'IA classe et explique pourquoi</p></div>
+        <div class="step"><div class="dot"><i data-lucide="user-check"></i><span class="num">3</span></div><p>L'équipe valide</p></div>
+        <div class="step"><div class="dot"><i data-lucide="mail"></i><span class="num">4</span></div><p>Courriel personnalisé</p></div>
+        <div class="step"><div class="dot"><i data-lucide="flask-conical"></i><span class="num">5</span></div><p>Un groupe témoin mesure l'effet</p></div>
+      </div>
+      <div class="gallery">
+        <div class="fig big"><div class="shot"><img src="capture-tableau.png" alt="Tableau de bord de Fidélia"></div>
+          <span class="cap"><i>1</i>Tableau de bord</span></div>
+        <div class="fig"><div class="shot"><img src="capture-fiche.png" alt="Fiche d'une donatrice" style="object-position: 0 100%" ></div>
+          <span class="cap"><i>2</i>Pourquoi ce donateur ?</span></div>
+        <div class="fig"><div class="shot"><img src="capture-courriel.png" alt="Brouillon de courriel" ></div>
+          <span class="cap"><i>4</i>Brouillon à valider</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- droite -->
+  <div class="col">
+    <div class="card result">
+      <h2 class="serif"><span class="ic" style="background:var(--gold);color:var(--forest)"><i data-lucide="trophy"></i></span>Le résultat</h2>
+      <div class="x3"><span class="n serif"><span style="font-family:Inter;font-weight:800;font-size:220px">×</span>3</span>
+        <p>de dons récupérés à effort égal, face à la méthode habituelle</p></div>
+      <small>300 contacts · donateurs fictifs de test</small>
+      <div class="honest"><i data-lucide="scale"></i>
+        <p>Sur <b>18 824 vrais donateurs</b> (KDD Cup 1998), l'IA ne bat pas assez la méthode habituelle : on garderait celle-ci.</p></div>
+    </div>
+    <div class="card guards">
+      <h2 class="serif"><span class="ic" style="background:var(--g50);color:var(--g600)"><i data-lucide="shield-check"></i></span>Garde-fous</h2>
+      <ul>
+        <li><span class="ic"><i data-lucide="user-check"></i></span>Un humain valide chaque envoi</li>
+        <li><span class="ic"><i data-lucide="git-compare"></i></span>L'IA seulement si elle bat la méthode habituelle</li>
+        <li><span class="ic"><i data-lucide="lock"></i></span>Loi 25 : droit de refuser le profilage</li>
+        <li><span class="ic"><i data-lucide="calendar-clock"></i></span>Un courriel par 30 jours, au plus</li>
+      </ul>
+    </div>
+  </div>
+</main>
+
+<section class="biz">
+  <div class="card">
+    <h2 class="serif"><span class="ic" style="background:#fff1f2;color:var(--rose)"><i data-lucide="hammer"></i></span>Coûts</h2>
+    <div class="big-n serif">150 k$</div>
+    <p class="t">pour bâtir la V1 en 6 mois</p>
+    <p class="t mute">puis ≈ 106 k$ par an : maintenance et support</p>
+  </div>
+  <div class="card">
+    <h2 class="serif"><span class="ic" style="background:var(--g50);color:var(--g600)"><i data-lucide="coins"></i></span>Revenus</h2>
+    <div class="big-n serif">99 $<sub> /mois</sub></div>
+    <p class="t">par OBNL abonné</p>
+    <p class="t mute">rentable vers 140 à 150 clients</p>
+  </div>
+  <div class="card">
+    <h2 class="serif"><span class="ic" style="background:#f0f9ff;color:var(--sky)"><i data-lucide="map"></i></span>Feuille de route</h2>
+    <div class="road">
+      <div class="s now"><b>V1</b><span>Listes et courriels validés</span></div>
+      <span class="arr"><i data-lucide="chevron-right"></i></span>
+      <div class="s"><b>Pilote</b><span>2 OBNL, leurs vraies données</span></div>
+      <span class="arr"><i data-lucide="chevron-right"></i></span>
+      <div class="s"><b>V2</b><span>Rédaction assistée</span></div>
+    </div>
+  </div>
+  <div class="card demo">
+    <div class="qr"><img src="qr.svg" alt="QR vers la démo"></div>
+    <div>
+      <h3 class="serif">Essayez la démo</h3>
+      <p>wtigg.github.io/fidelia</p>
+      <p style="font-size:40px;font-weight:500">Concurrents dès 125 $/mois : Dataro, Keela, Bloomerang.</p>
+    </div>
+  </div>
+</section>
+
+<footer>Sources : Fundraising Effectiveness Project 2025 · CanadaHelps 2024 · Virtuous et Fundraising.AI 2026 · KDD Cup 1998. Captures : prototype Fidélia, donateurs fictifs. Détails statistiques : fiche technique.</footer>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

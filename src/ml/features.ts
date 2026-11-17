@@ -13,18 +13,18 @@ export const FEATURE_LABELS: Record<keyof Features, string> = {
   tenureMonths: 'Ancienneté (mois)',
   failed90d: 'Paiements échoués (90 j)',
   openRate3m: 'Taux d\'ouverture des courriels (3 mois)',
-  engagementTrend: 'Tendance d\'engagement',
-  amountTrend: 'Tendance des montants',
+  engagementTrend: "Évolution de l'ouverture des courriels",
+  amountTrend: 'Évolution des montants donnés',
   giftsLifetime: 'Nombre de dons (depuis le début)',
   avgGift: 'Don moyen',
-  lastGiftRatio: 'Dernier don / don moyen',
+  lastGiftRatio: 'Dernier don comparé au don moyen',
   anniversarySoon: 'Date anniversaire du don annuel proche',
   emailOptOut: 'Pas de consentement courriel',
   isAnnual: 'Donateur annuel',
   channelWeb: 'Recruté en ligne',
   channelEvent: 'Recruté lors d\'un événement',
   channelStreet: 'Recruté dans la rue',
-  seasonQ4: 'Décembre dans l\'horizon de prédiction',
+  seasonQ4: 'Période des fêtes à venir',
 }
 
 /** Famille de chaque variable, pour la documentation (datasheet) */
@@ -113,10 +113,10 @@ export function computeFeatures(d: Donor, gifts: Donation[], T: string, historyS
     failed90d: before.filter((g) => g.status === 'failed' && ago(g) <= 90).length,
     openRate3m: last3 ?? OPEN_RATE_IMPUTED,
     engagementTrend: last3 !== null && prev3 !== null ? last3 - prev3 : 0,
-    amountTrend: Math.log((a6 + 10) / (p6 + 10)),
+    amountTrend: stable(Math.log((a6 + 10) / (p6 + 10))),
     giftsLifetime: paid.length,
     avgGift: Math.round(avg),
-    lastGiftRatio: last ? Math.log((last.amount + 1) / (prevAvg + 1)) : 0,
+    lastGiftRatio: last ? stable(Math.log((last.amount + 1) / (prevAvg + 1))) : 0,
     anniversarySoon: kind === 'annual' && 12 - (Math.floor(monthsSinceJoin) % 12) <= 3 ? 1 : 0,
     emailOptOut: last3 === null ? 1 : 0,
     isAnnual: kind === 'annual' ? 1 : 0,
@@ -127,10 +127,19 @@ export function computeFeatures(d: Donor, gifts: Donation[], T: string, historyS
   }
 }
 
-/** Transformation avant apprentissage : logarithme des variables très asymétriques */
+/**
+ * Arrondi à 12 chiffres significatifs. Math.log et Math.log1p ne sont pas exacts au dernier chiffre près :
+ * Chrome et Node peuvent différer d'une unité au 16e chiffre (log(3) = 1.0986122886681098 contre …096).
+ * Les seuils des arbres sont des valeurs observées : sans arrondi, un donateur situé pile sur un seuil
+ * part dans l'autre branche selon le navigateur. Arrondies, les variables sont identiques sur tous les moteurs.
+ */
+export const stable = (v: number) => (Number.isFinite(v) && v !== 0 ? Number(v.toPrecision(12)) : v)
+
+/** Transformation avant apprentissage : logarithme des variables très asymétriques, arrondi stable (voir stable).
+ * Les autres variables (comptes, taux, différences) ne passent que par + − × ÷, exacts au bit près sur tous les moteurs. */
 export function toVector(f: Features): number[] {
   return FEATURE_KEYS.map((k) =>
-    k === 'recencyDays' || k === 'amount12m' || k === 'tenureMonths' || k === 'giftsLifetime' || k === 'avgGift' ? Math.log1p(f[k]) : f[k],
+    k === 'recencyDays' || k === 'amount12m' || k === 'tenureMonths' || k === 'giftsLifetime' || k === 'avgGift' ? stable(Math.log1p(f[k])) : f[k],
   )
 }
 

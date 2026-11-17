@@ -1,10 +1,11 @@
-import { useState, type ReactNode } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
-import { AlertTriangle, BrainCircuit, Database, HeartHandshake, LayoutDashboard, Loader2, Mail, Menu, Sparkles, TrendingUp, Users, Zap } from 'lucide-react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { AlertTriangle, BrainCircuit, Database, HeartHandshake, LayoutDashboard, Loader2, Mail, Menu, PlayCircle, Sparkles, TrendingUp, Users, Zap } from 'lucide-react'
 import { formatDate } from '../lib/dates.ts'
-import { ORG_NAME } from '../lib/emails.ts'
+import { ORG_NAME, setEmailContext } from '../lib/emails.ts'
 import { MODEL_SPECS } from '../ml/pipeline.ts'
 import { useStore } from '../state/store.tsx'
+import { GuidedTour } from './tour/GuidedTour.tsx'
 import { cx } from './ui.tsx'
 
 const NAV = [
@@ -19,11 +20,16 @@ const NAV = [
 ]
 
 export function Layout({ children }: { children: ReactNode }) {
-  const { training, trainingStep, trainError, trainSkipped, dataset, campaign, scores, modelVersion } = useStore()
+  const { training, trainingStep, trainError, trainSkipped, dataset, campaign, scores, modelTrainedAt } = useStore()
   const [open, setOpen] = useState(false)
+  const [tourStep, setTourStep] = useState<number | null>(null)
   const location = useLocation()
+  const navigate = useNavigate()
   const drafts = campaign.filter((c) => c.status === 'draft' || c.status === 'approved').length
   const recos = scores.filter((s) => s.action).length
+
+  // les brouillons de courriels citent le dernier don réel (montant, date)
+  useEffect(() => setEmailContext(dataset), [dataset])
 
   const nav = (
     <nav className="flex flex-col gap-0.5">
@@ -58,17 +64,28 @@ export function Layout({ children }: { children: ReactNode }) {
         <span className="font-display text-xl font-semibold">Fidélia</span>
       </div>
       {nav}
+      <button
+        onClick={() => {
+          setOpen(false)
+          setTourStep(0)
+          navigate('/')
+        }}
+        className="mt-6 flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-brand-100/60 transition-colors hover:bg-white/5 hover:text-white"
+      >
+        <PlayCircle className="size-4" /> Visite guidée
+      </button>
       <div className="mt-auto rounded-xl bg-white/5 p-3 text-xs text-brand-100/70">
         <p className="font-medium text-white">{ORG_NAME}</p>
-        <p className="mt-0.5">{dataset.donors.length.toLocaleString('fr-CA')} donateurs · {dataset.source === 'demo' ? 'données de démo' : dataset.source === 'csv' ? 'import CSV' : 'Supabase'}</p>
+        <p className="mt-0.5">{dataset.donors.length.toLocaleString('fr-CA')} donateurs · {dataset.source === 'demo' ? 'données de démo' : dataset.source === 'csv' ? 'fichier importé' : 'base en ligne'}</p>
+        <p className="mt-0.5">Données au {formatDate(dataset.refDate)}</p>
         <p className="mt-2 flex items-center gap-1.5">
           {training ? (
             <>
-              <Loader2 className="size-3 animate-spin" /> Entraînement{trainingStep ? ` : ${trainingStep}` : '…'}
+              <Loader2 className="size-3 animate-spin" /> Analyse en cours{trainingStep ? ` : ${MODEL_SPECS[trainingStep].title.toLowerCase()}` : '…'}
             </>
           ) : (
             <>
-              <span className="size-1.5 rounded-full bg-emerald-400" /> Modèle {modelVersion} · {formatDate(dataset.refDate)}
+              <span className="size-1.5 rounded-full bg-emerald-400" /> Modèle entraîné le {formatDate(modelTrainedAt)}
             </>
           )}
         </p>
@@ -104,12 +121,13 @@ export function Layout({ children }: { children: ReactNode }) {
           <p role="status" className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
             <span>
-              <b>Données insuffisantes pour : {trainSkipped.map((k) => MODEL_SPECS[k].title).join(', ')}.</b> Ce modèle n'est pas entraîné et ses actions ne sont pas proposées. Minimum technique : 100 exemples, dont 10 cas positifs à l'entraînement, et 3 cas positifs en validation comme en test. Le requis RD1 vise 100 cas positifs dans l'historique.
+              <b>Données insuffisantes pour : {trainSkipped.map((k) => MODEL_SPECS[k].title).join(', ')}.</b> Fidélia ne propose pas encore ces actions : il manque d'exemples dans l'historique importé. <details className="mt-1 inline"><summary className="cursor-pointer underline">Voir le détail</summary> Minimum technique : 100 exemples, dont 10 cas positifs à l'entraînement, et 3 cas positifs en validation comme en test. Entre ce minimum et 100 cas positifs (requis RD1), le modèle est entraîné mais Fidélia classe avec la méthode habituelle.</details>
             </span>
           </p>
         )}
         {children}
       </main>
+      <GuidedTour step={tourStep} onStep={setTourStep} />
     </div>
   )
 }

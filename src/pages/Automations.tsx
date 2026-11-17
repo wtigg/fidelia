@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { CalendarClock, Play } from 'lucide-react'
 import { Button, Card, PageHeader, Toggle } from '../components/ui.tsx'
+import { actionStats } from '../lib/actionStats.ts'
 import { formatMoney } from '../lib/dates.ts'
-import { ACTION_COLOR, ACTION_DESCRIPTIONS, ACTION_LABELS } from '../lib/labels.ts'
+import { ACTION_COLOR, ACTION_DESCRIPTIONS, ACTION_LABELS, PROB_WORD, thresholdText } from '../lib/labels.ts'
 import type { ActionType, DonorScore } from '../lib/types.ts'
 import { CONTACT_COOLDOWN_DAYS, CONTROL_SHARE, useStore } from '../state/store.tsx'
 
@@ -23,14 +24,10 @@ export default function Automations() {
   const stats = useMemo(() => {
     const out = {} as Record<ActionType, { count: number; value: number; pool: number }>
     for (const a of automations) {
-      if (a.type === 'thank') {
-        const hit = scores.filter((s) => s.thankReason)
-        out[a.type] = { count: hit.length, value: 0, pool: scores.length }
-        continue
-      }
-      const pool = scores.filter((s) => probFor(a.type, s) !== undefined)
-      const hit = pool.filter((s) => (probFor(a.type, s) ?? 0) >= a.threshold)
-      out[a.type] = { count: hit.length, value: hit.reduce((s, x) => s + x.expectedValue, 0), pool: pool.length }
+      // même définition que le tableau de bord : l'action finale retenue pour chaque donateur
+      const { count, value } = actionStats(scores, a.type)
+      const pool = a.type === 'thank' ? scores.length : scores.filter((s) => probFor(a.type, s) !== undefined).length
+      out[a.type] = { count, value, pool }
     }
     return out
   }, [automations, scores])
@@ -39,7 +36,7 @@ export default function Automations() {
     <>
       <PageHeader
         title="Automatisations"
-        subtitle="Choisissez à partir de quelle probabilité le modèle déclenche une action, et si un humain doit valider le courriel avant envoi."
+        subtitle="Choisissez à partir de quelle chance (ou quel risque) Fidélia ajoute un donateur à une liste. Curseur à gauche : plus de donateurs, moins ciblés. À droite : moins de courriels, plus pertinents."
         actions={
           <Button variant="primary" disabled={training} onClick={() => setResult(runCycle())}>
             <Play className="size-4" /> Lancer le cycle maintenant
@@ -50,7 +47,7 @@ export default function Automations() {
       {result && (
         <div className="mb-6 rounded-xl border border-brand-100 bg-brand-50 px-4 py-3 text-sm text-brand-900">
           Cycle terminé : <b>{result.drafted}</b> courriel{result.drafted > 1 ? 's' : ''} en attente de validation, <b>{result.sent}</b> envoyé{result.sent > 1 ? 's' : ''} automatiquement (simulé),{' '}
-          <b>{result.control}</b> donateur{result.control > 1 ? 's' : ''} placé{result.control > 1 ? 's' : ''} dans le groupe témoin, {result.skipped} ignoré{result.skipped > 1 ? 's' : ''} (déjà contacté{result.skipped > 1 ? 's' : ''} il y a moins de {CONTACT_COOLDOWN_DAYS} jours).{' '}
+          <b>{result.control}</b> donateur{result.control > 1 ? 's' : ''} mis de côté pour mesurer l'effet (10 %), {result.skipped} ignoré{result.skipped > 1 ? 's' : ''} (déjà contacté{result.skipped > 1 ? 's' : ''} il y a moins de {CONTACT_COOLDOWN_DAYS} jours).{' '}
           <Link to="/campagnes" className="font-medium underline">Voir les courriels</Link>
         </div>
       )}
@@ -81,8 +78,8 @@ export default function Automations() {
                 ) : (
                 <div className="mt-6">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-stone-600">Seuil de probabilité</span>
-                    <span className="font-semibold tabular-nums text-stone-900">{Math.round(a.threshold * 100)} %</span>
+                    <span className="text-stone-600">{PROB_WORD(a.type) === 'risque' ? 'Risque minimal' : 'Chance minimale'}</span>
+                    <span className="font-semibold tabular-nums text-stone-900">{thresholdText(a.threshold)}</span>
                   </div>
                   <input
                     type="range"
@@ -93,7 +90,7 @@ export default function Automations() {
                     disabled={!a.enabled}
                     onChange={(e) => setAutomation(a.type, { threshold: Number(e.target.value) })}
                     className="mt-2 w-full"
-                    style={{ accentColor: ACTION_COLOR[a.type] }}
+                    style={{ '--range': ACTION_COLOR[a.type] } as CSSProperties}
                   />
                   <div className="mt-3 grid grid-cols-2 gap-3">
                     <div className="rounded-xl bg-stone-50 p-3">
@@ -103,11 +100,10 @@ export default function Automations() {
                       </p>
                     </div>
                     <div className="rounded-xl bg-stone-50 p-3">
-                      <p className="text-xs text-stone-500">Valeur attendue</p>
+                      <p className="text-xs text-stone-500">Dons espérés sur un an</p>
                       <p className="mt-0.5 text-lg font-semibold tabular-nums text-stone-900">{formatMoney(s.value)}</p>
                     </div>
                   </div>
-                  <p className="mt-2 text-xs text-stone-400">Seuil bas : plus de donateurs touchés mais moins ciblés. Seuil haut : moins de courriels, plus pertinents.</p>
                 </div>
 
                 )}
@@ -127,9 +123,9 @@ export default function Automations() {
       <div className="mt-6 flex items-start gap-3 rounded-2xl border border-stone-200 bg-white p-5 text-sm text-stone-600">
         <CalendarClock className="mt-0.5 size-5 shrink-0 text-brand-600" />
         <p>
-          En production, ce cycle tourne chaque semaine : import des nouveaux dons, recalcul des scores, préparation des courriels. Garde-fous :
+          En production, ce cycle tourne chaque semaine : import des nouveaux dons, mise à jour des listes, préparation des courriels. Garde-fous :
           un courriel au plus tous les {CONTACT_COOLDOWN_DAYS} jours par donateur, remerciement avant toute sollicitation, exclusion des donateurs sans consentement,
-          et {Math.round(CONTROL_SHARE * 100)} % des donateurs ciblés gardés en groupe témoin pour mesurer l'effet réel des actions.
+          et {Math.round(CONTROL_SHARE * 100)} % des donateurs ciblés mis de côté, sans contact, pour mesurer l'effet réel des actions.
         </p>
       </div>
     </>

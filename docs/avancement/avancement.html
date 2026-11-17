@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Suivi de projet · Équipe 4 · 10 novembre 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet">
+<style>
+@page { size: letter; margin: 0.55in 0.6in }
+* { box-sizing: border-box }
+body { font-family: Inter, sans-serif; font-size: 10pt; line-height: 1.38; color: #1c1917; margin: 0 }
+h1 { font-family: Fraunces, serif; font-size: 19pt; color: #0a2f1e; margin: 0 0 2pt }
+h2 { font-family: Fraunces, serif; font-size: 13pt; color: #0a2f1e; margin: 14pt 0 6pt; border-bottom: 2px solid #d5ecdd; padding-bottom: 3pt }
+.sub { color: #57534e; margin: 0 0 8pt }
+table { width: 100%; border-collapse: collapse; margin: 4pt 0 6pt }
+th, td { text-align: left; vertical-align: top; padding: 4pt 6pt; border-bottom: 1px solid #e7e5e4 }
+th { background: #eef7f1; color: #0a2f1e; font-weight: 700; font-size: 9pt }
+.fiche td:first-child { width: 22%; font-weight: 700; color: #0a2f1e }
+.ok { color: #17663f; font-weight: 700 } .warn { color: #b45309; font-weight: 700 } .ko { color: #b91c1c; font-weight: 700 }
+.num { font-variant-numeric: tabular-nums; white-space: nowrap }
+.note { background: #fffbeb; border-left: 4px solid #f4c95d; padding: 6pt 9pt; margin: 6pt 0 }
+ul { margin: 2pt 0 4pt 16pt; padding: 0 } li { margin: 1pt 0 }
+.pb { page-break-before: always }
+small { color: #57534e }
+</style></head><body>
+
+<h1>Suivi de projet · Équipe 4</h1>
+<p class="sub">TECH 60711 · Réalisation d'applications d'intelligence artificielle · HEC Montréal · état au 10 novembre 2026 · fiche précédente (26 octobre) en annexe</p>
+
+<table class="fiche">
+<tr><td>Équipe</td><td>Geoffrey Carel, Juliette Ponce, Juliette Violon, Paul Soubigou</td></tr>
+<tr><td>Projet</td><td><b>Fidélia</b> : savoir qui relancer, remercier ou solliciter, au bon moment. Démo : <b>wtigg.github.io/fidelia</b> · code : github.com/wtigg/fidelia</td></tr>
+<tr><td>Audience</td><td>Responsables des dons d'OBNL de 1 à 5 personnes, sans analyste de données.</td></tr>
+<tr><td>Problématique</td><td>Seuls <b>43,3 %</b> des donateurs redonnent l'année suivante (FEP, 2025), alors que garder un donateur coûte environ <b>7 fois moins cher</b> que d'en recruter un (Johnson, 2023). <b>53 %</b> des petits OBNL canadiens confient leurs données à des employés sans formation (CanadaHelps, 2024) et <b>92 %</b> utilisent déjà l'IA, mais surtout pour écrire, rarement pour cibler (Virtuous et Fundraising.AI, 2026).</td></tr>
+<tr><td>Notre IA</td><td>Quatre modèles supervisés (attrition, passage au mensuel, hausse, réactivation) : régression logistique et boosting d'arbres, codés et vérifiés contre scikit-learn. <b>Règle de gouvernance</b> : un modèle n'est utilisé que s'il fait au moins 2 fois mieux que le hasard (R1) et bat la méthode habituelle RFM de façon significative (R2) ; sinon, l'outil garde RFM. Chaque recommandation est expliquée en mots simples et validée par un humain.</td></tr>
+<tr><td>Statut</td><td><span class="ok">Fait :</span> rapport complet (13 800 mots, 9 leçons, 45 références dont 20 académiques), prototype en ligne (8 pages, visite guidée, courriels personnalisés), Docker, 24 tests, intégration continue, affiche, fiche technique, canevas. <span class="warn">À finaliser :</span> relecture d'équipe (PR n° 1), vidéo de démonstration de secours, impression.</td></tr>
+<tr><td>Outils</td><td>Prototype : React, TypeScript et Vite ; modèles dans le navigateur (aucune donnée ne quitte le poste) ; vérification en Python et scikit-learn. Solution cible : API Python (FastAPI) en conteneur, base PostgreSQL au Canada ; rédaction assistée par LLM en V2.</td></tr>
+</table>
+
+<div class="note"><b>Écarts depuis le 26 octobre.</b> (1) Supabase et Gemini ne sont pas utilisés dans le prototype : les modèles tournent dans le navigateur, sans serveur, ce qui simplifie la démonstration et la confidentialité ; le LLM passe en V2. (2) Le calendrier est en avance : modèle et prototype sont faits, alors que le prototype était prévu du 9 au 16 novembre. (3) Une règle RFM reste utilisée pour la hausse du don, faute de gain significatif du modèle : c'est la gouvernance qui joue son rôle.</div>
+
+<h2>Avancement selon la grille d'évaluation</h2>
+<table>
+<tr><th>Critère</th><th>Poids</th><th>Livrable et emplacement</th><th>État</th></tr>
+<tr><td>Idéation : idée et canevas</td><td class="num">10 %</td><td>RAPPORT §1 (problème, pourquoi l'IA, solutions existantes, proposition de valeur, impact) ; canevas au gabarit S02 (§2, docs/canevas/)</td><td class="ok">Fait</td></tr>
+<tr><td>Requis fonctionnels, techniques et données</td><td class="num">30 %</td><td>§3 (24 requis, marqués IA), §4 (tâche, modèles, R1 à R6, architecture, déploiement), §5 (sources, qualité par source, RD1 à RD6, datasheets)</td><td class="ok">Fait</td></tr>
+<tr><td>Prototype</td><td class="num">15 %</td><td>Application en ligne ; Dockerfile ; 24 tests ; contrôle de reproductibilité ; §6 (résultats, reproduire, écarts avec la cible, tentatives d'amélioration)</td><td class="ok">Fait</td></tr>
+<tr><td>Risques et éthique</td><td class="num">5 %</td><td>§7 (risques individuels, sociétaux, légaux, d'infrastructure) ; §8 (Suresh et Guttag, Rismani et al., NIST, Loi 25 et ÉFVP, humain dans la boucle)</td><td class="ok">Fait</td></tr>
+<tr><td>Estimations</td><td class="num">5 %</td><td>§9 : V1 en 2 mois, environ 27 000 $ (1,4 ETP, taux du Guichet-Emplois) ; environ 28 000 $ par an ensuite ; rentable vers 35 clients à 99 $ par mois</td><td class="warn">Hypothèses à confirmer en équipe</td></tr>
+<tr><td>Réflexion critique</td><td class="num">10 %</td><td>§10 : 9 leçons (fuites de données, RFM comme vraie référence, prédire n'est pas causer, équité, données avant modèle…)</td><td class="ok">Fait</td></tr>
+<tr><td>Cohérence, lectures, clarté</td><td class="num">10 %</td><td>Mêmes chiffres dans l'application, le rapport, l'affiche (sources : reports/) ; 45 références APA 7 ; lectures du cours mobilisées</td><td class="ok">Fait</td></tr>
+<tr><td>Présentation, affiche et démo</td><td class="num">15 %</td><td>Affiche 48 × 36 po (docs/affiche/) ; fiche technique pour les juges ; script de démo et visite guidée en 6 étapes (docs/PRESENTATION.md)</td><td class="warn">Répéter, imprimer, enregistrer la vidéo de secours</td></tr>
+</table>
+
+<h2>Résultats clés (sources : reports/, vérifiés le 10 novembre)</h2>
+<table>
+<tr><th>Mesure</th><th>Fidélia</th><th>Méthode habituelle (RFM)</th><th>Décision</th></tr>
+<tr><td>Attrition des mensuels (données de test)</td><td class="num">0,243</td><td class="num">0,091</td><td class="ok">Modèle utilisé</td></tr>
+<tr><td>Passage au mensuel</td><td class="num">0,113</td><td class="num">0,043</td><td class="ok">Modèle utilisé</td></tr>
+<tr><td>Réactivation</td><td class="num">0,123</td><td class="num">0,039</td><td class="ok">Modèle utilisé</td></tr>
+<tr><td>Hausse du don</td><td class="num">0,076</td><td class="num">0,066</td><td class="warn">RFM conservée</td></tr>
+<tr><td>Réactivation, 18 824 vrais donateurs (KDD Cup 1998)</td><td class="num">0,083</td><td class="num">0,053</td><td class="warn">Meilleure que RFM, sous le seuil R1 (0,102) : RFM conservée</td></tr>
+<tr><td>Valeur captée à effort égal</td><td colspan="2">environ ×4,8 à 100 contacts, ×3 à 300 contacts</td><td>Donateurs fictifs</td></tr>
+</table>
+<small>Mesure : AUC-PR, la précision pour trouver les bons donateurs (plus haut = mieux). Trois tentatives d'amélioration supplémentaires (plus de variables, réglages, nouvelles variables d'historique) n'ont pas donné de gain fiable : RAPPORT §6.5 et leçon 9.</small>
+
+<h2>Prochaines étapes</h2>
+<table>
+<tr><th>Tâche</th><th>Qui</th><th>Quand</th></tr>
+<tr><td>Relire la PR n° 1 (rapport, affiche, site) et la fusionner</td><td>Toute l'équipe</td><td>Avant le 20 novembre</td></tr>
+<tr><td>Valider les hypothèses de coûts (charges, juriste, vente par une fédération)</td><td>Toute l'équipe</td><td>Avant le 20 novembre</td></tr>
+<tr><td>Enregistrer la vidéo de démonstration de secours (5 min, script prêt)</td><td>À attribuer</td><td>Avant le 27 novembre</td></tr>
+<tr><td>Envoyer la notification d'usage de KDD Cup 1998 (Epsilon)</td><td>À attribuer</td><td>Avant la remise</td></tr>
+<tr><td>Répéter la démo et imprimer l'affiche</td><td>Toute l'équipe</td><td>Présentation le 3 décembre</td></tr>
+<tr><td>Remise finale du rapport et du code</td><td>À attribuer</td><td>5 décembre</td></tr>
+</table>
+
+</body></html>

@@ -1,9 +1,13 @@
+import { fx } from './dates.ts'
 import type { ActionType, ModelKind, Segment } from './types.ts'
+
+/** Seuil lisible : « 4,3 % » sous 10 % quand il a une décimale, sinon « 12 % » */
+export const thresholdText = (t: number) => `${fx(t * 100, t < 0.1 && Math.round(t * 1000) % 10 ? 1 : 0)} %`
 
 export const ACTION_TYPES: ActionType[] = ['churn_prevention', 'upgrade_amount', 'upgrade_one_time', 'upgrade_annual', 'reactivation', 'thank']
 
 export const ACTION_LABELS: Record<ActionType, string> = {
-  churn_prevention: 'Relancer (attrition)',
+  churn_prevention: "Relancer (risque d'arrêt)",
   upgrade_amount: 'Solliciter plus',
   upgrade_one_time: 'Ponctuel → mensuel',
   upgrade_annual: 'Annuel → mensuel',
@@ -69,8 +73,19 @@ export const SEGMENT_TONE: Record<Segment, string> = {
 }
 
 export const PROB_LABEL: Record<ModelKind, string> = {
-  churn: "Risque d'attrition (90 j)",
-  upgrade: 'Probabilité de hausse (6 mois)',
-  conversion: 'Probabilité de passage au mensuel (6 mois)',
-  reactivation: 'Probabilité de retour (6 mois)',
+  churn: "Risque d'arrêter son don mensuel (90 prochains jours)",
+  upgrade: "Chance d'augmenter son don mensuel (6 prochains mois)",
+  conversion: 'Chance de passer au don mensuel (6 prochains mois)',
+  reactivation: 'Chance de redonner (6 prochains mois)',
+}
+
+/** Mot affiché à côté d'un pourcentage : un risque (départ) ou une chance (hausse, passage, retour) */
+export const PROB_WORD = (action?: ActionType | null): 'risque' | 'chance' => (action === 'churn_prevention' ? 'risque' : 'chance')
+
+/** Définition des segments, en mots simples (infobulle) */
+export const SEGMENT_HELP: Record<Segment, string> = {
+  monthly: 'Donne chaque mois, prélèvement en cours.',
+  one_time: 'A donné au moins une fois dans les 12 derniers mois, sans don mensuel.',
+  annual: 'Donne une fois par an, à la même période.',
+  lapsed: 'Inactif : a arrêté son don mensuel, ou aucun don depuis 12 mois (13 mois pour un annuel). Un ancien mensuel peut donc être inactif malgré un dernier prélèvement récent.',
 }

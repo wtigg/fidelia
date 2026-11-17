@@ -1,12 +1,45 @@
 import { useMemo, useState } from 'react'
 import { CheckCircle2, Database, Download, FileUp, Mail, RefreshCw, Wand2, XCircle } from 'lucide-react'
 import { Badge, Button, Card, PageHeader } from '../components/ui.tsx'
+import { TechDetails } from '../components/plain/TechDetails.tsx'
 import { generateDemo } from '../data/generate.ts'
 import { download, exportDonations, exportDonors, exportEngagement, importCsv } from '../lib/csv.ts'
 import { formatDate, fx } from '../lib/dates.ts'
 import { ACTION_LABELS } from '../lib/labels.ts'
-import { isOk, qualityReport } from '../lib/quality.ts'
+import { isOk, qualityReport, type QualityCheck } from '../lib/quality.ts'
 import { useStore } from '../state/store.tsx'
+
+/** Étiquette simple de chaque famille de contrôle (le nom savant reste dans le détail) */
+const PLAIN_DIMENSION: Record<QualityCheck['dimension'], string> = {
+  Complétude: 'Manquant',
+  Validité: 'Erreur',
+  Unicité: 'Doublon',
+  Cohérence: 'Incohérent',
+  Actualité: 'À jour ?',
+  Accessibilité: 'Consentement',
+}
+
+/** Colonnes attendues dans chaque fichier, avec leur sens en français */
+const COLUMNS: Record<'donors' | 'donations' | 'engagement', [string, string][]> = {
+  donors: [
+    ['id', 'numéro du donateur'], ['first_name', 'prénom'], ['last_name', 'nom'], ['email', 'courriel'], ['city', 'ville'],
+    ['join_date', "date d'inscription"], ['kind', 'type de don : monthly (mensuel), one_time (ponctuel), annual (annuel)'], ['monthly_amount', 'montant mensuel'],
+    ['churn_date', "date d'arrêt du don mensuel"], ['converted_at', 'date du passage au mensuel'], ['converted_from', 'type de don avant ce passage'],
+    ['email_consent', 'accepte les courriels (oui/non)'], ['age', 'âge (facultatif, sert seulement à vérifier l\'équité)'], ['channel', 'canal de recrutement'],
+  ],
+  donations: [['donor_id', 'numéro du donateur'], ['date', 'date du don'], ['amount', 'montant'], ['kind', 'type de don'], ['status', 'paid (payé) ou failed (refusé)']],
+  engagement: [['donor_id', 'numéro du donateur'], ['month', 'mois (AAAA-MM)'], ['open_rate', 'part des courriels ouverts, de 0 à 1']],
+}
+
+function ColumnList({ cols }: { cols: [string, string][] }) {
+  return (
+    <ul className="mt-1 grid grid-cols-1 gap-x-4 gap-y-0.5 text-xs text-stone-500 sm:grid-cols-2">
+      {cols.map(([c, fr]) => (
+        <li key={c}><code className="rounded bg-stone-100 px-1 text-[11px] text-stone-700">{c}</code> {fr}</li>
+      ))}
+    </ul>
+  )
+}
 
 export default function Data() {
   const { dataset, loadDataset, scores, donorsById } = useStore()
@@ -65,7 +98,7 @@ export default function Data() {
         </span>
       </div>
 
-      <Card className="mb-6" title="Qualité des données" subtitle="Contrôles automatiques à chaque chargement, selon les dimensions de Strong, Lee et Wang (1997). Les autres dimensions sont documentées dans la datasheet du dépôt (docs/).">
+      <Card className="mb-6" title="Qualité des données" subtitle="Fidélia vérifie votre fichier automatiquement, à chaque chargement.">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
             <tbody className="divide-y divide-stone-100">
@@ -74,7 +107,7 @@ export default function Data() {
                 return (
                   <tr key={c.label}>
                     <td className="w-8 py-2.5 pl-5">{ok ? <CheckCircle2 className="size-4 text-brand-600" /> : <XCircle className="size-4 text-rose-500" />}</td>
-                    <td className="px-3 py-2.5 text-xs font-medium uppercase tracking-wide text-stone-400">{c.dimension}</td>
+                    <td className="px-3 py-2.5"><span title={c.dimension} className="whitespace-nowrap rounded-md bg-stone-100 px-1.5 py-0.5 text-xs text-stone-600">{PLAIN_DIMENSION[c.dimension]}</span></td>
                     <td className="px-3 py-2.5 text-stone-700">{c.label}</td>
                     <td className="py-2.5 pr-5 text-right tabular-nums text-stone-900">
                       {c.total > 1 ? `${c.value.toLocaleString('fr-CA')} / ${c.total.toLocaleString('fr-CA')} (${fx(((c.value / c.total) * 100), 1)} %)` : c.value}
@@ -85,14 +118,32 @@ export default function Data() {
             </tbody>
           </table>
         </div>
+        <div className="border-t border-stone-100 px-5 py-3">
+          <TechDetails label="Voir le détail">
+            <p className="text-xs text-stone-500">
+              Les contrôles suivent les dimensions de qualité de Strong, Lee et Wang (1997) : complétude (Manquant), validité (Erreur), unicité (Doublon), cohérence, actualité et accessibilité (consentement).
+              Les autres dimensions (crédibilité, interprétabilité…) sont décrites dans la fiche des données du dépôt (docs/DATASHEET-synthetique.md).
+            </p>
+          </TechDetails>
+        </div>
       </Card>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <Card title="Importer vos données (CSV)" subtitle="Export depuis votre CRM ou votre outil de dons. Le modèle se réentraîne automatiquement.">
           <div className="space-y-3 p-5">
-            {fileInput('donors', 'Donateurs', 'id, first_name, last_name, email, city, join_date, kind, monthly_amount, churn_date, converted_at, converted_from, email_consent, age, channel · dates AAAA-MM-JJ')}
-            {fileInput('donations', 'Dons', 'donor_id, date (AAAA-MM-JJ), amount, kind, status')}
-            {fileInput('engagement', 'Engagement email', 'donor_id, month (AAAA-MM), open_rate', false)}
+            {fileInput('donors', 'Donateurs', 'Une ligne par donateur · dates au format AAAA-MM-JJ')}
+            {fileInput('donations', 'Dons', 'Une ligne par don ou prélèvement')}
+            {fileInput('engagement', 'Ouverture des courriels', 'Une ligne par donateur et par mois', false)}
+            <details className="rounded-xl bg-stone-50 px-4 py-3">
+              <summary className="cursor-pointer text-sm font-medium text-stone-700">Colonnes attendues et leur sens</summary>
+              <p className="mt-2 text-xs font-medium text-stone-700">Donateurs</p>
+              <ColumnList cols={COLUMNS.donors} />
+              <p className="mt-2 text-xs font-medium text-stone-700">Dons</p>
+              <ColumnList cols={COLUMNS.donations} />
+              <p className="mt-2 text-xs font-medium text-stone-700">Ouverture des courriels (facultatif)</p>
+              <ColumnList cols={COLUMNS.engagement} />
+              <p className="mt-2 text-xs text-stone-500">Les noms de colonnes restent en anglais : ce sont ceux qu'exportent la plupart des outils de dons. « Modèles de fichiers » télécharge un exemple complet.</p>
+            </details>
             {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
             {ok && <p className="rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-800">{ok}</p>}
             <div className="flex flex-wrap gap-2 pt-1">
@@ -114,13 +165,16 @@ export default function Data() {
                 <span className="font-medium text-stone-800">Nombre de donateurs</span>
                 <span className="tabular-nums text-stone-600">{size.toLocaleString('fr-CA')}</span>
               </div>
-              <input type="range" min={500} max={8000} step={250} value={size} onChange={(e) => setSize(Number(e.target.value))} className="mt-1.5 w-full accent-brand-600" />
+              <input type="range" min={500} max={8000} step={250} value={size} onChange={(e) => setSize(Number(e.target.value))} className="mt-1.5 w-full" />
             </label>
-            <label className="block">
-              <span className="text-sm font-medium text-stone-800">Graine aléatoire</span>
-              <input type="number" value={seed} onChange={(e) => setSeed(Number(e.target.value))} className="mt-1 h-9 w-32 rounded-lg border border-stone-200 px-3 text-sm" />
-              <p className="mt-1 text-xs text-stone-400">Même graine = mêmes données, pour des résultats reproductibles.</p>
-            </label>
+            <details>
+              <summary className="cursor-pointer text-sm font-medium text-stone-600">Options avancées</summary>
+              <label className="mt-3 block">
+                <span className="text-sm font-medium text-stone-800">Graine aléatoire</span>
+                <input type="number" value={seed} onChange={(e) => setSeed(Number(e.target.value))} className="mt-1 h-9 w-32 rounded-lg border border-stone-200 px-3 text-sm" />
+                <p className="mt-1 text-xs text-stone-400">Même graine = mêmes données, pour des résultats reproductibles.</p>
+              </label>
+            </details>
             <Button variant="secondary" onClick={() => { loadDataset(generateDemo(size, seed)); setOk(undefined) }}>
               <Wand2 className="size-4" /> Générer et réentraîner
             </Button>

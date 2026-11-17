@@ -145,7 +145,7 @@ function valueGain(s: number[], rows: Row[]): { x: number; y: number }[] | undef
   return out
 }
 
-function fairnessBy(by: 'age' | 'region', rows: Row[], p: number[]): GroupStat[] {
+export function fairnessBy(by: 'age' | 'region', rows: Row[], p: number[]): GroupStat[] {
   const key = (r: Row) => (by === 'age' ? r.ageBand : r.region)
   if (!rows.some(key)) return []
   const cutoff = [...p].sort((a, b) => b - a)[Math.floor(p.length * 0.2)] ?? 1

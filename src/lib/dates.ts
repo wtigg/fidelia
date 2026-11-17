@@ -29,8 +29,9 @@ export function iso(d: Date): string {
 }
 
 const fmt = new Intl.DateTimeFormat('fr-CA', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+/** Date courte en français (« 1er oct. 2026 », « 10 nov. 2026 ») */
 export function formatDate(s: string): string {
-  return fmt.format(new Date(s))
+  return fmt.format(new Date(s)).replace(/^1 /, '1er ')
 }
 
 const pct = new Intl.NumberFormat('fr-CA', { style: 'percent', maximumFractionDigits: 0 })

@@ -2,13 +2,14 @@ import { useMemo } from 'react'
 import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { Check, Mail, MailX, MapPin, Sparkles } from 'lucide-react'
 import { addMonths, formatDate, formatMoney, iso, monthIndex, fx } from '../lib/dates.ts'
-import { ACTION_COLOR, ACTION_LABELS, ACTION_TONE, PROB_LABEL, SEGMENT_LABELS, SEGMENT_TONE } from '../lib/labels.ts'
+import { ACTION_COLOR, ACTION_LABELS, ACTION_TONE, PROB_LABEL, SEGMENT_HELP, SEGMENT_LABELS, SEGMENT_TONE } from '../lib/labels.ts'
 import type { ModelKind } from '../lib/types.ts'
 import { FEATURE_KEYS, FEATURE_LABELS } from '../ml/features.ts'
 import type { Features } from '../lib/types.ts'
 import { ALGORITHM_LABELS } from '../ml/pipeline.ts'
 import { useStore } from '../state/store.tsx'
 import { Badge, Button, Card, Drawer, ProbBar } from './ui.tsx'
+import { TechDetails } from './plain/TechDetails.tsx'
 
 function formatFeature(k: keyof Features, v: number): string {
   if (k === 'amount12m' || k === 'avgGift') return formatMoney(v)
@@ -51,7 +52,6 @@ export function DonorDrawer({ donorId, onClose }: { donorId: string | null; onCl
     score.segment === 'monthly'
       ? score.action === 'upgrade_amount' || (score.action !== 'churn_prevention' && (score.upgradeProb ?? 0) > (score.churnProb ?? 0)) ? 'upgrade' : 'churn'
       : score.segment === 'lapsed' ? 'reactivation' : 'conversion'
-  const others: [ModelKind, number | undefined][] = score.segment === 'monthly' ? [['churn', score.churnProb], ['upgrade', score.upgradeProb]] : []
   const report = reports[kind]
   const inCampaign = campaign.find((c) => c.donorId === donor.id && c.status !== 'dismissed')
   const color = score.action ? ACTION_COLOR[score.action] : '#78716c'
@@ -67,7 +67,7 @@ export function DonorDrawer({ donorId, onClose }: { donorId: string | null; onCl
             <h2 className="truncate text-lg font-semibold text-stone-900">
               {donor.firstName} {donor.lastName}
             </h2>
-            <Badge className={SEGMENT_TONE[score.segment]}>{SEGMENT_LABELS[score.segment]}</Badge>
+            <span title={SEGMENT_HELP[score.segment]}><Badge className={SEGMENT_TONE[score.segment]}>{SEGMENT_LABELS[score.segment]}</Badge></span>
           </div>
           <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-sm text-stone-500">
             <span>{donor.email}</span>
@@ -89,14 +89,11 @@ export function DonorDrawer({ donorId, onClose }: { donorId: string | null; onCl
                 <p className="mt-1 text-4xl font-semibold tabular-nums" style={{ color }}>
                   {Math.round(score.actionProb * 100)} %
                 </p>
-                <p className="mt-1 text-xs text-stone-400">
-                  {report ? `${ALGORITHM_LABELS[report.deployed]} · horizon ${kind === 'churn' ? '90 jours' : '6 mois'}` : 'Modèle indisponible'}
+                <p className="mt-1 text-xs text-stone-500">
+                  {!report ? 'Modèle indisponible' : report.deployed === 'rfm' ? 'Méthode habituelle (dernier don, fréquence, montant)' : 'Modèle qui apprend des dons passés'}
                 </p>
-                {others.filter(([k]) => k !== kind).map(([k, p]) => (
-                  <p key={k} className="mt-2 text-xs text-stone-500">{PROB_LABEL[k]} : <b className="tabular-nums text-stone-700">{Math.round((p ?? 0) * 100)} %</b></p>
-                ))}
               </div>
-              <div className="text-right">
+              <div className="sm:text-right">
                 {score.action ? (
                   <Badge className={ACTION_TONE[score.action]}>
                     <Sparkles className="size-3" />
@@ -106,7 +103,7 @@ export function DonorDrawer({ donorId, onClose }: { donorId: string | null; onCl
                   <Badge>Aucune action recommandée</Badge>
                 )}
                 <p className="mt-2 text-sm text-stone-500">
-                  Valeur attendue <span className="font-semibold text-stone-900">{formatMoney(score.expectedValue)}</span>/an
+                  Dons espérés sur un an <span className="font-semibold text-stone-900">{formatMoney(score.expectedValue)}</span>
                 </p>
                 {score.thankReason && <p className="mt-2 text-sm text-pink-700">À remercier : {score.thankReason}</p>}
                 {score.suggestedMonthly && score.action !== 'churn_prevention' && score.action !== 'reactivation' && (
@@ -120,7 +117,7 @@ export function DonorDrawer({ donorId, onClose }: { donorId: string | null; onCl
               <div className="mt-4 flex items-center gap-2 border-t border-stone-100 pt-4">
                 {inCampaign ? (
                   <p className="flex items-center gap-1.5 text-sm text-brand-700">
-                    <Check className="size-4" /> Courriel {inCampaign.status === 'sent' ? 'envoyé' : inCampaign.status === 'control' ? 'non envoyé (groupe témoin)' : 'en préparation'}
+                    <Check className="size-4" /> Courriel {inCampaign.status === 'sent' ? 'envoyé' : inCampaign.status === 'control' ? "non envoyé (mis de côté pour mesurer l'effet)" : 'en préparation'}
                   </p>
                 ) : donor.emailConsent ? (
                   <Button variant="primary" size="sm" onClick={() => createDrafts([donor.id])}>
@@ -136,14 +133,13 @@ export function DonorDrawer({ donorId, onClose }: { donorId: string | null; onCl
           </div>
         </Card>
 
-        <Card title="Pourquoi cette prédiction ?" subtitle="Variables qui poussent le plus la probabilité vers le haut pour ce donateur">
+        <Card title="Pourquoi ce donateur ?" subtitle="Ce qui compte le plus dans ce classement">
           <div className="space-y-3 p-5">
             {score.reasons.length ? (
               score.reasons.map((r) => (
                 <div key={r.feature}>
                   <div className="flex justify-between text-sm">
                     <span className="text-stone-800">{r.text}</span>
-                    <span className="text-xs text-stone-400">{FEATURE_LABELS[r.feature]}</span>
                   </div>
                   <div className="mt-1.5 h-1.5 rounded-full bg-stone-100">
                     <div className="h-full rounded-full" style={{ width: `${(r.impact / maxImpact) * 100}%`, background: color }} />
@@ -176,6 +172,12 @@ export function DonorDrawer({ donorId, onClose }: { donorId: string | null; onCl
           </div>
         </Card>
 
+        <TechDetails label="Voir le détail">
+        <p className="mb-3 text-xs text-stone-500">
+          {report ? `Méthode : ${ALGORITHM_LABELS[report.deployed]} · horizon ${kind === 'churn' ? '90 jours' : '6 mois'}.` : ''}
+          {score.segment === 'monthly' && kind === 'churn' && score.upgradeProb !== undefined && ` Chance d'augmenter son don (6 mois) : ${Math.round(score.upgradeProb * 100)} %.`}
+          {score.segment === 'monthly' && kind === 'upgrade' && score.churnProb !== undefined && ` Risque d'arrêt (90 jours) : ${Math.round(score.churnProb * 100)} %.`}
+        </p>
         <Card title="Variables vues par le modèle" subtitle={`Calculées au ${formatDate(dataset.refDate)} à partir des données passées uniquement`}>
           <dl className="grid grid-cols-2 gap-px bg-stone-100 text-sm">
             {FEATURE_KEYS.map((k) => (
@@ -186,6 +188,7 @@ export function DonorDrawer({ donorId, onClose }: { donorId: string | null; onCl
             ))}
           </dl>
         </Card>
+        </TechDetails>
 
         <Card title="Profil">
           <dl className="grid grid-cols-2 gap-4 p-5 text-sm">
@@ -214,7 +217,7 @@ export function DonorDrawer({ donorId, onClose }: { donorId: string | null; onCl
               </div>
             )}
             <div>
-              <dt className="text-stone-400">Probabilité</dt>
+              <dt className="text-stone-400">{kind === 'churn' ? "Risque d'arrêt" : 'Chance de réussite'}</dt>
               <dd>
                 <ProbBar value={score.actionProb} color={color} />
               </dd>
