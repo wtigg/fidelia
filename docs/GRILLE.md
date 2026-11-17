@@ -1,43 +1,43 @@
 # Correspondance avec la grille d'évaluation
 
-Chaque élément exigé par la consigne du travail d'équipe (`TECH 60711_A2026_TravailEquipe_Requis`), et où il est couvert.
+Chaque élément exigé par la consigne du travail d'équipe (`TECH 60711_A2026_TravailEquipe_Requis`), et où il est couvert. « RAPPORT » = `docs/RAPPORT.md` ; « ANNEXES » = `docs/ANNEXES.md`.
 
 | Critère (pondération) | Élément exigé | Où | État |
 |---|---|---|---|
 | **Idée** | Brève description | RAPPORT §1.1 | ✅ |
-| | Motivation | RAPPORT §1.2 (43,3 % de rétention, FEP 2025) | ✅ |
-| | Pourquoi l'IA plutôt qu'un système traditionnel | RAPPORT §1.3 (Davenport et Ronanki, Ng), comparaison chiffrée à RFM (§6.2, page Modèle) | ✅ |
+| | Motivation | RAPPORT §1.2 (3 statistiques clés : 43,3 % de rétention, FEP, données 2025 (AFP et GivingTuesday, 2026) ; 53 % ; 92 %), statistiques complémentaires en ANNEXES A | ✅ |
+| | Pourquoi l'IA plutôt qu'un système traditionnel | RAPPORT §1.3 (Davenport et Ronanki, Ng ; signaux du générateur déclarés comme tels), comparaison chiffrée à RFM et explication de la faiblesse de RFM sur le synthétique (§6.2, page Modèle) | ✅ |
 | | Recherche sur l'existant | RAPPORT §1.4 (Dataro, Keela, Bloomerang : prix et limites) | ✅ |
 | | Proposition de valeur | RAPPORT §1.5 | ✅ |
-| | Impact visé | RAPPORT §1.6 (mesuré contre supposé), page **Impact** | ✅ |
+| | Impact visé | RAPPORT §1.6 (valeur à risque ciblée, donateurs fictifs : × 4,8 contre RFM et × 4,85 contre le hasard à 100 contacts ; × 3,0 et × 3,3 à 300 ; effet de la relance = hypothèse ; `reports/impact-42.json`), page **Impact** | ✅ |
 | **Canevas** | Canevas d'IA complété (Agrawal et al.) | RAPPORT §2 : canevas principal au format du gabarit S02, différences des 3 autres ; diapositive `docs/canevas/Canevas-IA-Fidelia.pptx` (gabarit S02 rempli, 2 diapositives) ; visuel pour l'affiche `docs/canevas/canevas.png` (2400 px, source `canevas.html`) | ✅ |
 | **Requis fonctionnels** | Liste, avec indication de ceux qui utilisent l'IA | RAPPORT §3 (24 requis, marqueurs [IA] et [P] ; RF23 et RF24 traduisent la Loi 25) | ✅ |
 | | User stories (optionnel) | RAPPORT §3 | ✅ |
 | **Requis techniques** | Type de tâche et de modèle | RAPPORT §4.1 | ✅ |
 | | Modèle pré-entraîné, solution fournisseur ou sur mesure : justification | RAPPORT §4.2, vérification scikit-learn (`verification/`) | ✅ |
-| | Performance : métriques et valeurs désirées | RAPPORT §4.3, R1 à R6 vérifiés dans l'application (17/24 pour le meilleur candidat, 6 requis × 4 modèles ; R1 et R2 bloquants, R3 à R6 en alertes ; repli sur RFM) | ✅ |
+| | Performance : métriques et valeurs désirées | RAPPORT §4.3 (seuils fixés avant l'entraînement ; modalités de test changées ensuite, déclarées), R1 à R6 vérifiés dans l'application (17/24 pour le meilleur candidat, 6 requis × 4 modèles ; R1 et R2 bloquants, R3 à R6 en alertes ; repli sur RFM) ; résultats en §6.2 | ✅ |
 | | Système d'IA à haut niveau | RAPPORT §4.4 (schéma) | ✅ |
 | | Modalités de déploiement | RAPPORT §4.5 (API FastAPI, Docker, AWS ca-central-1 : ECS Fargate, EventBridge Scheduler, Cognito, RDS, SES) | ✅ |
 | | Langages et interopérabilité | RAPPORT §4.5 (Python et scikit-learn en cible, justification KISS) | ✅ |
 | **Requis données** | Sources pour l'entraînement et l'usage | RAPPORT §5.1 | ✅ |
-| | Volume minimal et démarrage à froid | RAPPORT §5.4 (requis RD1 à RD6, entraînement ou scoring ; repli sur RFM ; calcul de puissance du groupe témoin) | ✅ |
+| | Volume minimal et démarrage à froid | RAPPORT §5.4 (requis RD1 à RD6, entraînement ou scoring ; repli sur RFM ; groupe témoin), détail des courbes et du calcul de puissance en ANNEXES B | ✅ |
 | | Format et transformation | RAPPORT §5.2, `src/ml/features.ts` | ✅ |
 | | Qualité, par source (y compris accessibilité) | RAPPORT §5.3 (S1 à S4, dont l'outil de courriels), page **Données** (contrôles automatiques) | ✅ |
 | | Documentation des caractéristiques | `docs/DATASHEET-synthetique.md`, `docs/DATASHEET-kdd98.md`, RAPPORT §5.5 | ✅ |
 | **Prototype** | Démonstration de l'IA | Application (8 pages), page **Modèle IA** | ✅ |
-| | Tous les éléments sources livrés, reproductible | Dépôt git, `npm run …`, graines fixes, `model.json` versionné ; `npm ci` (versions figées) | ✅ |
-| | Conteneur Docker, tests, CI (portabilité, séance 5, scénario 4) | `Dockerfile` (étapes `build`, `eval`, `web`), `npm test` (22 tests), `npm run check:repro` (graine 42 comparée au rapport versionné, tolérance 1e-9) ; CI : lint, tests, check:repro, construction du site, `docker build` web et eval, `docker run` eval, puis publication ; README et RAPPORT §6.3 | ✅ |
+| | Tous les éléments sources livrés, reproductible | Dépôt git, `npm run …`, graines fixes, `model.json` versionné ; `npm ci` (versions figées) ; RAPPORT §6.3, commandes complètes en ANNEXES C | ✅ |
+| | Conteneur Docker, tests, CI (portabilité, séance 5, scénario 4) | `Dockerfile` (étapes `build`, `eval`, `web`), `npm test` (24 tests), `npm run check:repro` (graine 42 comparée au rapport versionné, tolérance 1e-9) ; CI : lint, tests, check:repro, construction du site, `docker build` web et eval, `docker run` eval, puis publication ; README, RAPPORT §6.3 et ANNEXES C | ✅ |
 | | Démonstration accessible sans installation | https://wtigg.github.io/fidelia/ (README, RAPPORT en tête et §6.1) | ✅ |
-| | Honnêteté sur les écarts avec la solution cible | RAPPORT §6.4 | ✅ |
+| | Honnêteté sur les écarts avec la solution cible | RAPPORT §6.4 ; tentatives d'amélioration de l'IA en §6.5 (détail en ANNEXES D) | ✅ |
 | | Aucune donnée réelle d'organisation | Synthétique ; KDD 98 public, organisation non nommée | ✅ Prévenir Epsilon (conditions d'usage) |
-| **Risques et éthique** | Risques (individuels, sociétaux, légaux, infrastructure) | RAPPORT §7 (lignes Individuel et Sociétal comprises) | ✅ |
-| | Éthique sur tout le cycle de vie, avec cadres du cours | RAPPORT §8 (Suresh et Guttag avec étapes Collecte et Maintenance, Rismani, NIST, Loi 25, Déclaration de Montréal, trois questions de S04 en §8.5, guide de Meta pour le LLM) | ✅ |
-| | Pérennité et réalisme | RAPPORT §11 (conclusion et viabilité : trois menaces, condition de poursuite) | ✅ |
-| **Estimations** | Ressources humaines, matérielles, financières | RAPPORT §9.1 à 9.3 (V1 allégée : 1,4 ETP sur 2 mois, environ 27 000 $ ; taux du Guichet-Emplois, réserve de 10 à 20 %, support et légal récurrents, seuil de rentabilité vers 35 clients) | ✅ Hypothèses signalées (charges 25 %, conseiller juridique, vente et support, réserve) ; assurance non chiffrée |
+| **Risques et éthique** | Risques (individuels, sociétaux, légaux, infrastructure) | RAPPORT §7 (11 risques principaux, lignes Individuel, Sociétal, Légal et Infrastructure comprises) ; risques secondaires en ANNEXES E | ✅ |
+| | Éthique sur tout le cycle de vie, avec cadres du cours | RAPPORT §8 (Suresh et Guttag avec étapes Collecte et Maintenance, Rismani en §8.2, NIST, Loi 25, Déclaration de Montréal, trois questions de S04 en §8.5, guide de Meta pour le LLM en §7) ; tableau Rismani complet et réponses détaillées de S04 en ANNEXES F | ✅ |
+| | Pérennité et réalisme | RAPPORT §11 (conclusion et viabilité : trois menaces, condition de poursuite), sensibilité du support en §9.3 | ✅ |
+| **Estimations** | Ressources humaines, matérielles, financières | RAPPORT §9.1 à 9.3 (V1 allégée : 1,4 ETP sur 2 mois, environ 27 000 $ ; réserve de 10 à 20 %, support et légal récurrents, seuil de rentabilité vers 35 clients, 55 à 59 si le support double) ; taux du Guichet-Emplois et calculs en ANNEXES H | ✅ Hypothèses signalées (charges 25 %, conseiller juridique, vente et support, réserve) ; assurance non chiffrée |
 | | Temps et sous-ensemble de la V1 | RAPPORT §9.4 (V1 en 2 mois, requis par mois ; pilote aux mois 3 à 5, suivi après lancement ; V1 = RF1 à RF9 et RF11 à RF24) | ✅ |
-| **Réflexion** | Au moins 3 leçons apprises | RAPPORT §10 (9 leçons, dont les tentatives d'amélioration de l'IA, §6.5) | ✅ |
-| **Commentaires généraux** | Au moins 10 références, dont au moins la moitié académiques | RAPPORT, Références (45 au total, dont 20 académiques ; 6 lectures du cours en revues professionnelles ou ouvrages), APA 7 avec DOI | ✅ |
-| | Cohérence et intégration | Mêmes chiffres dans l'application, le rapport et la fiche modèle (sources : `reports/`) | ✅ |
+| **Réflexion** | Au moins 3 leçons apprises | RAPPORT §10 (5 leçons principales ; 2 leçons complémentaires en ANNEXES G) | ✅ |
+| **Commentaires généraux** | Au moins 10 références, dont au moins la moitié académiques | RAPPORT, Références (45 au total, dont 20 académiques ; 6 lectures du cours en revues professionnelles ou ouvrages), APA 7 avec DOI ; toutes citées dans le rapport ou les annexes | ✅ |
+| | Cohérence et intégration | Mêmes chiffres dans l'application, le rapport, les annexes et la fiche modèle (sources : `reports/`) | ✅ |
 | **Présentation** | Affiche, démonstration, vidéo de secours | `docs/PRESENTATION.md` (plan inspiré de `files/Poster_Exemple 1.pdf` et `2.pdf`) ; affiche finale `docs/affiche/Affiche-Fidelia.pdf` (48 × 36 po paysage, simplifiée : 5 blocs, 168 mots ; source `affiche.html`, aperçu `apercu.png`) ; fiche technique pour les juges `docs/affiche/Fiche-technique.pdf` (lettre, 1 page : canevas, graphique AUC-PR, deux conditions, KDD 98, équité, références) ; tout est régénéré depuis `reports/` par `build_affiche.py` | 🟡 Affiche, fiche technique et canevas faits ; vidéo à enregistrer |
 
 ## À faire par l'équipe

@@ -32,7 +32,7 @@
   .cases { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .case { background: var(--pale); border-radius: 6px; padding: 6px 9px; }
   .case b { display: block; font-size: 9.5px; letter-spacing: 1.2px; color: var(--bleu); }
-  .graph svg { width: 60%; height: auto; display: block; margin: 0 auto; }
+  .graph svg { width: 56%; height: auto; display: block; margin: 0 auto; }
   .titre-graph { font-weight: 800; font-size: 12.5px; margin-bottom: 2px; }
   .encadre { background: var(--bleu-pale); border-radius: 8px; padding: 9px 12px; }
   .nuance { border-left: 4px solid var(--ambre); padding-left: 10px; }
@@ -157,14 +157,14 @@
     <section>
       <h2>Ciblage mesuré</h2>
       <!-- CIBLAGE:debut -->
-<p>À contacts égaux, valeur des dons à risque visée, Fidélia contre la méthode habituelle : <b>×4,8</b> avec 100 contacts, <b>×3</b> avec 300 (2,98 exactement).</p><p>Attrition : 10 % des mensuels contactés couvrent <b>41 %</b> des dons à risque.</p><p>Robustesse : 15 cas sur 20 retenus (5 autres jeux de données × 4 modèles).</p><p class="note">On mesure le ciblage, pas l'effet d'un courriel : il reste une hypothèse, qu'un groupe témoin mesurera.</p>
+<p>À contacts égaux, valeur des dons à risque visée, Fidélia contre la méthode habituelle : <b>×4,8</b> avec 100 contacts, <b>×3</b> avec 300 (2,98 exactement). Contre le hasard : ×4,9 et ×3,3. Donateurs fictifs.</p><p>Attrition : 10 % des mensuels contactés couvrent <b>41 %</b> des dons à risque.</p><p>Robustesse : 15 cas sur 20 retenus (5 autres jeux de données × 4 modèles).</p><p class="note">On mesure le ciblage, pas l'effet d'un courriel : il reste une hypothèse, qu'un groupe témoin mesurera.</p>
 <!-- CIBLAGE:fin -->
     </section>
 
     <section class="nuance">
       <h2>Vrais donateurs (KDD Cup 1998)</h2>
       <!-- KDDDETAIL:debut -->
-<p><b>Méthode validée, modèle non utilisé.</b> 18&nbsp;824 vrais donateurs américains inactifs (données publiques, 1998) : le modèle obtient une AUC-PR de 0,083, sous le seuil R1 (0,102). Il ne fait pas 2 fois mieux que le hasard.</p><p>À gros volume (12&nbsp;894 envois), la méthode habituelle fait même un peu mieux : 2&nbsp;422&nbsp;$ de profit net contre 2&nbsp;320&nbsp;$.</p><p>Seul signe positif : avec 20 % des envois, <b>+51 %</b> de profit net contre la méthode habituelle. Selon nos propres conditions, on garde la méthode habituelle.</p>
+<p><b>Réactivation : modèle non utilisé.</b> 18&nbsp;824 vrais donateurs américains inactifs (données publiques, 1998) : AUC-PR 0,083, sous le seuil R1 (0,102). Profit net : la méthode habituelle fait un peu mieux à gros volume (2&nbsp;422&nbsp;$ contre 2&nbsp;320&nbsp;$) ; le modèle, <b>+51 %</b> avec 20 % des envois. On garde la méthode habituelle.</p><p>Don plus élevé que le dernier : AUC-PR <b>0,040</b> contre 0,019 pour RFM (seuil R1 : 0,035 ; écart : 0,016 à 0,031). <b>R1 et R2 remplies</b> : résultat positif sur données réelles.</p>
 <!-- KDDDETAIL:fin -->
     </section>
 

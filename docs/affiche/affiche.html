@@ -169,6 +169,52 @@ footer { background: #f4c95d; border-top: 6px solid #e0ac2e }
 .qr { background: #fff; border: 3px solid #e0ac2e }
 .road .s.now { background: #f4c95d; border-color: #e0ac2e }
 .sources { color: #5c4813 }
+
+/* ---------- v4 : un seul message, badges de démo, capture lisible ---------- */
+header { grid-template-columns: 1fr 1500px; padding: 48px 100px }
+.team { font-size: 44px }
+.stats { grid-template-columns: 1fr }
+.stat { display: flex; align-items: center; gap: 56px; padding: 40px 56px }
+.stat b { font-size: 240px; flex: none }
+.stat p { font-size: 58px; margin-top: 0 }
+.stat small { font-size: 44px }
+main { grid-template-columns: 960px 100px 1560px 100px 1688px; padding: 44px 100px }
+.col { padding: 48px 54px }
+.kicker { font-size: 44px }
+.badge { position: absolute; z-index: 2; display: inline-flex; align-items: center; gap: 14px; background: #be123c; color: #fff; font-family: Inter, sans-serif; font-weight: 800; font-size: 54px; line-height: 1; padding: 18px 34px 18px 26px; border-radius: 999px; border: 6px solid #fff; letter-spacing: 0 }
+.badge::before { content: "▶"; font-size: 40px }
+.fiche { position: relative; margin-top: 44px; background: #fff; border: 3px solid var(--line); border-radius: 36px; overflow: visible }
+.fiche h3 { font-size: 50px; font-weight: 700; color: var(--forest); padding: 30px 40px 0 }
+.fiche img { display: block; width: 100% }
+.fiche .sep { border-top: 3px solid var(--line); margin: 0 40px }
+.fiche .badge { top: -40px; right: 36px }
+.apres h2 { font-size: 96px; line-height: 1.04 }
+.regle { font-size: 50px; font-weight: 700; color: var(--g600); margin-top: 22px; line-height: 1.15 }
+.graph-listes { margin-top: 26px }
+.graph-listes svg { display: block; width: 100%; height: auto }
+.reel { font-size: 46px; line-height: 1.2; font-weight: 600; color: var(--forest); background: var(--g50); border: 3px solid var(--g100); border-radius: 30px; padding: 24px 32px; margin-top: 20px }
+.reel b { color: var(--g600) }
+.x3 { position: relative; margin-top: 46px; gap: 40px; background: var(--g50); border: 3px solid var(--g100); border-radius: 40px; padding: 34px 44px 30px }
+.x3 b { font-size: 270px }
+.x3 b .fois { font-size: 190px }
+.x3 p { font-size: 58px }
+.x3 p small { display: block; font-size: 46px; font-weight: 600; color: var(--muted); margin-top: 14px }
+.x3 .badge { top: -40px; right: 36px }
+.gf { position: relative; margin-top: auto; padding-top: 30px }
+.gf .badge { top: 14px; right: 0 }
+.gf-titre { margin-top: 0; padding-top: 30px; font-size: 44px }
+.gardes { gap: 18px; margin-top: 20px }
+.flux { grid-template-columns: repeat(4, 1fr) }
+.etape[hidden] { display: none }
+.gardes li { font-size: 50px }
+.gardes .ic { width: 100px; height: 100px }
+.l2 { font-size: 44px }
+.road .s span { font-size: 44px }
+.sources { font-size: 40px; margin-top: -14px }
+.bulle q { font-size: 64px }
+.bulle q em { font-size: 86px }
+.avec .fiche { margin-top: 110px; padding-bottom: 30px }
+.avec .flux { margin-top: 50px }
 </style>
 </head>
 <body>
@@ -180,12 +226,10 @@ footer { background: #f4c95d; border-top: 6px solid #e0ac2e }
       <h1 class="serif">Fidélia</h1>
     </div>
     <p class="tag">Qui <em>relancer</em>, <em>remercier</em> ou <em>solliciter</em> ?<br>L'IA répond aux petits OBNL.</p>
-    <p class="team">Geoffrey Carel · Juliette Ponce · Juliette Violon · Paul Soubigou<br>Équipe 4 · HEC Montréal · TECH 60711</p>
+    <p class="team">Geoffrey Carel · Juliette Ponce · Juliette Violon · Paul Soubigou<br>HEC Montréal · TECH 60711</p>
   </div>
   <div class="stats">
-    <div class="stat"><b>43,3 %</b><p>des donateurs seulement redonnent l'année suivante</p><small>FEP, 2025</small></div>
-    <div class="stat"><b>53 %</b><p>des petits OBNL n'ont personne de formé aux données</p><small>CanadaHelps, 2024</small></div>
-    <div class="stat"><b>92 %</b><p>des OBNL utilisent déjà l'IA : pour écrire, rarement pour cibler</p><small>Virtuous et Fundraising.AI, 2026</small></div>
+    <div class="stat"><b>43,3 %</b><div><p>des donateurs seulement redonnent l'année suivante.</p><small>FEP, 2025</small></div></div>
   </div>
 </header>
 
@@ -284,7 +328,7 @@ footer { background: #f4c95d; border-top: 6px solid #e0ac2e }
 </div>
     <div class="bulle">
       <q>J'ai <em>2 heures</em> par semaine pour <em>4 000 donateurs</em>. Par qui je commence ?</q>
-      <cite>Sophie, responsable des dons d'un petit OBNL</cite>
+      <cite>Sophie, petit OBNL</cite>
     </div>
   </section>
 
@@ -293,28 +337,19 @@ footer { background: #f4c95d; border-top: 6px solid #e0ac2e }
   <!-- 2. Avec Fidélia -->
   <section class="col avec">
     <span class="kicker"><span class="n">2</span>Avec Fidélia</span>
-    <h2 class="serif">Sa liste est prête lundi matin</h2>
+    <h2 class="serif">Sa liste, lundi matin</h2>
     <div class="flux">
       <div class="etape"><span class="rond"><svg class="i" width="60" height="60" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg></span><p>Historique des dons</p></div>
-      <div class="etape ia"><span class="rond"><svg class="i" width="60" height="60" viewBox="0 0 24 24"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/><path d="M20 2v4"/><path d="M22 4h-4"/><circle cx="4" cy="20" r="2"/></svg></span><p>L'IA classe et explique pourquoi</p></div>
+      <div class="etape ia"><span class="rond"><svg class="i" width="60" height="60" viewBox="0 0 24 24"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/><path d="M20 2v4"/><path d="M22 4h-4"/><circle cx="4" cy="20" r="2"/></svg></span><p>L'IA classe et explique</p></div>
       <div class="etape"><span class="rond"><svg class="i" width="60" height="60" viewBox="0 0 24 24"><path d="m16 11 2 2 4-4"/><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span><p>L'équipe valide</p></div>
       <div class="etape"><span class="rond"><svg class="i" width="60" height="60" viewBox="0 0 24 24"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg></span><p>Courriel personnalisé</p></div>
-      <div class="etape"><span class="rond"><svg class="i" width="60" height="60" viewBox="0 0 24 24"><path d="M14 2v6a2 2 0 0 0 .245.96l5.51 10.08A2 2 0 0 1 18 22H6a2 2 0 0 1-1.755-2.96l5.51-10.08A2 2 0 0 0 10 8V2"/><path d="M6.453 15h11.094"/><path d="M8.5 2h7"/></svg></span><p>Un groupe témoin mesure l'effet</p></div>
     </div>
-    <div class="ecran r1"><h3><span class="num">1</span>Qui contacter, classé par dollars</h3>
-      <div class="nav"><div class="barre"><i></i><i></i><i></i><u></u></div><img src="capture-recos.png" alt="Recommandations : donateurs à relancer, risque et dons espérés"></div></div>
-    <div class="r2">
-      <div class="ecran"><h3><span class="num">2</span>Pourquoi, en mots simples</h3>
-        <div class="carte-img"><img src="fiche-raisons.png" alt="Pourquoi ce donateur : les signaux qui pèsent dans son score"></div></div>
-      <div class="listes">
-        <h3><span class="ic"><svg class="i" width="56" height="56" viewBox="0 0 24 24"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg></span>4 listes d'action</h3>
-        <div class="pills">
-          <span class="pill p-rose"><svg class="i" width="56" height="56" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/><path d="M6.38 18.7 4 21"/><path d="M17.64 18.67 20 21"/></svg>Relancer</span>
-          <span class="pill p-sky"><svg class="i" width="56" height="56" viewBox="0 0 24 24"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>Proposer le mensuel</span>
-          <span class="pill p-violet"><svg class="i" width="56" height="56" viewBox="0 0 24 24"><path d="M22 7 13.5 15.5 8.5 10.5 2 17"/><path d="M16 7h6v6"/></svg>Solliciter plus</span>
-          <span class="pill p-amber"><svg class="i" width="56" height="56" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Réactiver</span>
-        </div>
-      </div>
+    <div class="fiche"><span class="badge">Démo 1</span>
+      <h3>Fiche donateur : relancer ?</h3>
+      <img src="fiche-risque-affiche.png" alt="Risque d'arrêter son don mensuel : 35 %, action Relancer">
+      <div class="sep"></div>
+      <h3>Pourquoi lui ?</h3>
+      <img src="fiche-raisons-affiche.png" alt="Pourquoi ce donateur : dernier don il y a 101 jours, 3 paiements échoués, donne moins qu'il y a un an">
     </div>
   </section>
 
@@ -322,22 +357,26 @@ footer { background: #f4c95d; border-top: 6px solid #e0ac2e }
 
   <!-- 3. Après -->
   <section class="col apres">
-    <span class="kicker"><span class="n">3</span>Après</span>
-    <h2 class="serif">En simulation : plus de dons, même effort</h2>
-    <!-- RESULTAT:debut -->
-<div class="x3"><b><span class="fois">×</span>3</b><p>de dons récupérés, à effort égal, face à la méthode habituelle</p></div>
-<span class="simu">Sur 300 donateurs fictifs (simulation)</span>
-<!-- RESULTAT:fin -->
+    <span class="kicker"><span class="n">3</span>Résultat</span>
+    <h2 class="serif">L'IA n'est utilisée que là où elle gagne : 3 listes sur 4</h2>
+    <p class="regle">Notre règle : l'IA seulement si elle bat la méthode habituelle.</p>
+    <!-- LISTES:debut -->
+<div class="graph-listes"><svg viewBox="0 0 1580 500" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" role="img" aria-label="Précision du modèle divisée par celle de la méthode habituelle, pour les quatre listes"><rect x="0" y="6" width="50" height="50" rx="10" fill="#17663f"/><text x="66" y="48" font-size="44" font-weight="700" fill="#0a2f1e">IA utilisée</text><rect x="420" y="6" width="50" height="50" rx="10" fill="#c2410c"/><text x="486" y="48" font-size="44" font-weight="700" fill="#0a2f1e">méthode habituelle gardée</text><rect x="87.5" y="186.6" width="220" height="173.4" rx="14" fill="#17663f"/><text x="197.5" y="166.6" font-size="80" font-weight="800" fill="#17663f" text-anchor="middle">×2,7</text><text x="197.5" y="422.0" font-size="48" font-weight="700" fill="#0a2f1e" text-anchor="middle">Relancer</text><rect x="482.5" y="189.5" width="220" height="170.5" rx="14" fill="#17663f"/><text x="592.5" y="169.5" font-size="80" font-weight="800" fill="#17663f" text-anchor="middle">×2,6</text><text x="592.5" y="422.0" font-size="48" font-weight="700" fill="#0a2f1e" text-anchor="middle">Proposer</text><text x="592.5" y="476.0" font-size="48" font-weight="700" fill="#0a2f1e" text-anchor="middle">le mensuel</text><rect x="877.5" y="157.2" width="220" height="202.8" rx="14" fill="#17663f"/><text x="987.5" y="137.2" font-size="80" font-weight="800" fill="#17663f" text-anchor="middle">×3,1</text><text x="987.5" y="422.0" font-size="48" font-weight="700" fill="#0a2f1e" text-anchor="middle">Réactiver</text><rect x="1272.5" y="285.0" width="220" height="75.0" rx="14" fill="#c2410c"/><text x="1382.5" y="265.0" font-size="80" font-weight="800" fill="#c2410c" text-anchor="middle">×1,2</text><text x="1382.5" y="422.0" font-size="48" font-weight="700" fill="#0a2f1e" text-anchor="middle">Solliciter</text><text x="1382.5" y="476.0" font-size="48" font-weight="700" fill="#0a2f1e" text-anchor="middle">plus</text><line x1="0" y1="360.0" x2="1580" y2="360.0" stroke="#0a2f1e" stroke-width="5"/></svg></div>
+<!-- LISTES:fin -->
     <!-- KDD:debut -->
-<div class="honnete"><span class="ic"><svg class="i" width="84" height="84" viewBox="0 0 24 24"><path d="M12 3v18"/><path d="m19 8 3 8a5 5 0 0 1-6 0zV7"/><path d="M3 7h1a17 17 0 0 0 8-2 17 17 0 0 0 8 2h1"/><path d="m5 8 3 8a5 5 0 0 1-6 0zV7"/><path d="M7 21h10"/></svg></span><div><b>Testé sur <em>18&nbsp;824 vrais donateurs</em> : l'IA y gagne un peu, mais pas assez nettement</b><p>Fidélia garderait donc la méthode habituelle. La règle protège l'OBNL.</p></div></div>
+<p class="reel"><b>18&nbsp;824 vrais donateurs</b> : l'IA gagne pour le don plus élevé, pas pour la réactivation.</p>
 <!-- KDD:fin -->
+    <!-- RESULTAT:debut -->
+<div class="x3"><span class="badge">Démo 2</span><b><span class="fois">×</span>3</b><p>de dons à risque ciblés, à effort égal<small>300 contacts parmi 4&nbsp;000 donateurs fictifs, contre la méthode habituelle</small></p></div>
+<!-- RESULTAT:fin -->
+    <div class="gf"><span class="badge">Démo 3</span>
     <p class="gf-titre">Garde-fous</p>
     <ul class="gardes">
       <li><span class="ic"><svg class="i" width="58" height="58" viewBox="0 0 24 24"><path d="m16 11 2 2 4-4"/><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span>Un humain valide chaque envoi</li>
-      <li><span class="ic"><svg class="i" width="58" height="58" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span>L'IA seulement si elle bat la méthode habituelle</li>
       <li><span class="ic"><svg class="i" width="58" height="58" viewBox="0 0 24 24"><path d="m14 13-8.381 8.38a1 1 0 0 1-3.001-3l8.384-8.381"/><path d="m16 16 6-6"/><path d="m21.5 10.5-8-8"/><path d="m8 8 6-6"/><path d="m8.5 7.5 8 8"/></svg></span>Loi 25 : droit de refuser le profilage</li>
       <li><span class="ic"><svg class="i" width="58" height="58" viewBox="0 0 24 24"><path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M8 13h.01"/><path d="M12 13h.01"/><path d="M16 13h.01"/><path d="M8 17h.01"/><path d="M12 17h.01"/><path d="M16 17h.01"/></svg></span>Au plus 1 courriel par 30 jours</li>
     </ul>
+    </div>
   </section>
 </main>
 
@@ -345,32 +384,32 @@ footer { background: #f4c95d; border-top: 6px solid #e0ac2e }
   <div class="bloc">
     <h2 class="serif"><span class="ic" style="background:#ffe4e6;color:#be123c"><svg class="i" width="58" height="58" viewBox="0 0 24 24"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg></span>Coûts</h2>
     <p class="gros">≈ 27 k$</p>
-    <p class="l1">pour bâtir la V1 en 2 mois : le prototype existe déjà</p>
-    <p class="l2">puis ≈ 28 k$/an : maintenance et support</p>
+    <p class="l1">pour bâtir la V1 en 2 mois</p>
+    <p class="l2">puis ≈ 28 k$/an de support</p>
   </div>
   <div class="bloc">
     <h2 class="serif"><span class="ic" style="background:#fef3c7;color:#b45309"><svg class="i" width="58" height="58" viewBox="0 0 24 24"><path d="M11 15h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 17"/><path d="m7 21 1.6-1.4c.3-.4.8-.6 1.4-.6h4c1.1 0 2.1-.4 2.8-1.2l4.6-4.4a2 2 0 0 0-2.750-2.910l-4.2 3.9"/><path d="m2 16 6 6"/><circle cx="16" cy="9" r="2.9"/><circle cx="6" cy="5" r="3"/></svg></span>Revenus</h2>
     <p class="gros">99 $<small> /mois</small></p>
     <p class="l1">par OBNL · rentable vers <em>35 clients</em></p>
-    <p class="l2">Concurrents dès 125 $/mois : Dataro, Keela, Bloomerang</p>
+    <p class="l2">Concurrents dès 125 $ : Dataro, Keela…</p>
   </div>
   <div class="bloc">
     <h2 class="serif"><span class="ic" style="background:var(--g100);color:var(--g600)"><svg class="i" width="58" height="58" viewBox="0 0 24 24"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.830A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg></span>Feuille de route</h2>
     <div class="road">
-      <div class="s now"><b>V1</b><span>2 mois : listes et courriels validés</span></div>
+      <div class="s now"><b>V1</b><span>Listes et courriels</span></div>
       <span class="arr"><svg class="i" width="64" height="64" viewBox="0 0 24 24" style="stroke-width:3"><path d="m9 18 6-6-6-6"/></svg></span>
-      <div class="s"><b>Pilote</b><span>2 OBNL, leurs vraies données</span></div>
+      <div class="s"><b>Pilote</b><span>2 OBNL, vraies données</span></div>
       <span class="arr"><svg class="i" width="64" height="64" viewBox="0 0 24 24" style="stroke-width:3"><path d="m9 18 6-6-6-6"/></svg></span>
       <div class="s"><b>V2</b><span>Rédaction assistée</span></div>
     </div>
   </div>
   <div class="qr">
     <div class="code"><!-- QR:debut -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 330" width="100%" height="100%" class="segno"><title>QR code vers https://wtigg.github.io/fidelia/</title><path transform="scale(10)" class="qrline" stroke="#0a2f1e" d="M2 2.5h7m1 0h3m1 0h3m1 0h4m2 0h7m-29 1h1m5 0h1m3 0h2m1 0h1m2 0h2m4 0h1m5 0h1m-29 1h1m1 0h3m1 0h1m1 0h4m1 0h3m1 0h1m2 0h1m1 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m1 0h1m7 0h1m1 0h2m2 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m2 0h3m1 0h1m4 0h1m3 0h1m1 0h3m1 0h1m-29 1h1m5 0h1m1 0h1m1 0h2m3 0h1m2 0h3m1 0h1m5 0h1m-29 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-21 1h2m2 0h4m1 0h2m1 0h1m-20 1h1m1 0h1m1 0h4m2 0h1m2 0h1m6 0h3m1 0h2m1 0h1m-28 1h1m5 0h2m1 0h4m2 0h2m2 0h3m2 0h2m1 0h1m-27 1h1m3 0h2m1 0h2m1 0h6m1 0h1m2 0h6m-26 1h1m1 0h1m4 0h2m2 0h1m1 0h2m1 0h5m1 0h1m1 0h2m-26 1h1m1 0h3m2 0h1m1 0h3m1 0h3m1 0h1m2 0h2m1 0h1m-26 1h4m1 0h1m1 0h2m2 0h2m6 0h3m1 0h1m1 0h1m1 0h1m-28 1h3m1 0h7m2 0h1m2 0h2m2 0h2m5 0h2m-27 1h4m1 0h1m1 0h2m1 0h2m2 0h2m2 0h1m1 0h2m3 0h1m-28 1h2m2 0h3m2 0h2m3 0h2m1 0h1m1 0h2m6 0h1m-26 1h1m1 0h2m2 0h1m1 0h1m4 0h1m5 0h3m2 0h3m-29 1h1m3 0h1m1 0h1m1 0h4m2 0h1m2 0h1m2 0h2m3 0h4m-27 1h2m1 0h1m4 0h2m1 0h1m3 0h4m3 0h2m1 0h2m-29 1h1m5 0h1m1 0h2m1 0h2m2 0h2m1 0h1m1 0h5m1 0h1m1 0h1m-21 1h3m1 0h2m2 0h1m3 0h1m3 0h1m3 0h1m-29 1h7m1 0h2m2 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h4m-28 1h1m5 0h1m1 0h4m4 0h1m1 0h1m1 0h1m3 0h1m1 0h1m-27 1h1m1 0h3m1 0h1m2 0h3m2 0h1m1 0h2m2 0h6m-26 1h1m1 0h3m1 0h1m1 0h1m1 0h2m1 0h2m1 0h1m2 0h4m1 0h1m2 0h1m-28 1h1m1 0h3m1 0h1m6 0h1m5 0h2m3 0h1m1 0h1m1 0h1m-29 1h1m5 0h1m1 0h1m1 0h1m3 0h2m1 0h1m1 0h2m1 0h2m1 0h1m1 0h1m-28 1h7m2 0h2m2 0h1m3 0h1m2 0h3m1 0h2m1 0h1"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 330" width="100%" height="100%" class="segno"><title>QR code vers https://wtigg.github.io/fidelia/</title><path transform="scale(10)" class="qrline" stroke="#163e6e" d="M2 2.5h7m1 0h3m1 0h3m1 0h4m2 0h7m-29 1h1m5 0h1m3 0h2m1 0h1m2 0h2m4 0h1m5 0h1m-29 1h1m1 0h3m1 0h1m1 0h4m1 0h3m1 0h1m2 0h1m1 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m1 0h1m7 0h1m1 0h2m2 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m2 0h3m1 0h1m4 0h1m3 0h1m1 0h3m1 0h1m-29 1h1m5 0h1m1 0h1m1 0h2m3 0h1m2 0h3m1 0h1m5 0h1m-29 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-21 1h2m2 0h4m1 0h2m1 0h1m-20 1h1m1 0h1m1 0h4m2 0h1m2 0h1m6 0h3m1 0h2m1 0h1m-28 1h1m5 0h2m1 0h4m2 0h2m2 0h3m2 0h2m1 0h1m-27 1h1m3 0h2m1 0h2m1 0h6m1 0h1m2 0h6m-26 1h1m1 0h1m4 0h2m2 0h1m1 0h2m1 0h5m1 0h1m1 0h2m-26 1h1m1 0h3m2 0h1m1 0h3m1 0h3m1 0h1m2 0h2m1 0h1m-26 1h4m1 0h1m1 0h2m2 0h2m6 0h3m1 0h1m1 0h1m1 0h1m-28 1h3m1 0h7m2 0h1m2 0h2m2 0h2m5 0h2m-27 1h4m1 0h1m1 0h2m1 0h2m2 0h2m2 0h1m1 0h2m3 0h1m-28 1h2m2 0h3m2 0h2m3 0h2m1 0h1m1 0h2m6 0h1m-26 1h1m1 0h2m2 0h1m1 0h1m4 0h1m5 0h3m2 0h3m-29 1h1m3 0h1m1 0h1m1 0h4m2 0h1m2 0h1m2 0h2m3 0h4m-27 1h2m1 0h1m4 0h2m1 0h1m3 0h4m3 0h2m1 0h2m-29 1h1m5 0h1m1 0h2m1 0h2m2 0h2m1 0h1m1 0h5m1 0h1m1 0h1m-21 1h3m1 0h2m2 0h1m3 0h1m3 0h1m3 0h1m-29 1h7m1 0h2m2 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h4m-28 1h1m5 0h1m1 0h4m4 0h1m1 0h1m1 0h1m3 0h1m1 0h1m-27 1h1m1 0h3m1 0h1m2 0h3m2 0h1m1 0h2m2 0h6m-26 1h1m1 0h3m1 0h1m1 0h1m1 0h2m1 0h2m1 0h1m2 0h4m1 0h1m2 0h1m-28 1h1m1 0h3m1 0h1m6 0h1m5 0h2m3 0h1m1 0h1m1 0h1m-29 1h1m5 0h1m1 0h1m1 0h1m3 0h2m1 0h1m1 0h2m1 0h2m1 0h1m1 0h1m-28 1h7m2 0h2m2 0h1m3 0h1m2 0h3m1 0h2m1 0h1"/></svg>
 <!-- QR:fin --></div>
     <div><b>Essayez la démo</b><span>wtigg.github.io/fidelia</span></div>
   </div>
-  <p class="sources">Sources : Fundraising Effectiveness Project 2025 · CanadaHelps 2024 · Virtuous et Fundraising.AI 2026 · KDD Cup 1998. Captures : prototype Fidélia, donateurs fictifs. Détails statistiques : fiche technique.</p>
+  <p class="sources">Sources : Fundraising Effectiveness Project 2025 · KDD Cup 1998. Captures : donateurs fictifs.</p>
 </footer>
 </body>
 </html>

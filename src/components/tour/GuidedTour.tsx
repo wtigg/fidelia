@@ -41,7 +41,7 @@ const TOUR_STEPS: Step[] = [
   {
     to: '/impact',
     title: 'Impact',
-    text: () => 'À effort égal, combien de dons Fidélia retrouve, comparé à la méthode habituelle (dernier don, fréquence, montant). Faites glisser « Donateurs contactés ».',
+    text: () => 'À effort égal, combien de dons à risque Fidélia cible, comparé à la méthode habituelle (dernier don, fréquence, montant). Faites glisser « Donateurs contactés ».',
     focus: 'capacite',
   },
   {

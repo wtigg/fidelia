@@ -3,13 +3,14 @@
 **TECH60711, Réalisation d'applications d'intelligence artificielle, HEC Montréal, automne 2026**
 **Équipe 4 :** Geoffrey Carel, Juliette Ponce, Juliette Violon, Paul Soubigou  
 **Démonstration en ligne :** https://wtigg.github.io/fidelia/ (aucune installation)  
-**Dépôt du code :** https://github.com/wtigg/fidelia
+**Dépôt du code :** https://github.com/wtigg/fidelia  
+**Annexes :** [`docs/ANNEXES.md`](ANNEXES.md) (détails de calcul, commandes, risques et leçons complémentaires)
 
 ## Résumé
 
-Fidélia aide un petit OBNL à choisir chaque semaine qui relancer, remercier ou solliciter. Quatre petits modèles prédisent l'attrition, le passage au mensuel, la hausse et la réactivation. Un modèle n'est déployé que s'il bat nettement le hasard (R1) et la règle RFM (R2) ; sinon, l'outil garde RFM. Sur le jeu synthétique, 3 modèles sur 4 passent. Sur de vrais donateurs (KDD Cup 1998), la méthode de classement rapporte 51 % de plus que RFM avec 20 % des envois, mais ce modèle n'atteint pas notre requis R1 (0,083 < 0,102) : nous ne le déploierions pas. Ce résultat valide la méthode, pas un modèle prêt à l'emploi. La performance sur les données d'un vrai OBNL se vérifiera au pilote. L'effet causal des relances et la rentabilité ne se mesureront qu'après la V1, sur plusieurs organisations (section 11).
+Fidélia aide un petit OBNL à choisir chaque semaine qui relancer, remercier ou solliciter. Quatre petits modèles prédisent l'attrition, le passage au mensuel, la hausse et la réactivation. Un modèle n'est déployé que s'il bat nettement le hasard (R1) et la règle RFM (R2) ; sinon, l'outil garde RFM. Sur le jeu synthétique, 3 modèles sur 4 passent. À 100 contacts, ils ciblent 4,8 fois plus de valeur à risque que RFM (donateurs fictifs ; l'effet de la relance reste une hypothèse). Sur de vrais donateurs (KDD Cup 1998), le modèle « don plus élevé que le dernier » passe R1 et R2. Celui de réactivation bat RFM, mais échoue à R1 : nous ne le déploierions pas (section 6.2). La performance chez un vrai OBNL se vérifiera au pilote ; l'effet causal des relances, après la V1 (section 11).
 
-> Tous les chiffres de performance viennent des rapports générés par les scripts du dépôt (`reports/`, `verification/`). Ils sont reproductibles avec les commandes de la section 6.3. Les estimations de coûts (section 9) sont des hypothèses, et leurs sources sont indiquées.
+> Les chiffres de performance viennent des rapports générés par les scripts du dépôt (`reports/`, `verification/`) et sont reproductibles (section 6.3). Les coûts (section 9) sont des hypothèses sourcées.
 
 ---
 
@@ -17,62 +18,50 @@ Fidélia aide un petit OBNL à choisir chaque semaine qui relancer, remercier ou
 
 ### 1.1 Description
 
-Fidélia est un outil web pour les OBNL de petite taille (1 à 5 personnes à la collecte de fonds, sans analyste de données). Il lit l'historique des dons et produit chaque semaine **quatre listes d'actions** :
+Fidélia est un outil web pour les petits OBNL (1 à 5 personnes à la collecte de fonds, sans analyste). Il lit l'historique des dons et produit chaque semaine **quatre listes d'actions** :
 
 | Liste | Question | Méthode |
 |---|---|---|
-| **Relancer** | Quel donateur mensuel risque d'arrêter son don dans les 90 jours ? | Modèle d'attrition |
-| **Proposer le mensuel** | Quel donateur ponctuel ou annuel passerait au don mensuel dans les 6 mois ? | Modèle de conversion |
-| **Solliciter plus** | Quel donateur mensuel fidèle augmenterait son don ? Quel inactif redonnerait ? | Réactivation : modèle. Hausse : modèle évalué, **règle RFM conservée** tant que R1 et R2 échouent (section 4.3) |
+| **Relancer** | Quel donateur mensuel risque d'arrêter son don dans les 90 jours ? | Modèle d'attrition |
+| **Proposer le mensuel** | Quel donateur ponctuel ou annuel passerait au don mensuel dans les 6 mois ? | Modèle de conversion |
+| **Solliciter plus** | Quel mensuel augmenterait son don ? Quel inactif redonnerait ? | Réactivation : modèle. Hausse : **règle RFM conservée** (section 4.3) |
 | **Remercier** | Qui vient de faire un premier don, un don inhabituel ou d'atteindre un anniversaire ? | Règle simple, sans IA |
 
-Pour chaque donateur, l'outil affiche :
-- la probabilité ;
-- la valeur attendue (probabilité × montant annuel) ;
-- les trois raisons principales de la prédiction ;
-- un brouillon de courriel personnalisé.
-
-L'équipe relit, ajuste et valide chaque envoi.
+Pour chaque donateur : la probabilité, la valeur attendue (probabilité × montant annuel), les trois raisons principales et un brouillon de courriel. L'équipe valide chaque envoi.
 
 ### 1.2 Motivation
 
-**Moins d'un donateur sur deux redonne l'année suivante** : 43,3 % de rétention en 2025 selon le Fundraising Effectiveness Project, sur 15 102 OBNL américains (AFP et GivingTuesday, 2026). Garder un donateur rapporte bien plus que d'en trouver un nouveau (Sargeant, 2001). Recruter coûte jusqu'à 1,50 $ par dollar recueilli, contre 0,20 $ ou moins auprès des donateurs existants, soit environ 7 fois moins cher (Johnson, 2023). Et un donateur qui a déjà redonné revient bien plus souvent : 59,3 % des donateurs réguliers redonnent l'année suivante, contre 18,9 % des nouveaux (Bloomerang, s. d., d'après le FEP du 4e trimestre 2025). Le don mensuel est le plus précieux : revenu prévisible, meilleure rétention, valeur à vie plus élevée.
+**Moins d'un donateur sur deux redonne l'année suivante** : 43,3 % de rétention en 2025, selon le Fundraising Effectiveness Project (FEP), sur 15 102 OBNL américains (AFP et GivingTuesday, 2026). Or garder un donateur rapporte plus que d'en recruter un (Sargeant, 2001), et le don mensuel est le plus précieux.
 
-**Les petits OBNL manquent de moyens pour analyser leurs données.** Au Canada, 53 % des organismes de moins de 1 M$ de revenus confient la technologie et les données à des employés qui n'ont ni formation ni mandat dans ce domaine. Seuls 13 % des petits organismes ont une personne dédiée à la technologie et aux données, contre 25 % des grands (Gandhi, 2024, sondage de CanadaHelps auprès de 1 470 organismes). Un organisme sur quatre juge faibles ses compétences pour collecter, gérer et analyser ses données, et 23 % peinent à s'en servir pour décider (Nguyen, 2024). Enfin, la demande dépasse la capacité dans 65 % des organismes en 2026 (Charity Insights Canada Project, 2026).
+**Les petits OBNL manquent de moyens pour analyser leurs données.** Au Canada, 53 % des organismes de moins de 1 M$ de revenus confient leurs données à des employés sans formation ni mandat (Gandhi, 2024, sondage de CanadaHelps, 1 470 organismes).
 
-**L'IA est déjà là, mais pas pour cibler les donateurs.** 92 % des OBNL interrogés utilisent un outil d'IA, surtout pour écrire : 62 % pour les communications aux donateurs. L'usage prédictif, comme le classement des donateurs, reste rare, et 47 % n'ont aucune politique d'encadrement (Virtuous et Fundraising.AI, 2026, 346 OBNL interrogés en décembre 2025). Fidélia vise cet écart : une prédiction simple, encadrée par des règles, utilisable sans analyste.
-
-Une petite équipe ne peut pas analyser des milliers de fiches. Elle relance donc tout le monde avec le même message, ou personne. Fidélia concentre son peu de temps sur les bons donateurs, avec le bon message, au bon moment.
+**L'IA est déjà là, mais pas pour cibler les donateurs.** 92 % des OBNL interrogés utilisent un outil d'IA, surtout pour écrire. L'usage prédictif, comme le classement des donateurs, reste rare (Virtuous et Fundraising.AI, 2026, 346 OBNL). Une petite équipe ne peut pas analyser des milliers de fiches : elle relance tout le monde avec le même message, ou personne. Fidélia concentre son peu de temps sur les bons donateurs. D'autres chiffres sont en annexe A.
 
 ### 1.3 Pourquoi l'IA ?
 
-**Le type d'IA.** Fidélia relève de l'**analyse cognitive** (*cognitive insight*) au sens de Davenport et Ronanki (2018) : détecter des régularités dans des données pour prédire un comportement. Ces auteurs conseillent de commencer par des projets modestes et utiles plutôt que par des « projets lune ». Ng (2019) va dans le même sens : un premier projet d'IA doit être petit, propre au secteur, et donner une victoire rapide, idéalement en 6 à 12 mois. Fidélia suit ce conseil : quatre prédictions simples, sur des données que l'OBNL possède déjà.
+**Le type d'IA.** Fidélia relève de l'**analyse cognitive** (*cognitive insight*) : détecter des régularités dans des données pour prédire un comportement (Davenport et Ronanki, 2018). Un premier projet d'IA doit être petit, propre au secteur, et donner une victoire rapide (Ng, 2019). D'où quatre prédictions simples, sur des données que l'OBNL possède déjà.
 
-**La méthode traditionnelle.** Le secteur utilise la **segmentation RFM** (récence, fréquence, montant ; Fader, Hardie et Lee, 2005). Elle classe tout le monde sur trois variables, avec des seuils fixes. RFM est simple, lisible et gratuite. C'est donc une référence sérieuse, que l'IA doit battre.
+**La méthode traditionnelle.** Le secteur utilise la **segmentation RFM** (récence, fréquence, montant ; Fader, Hardie et Lee, 2005) : trois variables, des seuils fixes. Simple, lisible et gratuite, c'est la référence que l'IA doit battre.
 
-**Ce que le modèle ajoute.** Deux choses, mesurées :
-1. **Des signaux que RFM ignore.** Les variables les plus utiles au modèle d'attrition sont le taux d'ouverture des courriels sur 3 mois, la récence, les échecs de paiement sur 90 jours et le canal de recrutement (importance par permutation, `reports/evaluate-42.txt`). RFM n'en voit qu'une, la récence.
-2. **Un meilleur classement des premiers noms.** Sur le jeu de test synthétique, l'AUC-PR de l'attrition passe de 0,091 avec RFM à 0,243 avec le modèle. L'écart apparié vaut +0,152, IC 95 % [0,058 ; 0,255]. Sur les 50 premiers noms, 34 % sont de vrais départs, contre 8 % avec RFM (section 6.2).
+**Ce que le modèle ajoute.**
+1. **D'autres signaux que RFM.** Les variables les plus utiles au modèle d'attrition sont le taux d'ouverture des courriels, la récence, les échecs de paiement sur 90 jours et le canal de recrutement (`reports/evaluate-42.txt`). **Attention :** ce sont les signaux que notre générateur a lui-même placés dans les données (leçon 1). Le modèle sait les retrouver ; rien ne prouve encore qu'ils prédisent l'attrition réelle. Aucune de nos références ne chiffre ce lien : le pilote le vérifiera.
+2. **Un meilleur classement des premiers noms.** En attrition, l'AUC-PR passe de 0,091 avec RFM à 0,243 avec le modèle (écart apparié IC 95 % [0,058 ; 0,255]). Sur les 50 premiers noms, 34 % sont de vrais départs, contre 8 % avec RFM (section 6.2).
 
-**Ce que le modèle n'ajoute pas.** Deux arguments souvent avancés ne tiennent pas ici :
-- *La calibration.* Une probabilité calibrée est utile pour la valeur attendue, mais RFM peut aussi être calibrée. Fidélia le fait d'ailleurs pour sa règle de repli (section 4.3). L'avantage de l'IA est le classement, pas la calibration.
-- *L'explication.* RFM est plus lisible qu'un modèle : trois variables, des seuils connus. Le modèle doit donc afficher ses trois raisons principales pour compenser sa complexité. Ce n'est pas un avantage sur RFM.
+**Ce que le modèle n'ajoute pas :** la calibration (Fidélia calibre aussi RFM) et la lisibilité (d'où les trois raisons affichées). Son seul avantage est le classement.
 
-**Sur de vrais donateurs (KDD Cup 1998)**, le modèle de réactivation bat RFM de façon significative : AUC-PR 0,083 contre 0,053, écart apparié IC 95 % [0,022 ; 0,039] (`reports/kdd98.json`). Il **n'atteint pourtant pas le requis R1** : 0,083 est inférieur à 2 × le taux de base (2 × 0,051 = 0,102). Selon notre propre règle, ce modèle ne serait donc pas déployé (leçon 3).
-
-**Le garde-fou.** Nous l'avons fixé dès la séance 6 : **on ne garde un modèle que s'il fait au moins deux fois mieux que le hasard (R1) et bat RFM de façon significative (R2)**. L'application l'applique automatiquement. Sur le jeu synthétique, c'est le cas pour 3 des 4 modèles : attrition, passage au mensuel et réactivation. Pour le 4e, la hausse, Fidélia garde la règle RFM (section 6).
+**Le garde-fou.** **On ne garde un modèle que s'il fait au moins deux fois mieux que le hasard (R1) et bat RFM de façon significative (R2).** Les seuils ont été fixés en séance 6, avant l'entraînement ; la façon de les tester a été précisée ensuite (section 4.3). Sur le jeu synthétique, 3 modèles sur 4 passent ; pour la hausse, Fidélia garde RFM. Sur de vrais donateurs (KDD Cup 1998), une tâche sur deux passe (section 6.2).
 
 ### 1.4 Solutions existantes
 
-Des outils de prédiction pour la collecte de fonds existent déjà. Voici trois exemples, consultés en novembre 2026 :
+Trois outils de prédiction pour la collecte de fonds, consultés en novembre 2026 :
 
 | Solution | Ce qu'elle prédit | Prix publié | Limites pour un petit OBNL québécois |
 |---|---|---|---|
-| **Dataro** (spécialiste de l'IA pour la collecte de fonds) | Attrition et hausse des mensuels, réactivation, dons majeurs (Dataro, s. d.-b) | À partir de 15 000 $ par an, plus 0,10 $ par donateur actif (forfait Essentials ; Dataro, s. d.-a) | Coût hors de portée d'un OBNL de 1 à 5 personnes. Pas d'essai libre. Hébergement possible au Canada. Français non mentionné |
-| **Keela** (CRM canadien) | *Donor Score* et *Smart Ask* : score et montant suggéré, à partir de l'historique, du filtrage de richesse et de données démographiques (Keela, s. d.-b) | De 164 $ à 489 $ par mois selon le nombre de contacts, facturation annuelle (Keela, s. d.-a) | Méthode non décrite. Utilise des données démographiques et de richesse, ce que Fidélia exclut. Données hébergées au Canada |
-| **Bloomerang** (CRM américain) | « Prédictions de dons » et suivi du sentiment des donateurs (Bloomerang, s. d.) | CRM à partir de 125 $ par mois, facturation annuelle ; fonctions d'IA avancées sur devis | Méthode et performance non publiées. Hébergement et français non précisés |
+| **Dataro** | Attrition et hausse des mensuels, réactivation, dons majeurs (Dataro, s. d.-b) | Dès 15 000 $ par an, plus 0,10 $ par donateur actif (Dataro, s. d.-a) | Coût hors de portée. Français non mentionné |
+| **Keela** (CRM canadien) | Score et montant suggéré, avec filtrage de richesse et données démographiques (Keela, s. d.-b) | 164 $ à 489 $ par mois (Keela, s. d.-a) | Méthode non décrite. Utilise des données que Fidélia exclut |
+| **Bloomerang** (CRM américain) | « Prédictions de dons », sentiment des donateurs (Bloomerang, s. d.-b) | Dès 125 $ par mois ; IA avancée sur devis | Méthode et performance non publiées |
 
-**Ce que ces outils ne font pas.** Aucun ne publie sa performance face à une méthode simple comme RFM. Aucun ne retire son modèle quand il ne fait pas mieux. Les deux premiers coûtent plus cher que le budget d'un très petit OBNL. Fidélia vise ce vide : un outil en français, peu coûteux, qui mesure et affiche honnêtement sa valeur.
+**Ce que ces outils ne font pas.** Aucun ne publie sa performance face à RFM. Aucun ne retire son modèle quand il ne fait pas mieux. Fidélia vise ce vide : un outil en français, peu coûteux, qui mesure et affiche honnêtement sa valeur.
 
 ### 1.5 Proposition de valeur
 
@@ -80,19 +69,22 @@ Des outils de prédiction pour la collecte de fonds existent déjà. Voici trois
 
 ### 1.6 Impact visé
 
-La valeur d'affaires de l'IA vient d'abord d'effets de premier ordre : mieux décider et mieux utiliser le temps des employés (Enholm et al., 2022). Nous distinguons ce qui est **mesuré** de ce qui est **supposé**.
+La valeur d'affaires de l'IA vient d'abord d'effets de premier ordre : mieux décider et mieux utiliser le temps des employés (Enholm et al., 2022). Nous séparons le **mesuré** du **supposé**.
 
-**Mesuré : la qualité du ciblage.** Sur le jeu de test synthétique (`reports/synthetique-42.json`), contacter les 10 % des mensuels les mieux classés par le modèle d'attrition capte **41 %** de la valeur à risque. La règle RFM en capte 7 %, et le hasard 10 %.
+**Mesuré : la valeur à risque ciblée, sur des donateurs fictifs** (jeu de test synthétique, `reports/impact-42.json`). À effort égal, les quatre listes réunies ciblent :
 
-**Mesuré sur données réelles** (KDD Cup 1998, `reports/kdd98.txt`). Avec un budget limité à 20 % des envois, le profit net est de **2 133 $ avec le modèle, contre 1 413 $ avec RFM** : +51 %. C'est aussi 5 fois moins d'envois qu'un envoi à tous, pour un profit plus élevé (1 975 $). Ce chiffre valide la **méthode de classement**, pas un modèle déployable : ce modèle de réactivation échoue à R1 (section 1.3) et notre règle ne le mettrait pas en service.
+| Contacts par cycle | Modèle | RFM | Hasard | Modèle ÷ RFM | Modèle ÷ hasard |
+|---|---|---|---|---|---|
+| 100 | 1 101 $ | 232 $ | 227 $ | **× 4,8** | **× 4,85** |
+| 300 | 2 261 $ | 759 $ | 681 $ | **× 3,0** | **× 3,3** |
 
-**Supposé : l'effet de l'action.** La page **Impact** convertit ce ciblage en dollars récupérés. Elle suppose qu'une action change vraiment le comportement d'une part des donateurs contactés. Les valeurs par défaut sont 30 % pour l'attrition, 25 % pour la hausse et 15 % pour la conversion et la réactivation. Ce sont des hypothèses, réglables à l'écran. Les montants affichés en dépendent directement. Le groupe témoin de 10 % (RF14) servira à mesurer cet effet. Chez un seul petit OBNL, il est trop petit pour le prouver : il faudra mettre en commun les témoins de plusieurs organisations (section 11).
+Les montants appliquent l'effet supposé de la relance (ci-dessous) ; les multiplicateurs n'en dépendent pas et mesurent seulement le **ciblage**, pas des dons récupérés. Plus on contacte de monde, moins le classement compte.
 
-**Pour les donateurs**, moins de sollicitations génériques et plus de remerciements :
-- un courriel au plus par 30 jours ;
-- un remerciement avant toute nouvelle demande.
+**Mesuré sur données réelles** (KDD Cup 1998). Avec 20 % des envois, le profit net de la relance est de **2 133 $ avec le modèle, contre 1 413 $ avec RFM** (+51 %). Ce chiffre valide la méthode de classement, pas un modèle déployable (section 6.2).
 
-**Pour le secteur**, un outil accessible aux petites organisations, qui n'ont pas les moyens d'un analyste.
+**Supposé : l'effet de la relance.** Pour convertir ce ciblage en dons, la page **Impact** suppose qu'une relance change le comportement de 15 à 30 % des donateurs contactés selon la liste (`effectAssumed`). Ces hypothèses, réglables, sont les mêmes pour les trois stratégies : elles ne changent pas les multiplicateurs. Le groupe témoin (RF14) les mesurera, une fois mis en commun entre organisations (section 5.4).
+
+**Pour les donateurs**, un courriel au plus par 30 jours et un remerciement avant toute demande.
 
 ---
 
@@ -105,12 +97,12 @@ Le canevas suit le gabarit du cours (`TECH 60711_S02_AI Canvas`) : sept cases, c
 | Case | Question du gabarit | Réponse pour l'attrition |
 |---|---|---|
 | **Prédiction** | Que faut-il savoir pour décider ? | La probabilité qu'un donateur mensuel arrête son don dans les 90 prochains jours. |
-| **Jugement** | Quelle valeur donner aux résultats et aux erreurs ? | Rater un départ coûte le don annuel : environ 240 $ par an au don médian de 20 $ par mois. Relancer à tort coûte peu, mais peut agacer. L'équipe fixe le seuil et le ton. |
+| **Jugement** | Quelle valeur donner aux résultats et aux erreurs ? | Rater un départ coûte environ 240 $ par an (don médian de 20 $ par mois). Relancer à tort coûte peu, mais peut agacer. L'équipe fixe le seuil et le ton. |
 | **Action** | Que cherche-t-on à faire ? | Envoyer un courriel de relance : mise à jour de la carte expirée, rappel de l'impact du don, option de pause. |
-| **Résultat** | Quelle mesure du succès ? | Le donateur est-il toujours mensuel 90 jours plus tard ? Comparaison avec un groupe témoin non contacté. |
-| **Entrée** | Quelles données pour prédire ? | Le comportement récent du donateur, par exemple : taux d'ouverture des courriels sur 3 mois, jours depuis le dernier don, échecs de paiement sur 90 jours, canal de recrutement (rue, Web, courrier), tendance de l'engagement. 18 variables au total (section 5). Ni âge, ni région. |
-| **Entraînement** | Quelles données pour entraîner ? | L'historique des dons et des ouvertures de l'organisation, en photos tous les 2 à 6 mois selon le modèle, sur 3,5 ans d'historique. Pour chaque photo : le donateur est-il parti dans les 90 jours suivants ? |
-| **Rétroaction** | Comment les résultats améliorent-ils le modèle ? | Les résultats des relances et du groupe témoin de 10 % sont ajoutés à l'historique. Réentraînement chaque trimestre. |
+| **Résultat** | Quelle mesure du succès ? | Le donateur est-il toujours mensuel 90 jours plus tard ? Comparaison avec un groupe témoin non contacté. |
+| **Entrée** | Quelles données pour prédire ? | Le comportement récent : ouvertures des courriels sur 3 mois, jours depuis le dernier don, échecs de paiement, canal de recrutement. 18 variables (section 5). Ni âge, ni région. |
+| **Entraînement** | Quelles données pour entraîner ? | L'historique de l'organisation, en photos tous les 2 à 6 mois sur 3,5 ans. Pour chaque photo : le donateur est-il parti dans les 90 jours ? |
+| **Rétroaction** | Comment les résultats améliorent-ils le modèle ? | Résultats des relances et du groupe témoin de 10 % ajoutés à l'historique ; réentraînement trimestriel. |
 
 **Lecture pour un non-spécialiste.** L'IA rend la **prédiction** bon marché. L'équipe garde le **jugement** : seuils, ton, validation. Les **résultats** des campagnes réalimentent le modèle.
 
@@ -120,10 +112,10 @@ Les cases Entrée, Entraînement et Rétroaction sont les mêmes pour les quatre
 
 | Case | Passage au mensuel | Hausse | Réactivation |
 |---|---|---|---|
-| **Prédiction** | Probabilité qu'un donateur ponctuel ou annuel passe au mensuel dans les 6 mois | Probabilité qu'un mensuel augmente son don dans les 6 mois. **Modèle évalué, règle RFM conservée** tant que R1 et R2 échouent | Probabilité qu'un inactif redonne dans les 6 mois |
+| **Prédiction** | Passage au mensuel dans les 6 mois | Hausse du don dans les 6 mois (**règle RFM conservée**) | Nouveau don d'un inactif dans les 6 mois |
 | **Jugement** | Solliciter trop tôt peut faire fuir. Le montant suggéré doit rester raisonnable | Ne jamais demander plus à un donateur à risque de départ | Coût d'un envoi contre le don moyen espéré |
-| **Action** | Proposition de don mensuel, avec un montant suggéré | Demande de hausse de 5 ou 10 $ | Courriel « vous nous manquez » |
-| **Résultat** | Conversion ou non en 6 mois | Hausse ou non en 6 mois | Nouveau don ou non en 6 mois |
+| **Action** | Proposition de don mensuel, avec un montant suggéré | Demande de hausse de 5 ou 10 $ | Courriel « vous nous manquez » |
+| **Résultat** | Conversion ou non en 6 mois | Hausse ou non en 6 mois | Nouveau don ou non en 6 mois |
 
 ---
 
@@ -134,33 +126,33 @@ Légende : **[IA]** = le requis repose sur un modèle d'apprentissage. **[P]** =
 | # | Requis | IA | Prototype |
 |---|---|---|---|
 | RF1 | Importer l'historique des dons et des donateurs depuis un export CSV du CRM ou de la plateforme de dons | | P |
-| RF2 | Contrôler automatiquement la qualité des données importées (complétude, validité, doublons, cohérence, actualité, consentement) | | P |
-| RF3 | Calculer pour chaque donateur actif un **risque d'attrition** à 90 jours | IA | P |
-| RF4 | Calculer une **propension au passage au mensuel** à 6 mois et suggérer un montant | IA | P |
-| RF5 | Calculer une **propension à augmenter** le don mensuel. Modèle évalué ; règle RFM conservée tant que R1 et R2 échouent | IA (évalué) | P (règle RFM en service) |
+| RF2 | Contrôler automatiquement la qualité des données importées (complétude, doublons, cohérence, actualité, consentement) | | P |
+| RF3 | Calculer pour chaque donateur actif un **risque d'attrition** à 90 jours | IA | P |
+| RF4 | Calculer une **propension au passage au mensuel** à 6 mois et suggérer un montant | IA | P |
+| RF5 | Calculer une **propension à augmenter** le don mensuel (règle RFM conservée tant que R1 et R2 échouent) | IA (évalué) | P (règle RFM) |
 | RF6 | Calculer une **probabilité de réactivation** des inactifs | IA | P |
 | RF7 | Identifier les donateurs **à remercier** (règle explicite) | | P |
 | RF8 | Choisir pour chaque donateur l'action la plus utile et classer par **valeur attendue** | IA | P |
 | RF9 | **Expliquer** chaque prédiction par ses trois facteurs principaux | IA | P |
 | RF10 | Générer un **brouillon de courriel** personnalisé, sans montant ni fait inventé | (IA en V2) | P (gabarits) |
 | RF11 | Validation humaine obligatoire avant tout envoi, modifiable par type d'action | | P |
-| RF12 | Plafond de sollicitation : un courriel par donateur et par 30 jours ; remerciement prioritaire | | P |
+| RF12 | Plafond de sollicitation : un courriel par donateur et par 30 jours ; remerciement prioritaire | | P |
 | RF13 | Respect du consentement : aucun courriel sans consentement, lien de désabonnement | | P |
-| RF14 | **Groupe témoin** de 10 % pour mesurer l'effet réel des actions | | P |
+| RF14 | **Groupe témoin** de 10 % pour mesurer l'effet réel des actions | | P |
 | RF15 | Tableau de bord : revenus, segments, valeur à risque, santé des modèles | IA | P |
 | RF16 | Page **Impact** : dons récupérables selon la capacité de l'équipe, comparés à RFM et au hasard | IA | P |
 | RF17 | Page **Modèle** : métriques, requis de performance, équité, version du modèle | IA | P |
 | RF18 | Réentraînement planifié (hebdomadaire pour les scores, trimestriel pour le modèle) et retour à la version précédente | IA | P (manuel) |
 | RF19 | Envoi réel par un fournisseur de courriels et suivi des ouvertures | | Non (simulé) |
 | RF20 | Authentification, comptes par organisation, journal des accès | | Non |
-| RF21 | Temps de réponse : liste de la semaine affichée en moins de 2 s | | P (modèle pré-entraîné) |
+| RF21 | Temps de réponse : liste de la semaine affichée en moins de 2 s | | P (modèle pré-entraîné) |
 | RF22 | Interface en français, utilisable sur ordinateur et téléphone | | P |
-| RF23 | **Opposition au profilage** (Loi 25) : un donateur peut demander à ne pas être scoré. Un drapeau, saisi à l'écran ou lu à l'import, l'exclut de tous les modèles et de toutes les listes ; il ne reçoit que les messages non ciblés | | Non |
-| RF24 | **Accès, rectification, suppression et conservation.** Exporter sur demande les données et les scores d'un donateur ; les corriger ; les purger. Les scores et leur historique sont effacés au bout de 24 mois (choix de l'équipe). Les dons sont conservés selon les obligations fiscales de l'organisation, durée à confirmer par le conseiller juridique (section 9.3) | | Non |
+| RF23 | **Opposition au profilage** (Loi 25) : un drapeau exclut le donateur de tous les modèles et listes ciblées | | Non |
+| RF24 | **Accès, rectification, suppression** des données et scores d'un donateur ; scores effacés après 24 mois ; dons conservés selon les obligations fiscales | | Non |
 
 ### User stories (extrait)
 
-- *En tant que responsable des dons*, je veux voir chaque lundi les 50 donateurs à contacter en priorité, pour utiliser mes 2 heures de la semaine au mieux. (RF8)
+- *En tant que responsable des dons*, je veux voir chaque lundi les 50 donateurs à contacter en priorité, pour utiliser mes 2 heures de la semaine au mieux. (RF8)
 - *En tant que responsable des dons*, je veux savoir **pourquoi** un donateur est signalé, pour adapter mon message et faire confiance à l'outil. (RF9)
 - *En tant que directrice*, je veux savoir combien de dons l'outil peut nous faire récupérer avant de l'adopter. (RF16)
 - *En tant que donateur*, je ne veux pas recevoir trois demandes dans le mois. (RF12)
@@ -172,46 +164,42 @@ Légende : **[IA]** = le requis repose sur un modèle d'apprentissage. **[P]** =
 
 ### 4.1 Tâche et type de modèle
 
-- **Tâche :** 4 problèmes de **classification binaire supervisée** sur données tabulaires et temporelles, avec des classes déséquilibrées (2 à 8 % de positifs).
-- **Apprentissage :** supervisé, avec des étiquettes construites à partir de l'historique (photo à la date T, résultat observé sur l'horizon).
-- **Algorithmes :**
-  - **régression logistique** : lisible, coefficients interprétables, bien calibrée ;
-  - **gradient boosting d'arbres** (Friedman, 2001) : capte les interactions et les seuils, par exemple deux échecs de paiement consécutifs ;
-  - **ensemble** des deux.
-  Choix automatique sur un jeu de validation.
+- **Tâche :** 4 problèmes de **classification binaire supervisée**, sur données tabulaires et temporelles, avec 2 à 8 % de positifs.
+- **Étiquettes :** construites à partir de l'historique (photo à la date T, résultat observé sur l'horizon).
+- **Algorithmes :** **régression logistique** (lisible, bien calibrée), **gradient boosting d'arbres** (Friedman, 2001), qui capte les seuils comme deux échecs de paiement consécutifs, et leur **ensemble**. Choix sur un jeu de validation.
 - **Référence :** règle RFM par quintiles.
 
 ### 4.2 Pourquoi un modèle personnalisé plutôt qu'un modèle pré-entraîné ?
 
 | Option | Évaluation |
 |---|---|
-| Modèle pré-entraîné (Hugging Face) | Aucun modèle public ne prédit l'attrition de donateurs ; chaque base est propre à son organisation |
-| Service clé en main (section 1.4) | Coûteux pour un petit OBNL, méthode non publiée, données confiées à un tiers dont l'hébergement varie |
-| LLM généraliste (ChatGPT, Gemini) | Mauvais en prédiction tabulaire calibrée, non reproductible, coût par appel |
-| **Modèle personnalisé, petit** | Entraîné sur les données de l'organisation, explicable, gratuit à l'usage, exécutable localement |
+| Modèle pré-entraîné (Hugging Face) | Aucun modèle public ne prédit l'attrition de donateurs |
+| Service clé en main (section 1.4) | Coûteux, méthode non publiée, données confiées à un tiers |
+| LLM généraliste (ChatGPT, Gemini) | Mauvais en prédiction tabulaire calibrée, non reproductible |
+| **Modèle personnalisé, petit** | Entraîné sur les données de l'organisation, explicable, gratuit à l'usage |
 
-Nous avons choisi des **modèles petits et frugaux** (Varoquaux, Luccioni et Whittaker, 2025). Ils sont **codés à la main** en TypeScript pour tourner dans le navigateur, sans serveur de calcul. Leur justesse est **vérifiée contre scikit-learn** sur les mêmes données (`verification/RESULTATS.md`) : la régression logistique donne la même AUC-PR à 0,003 près, le boosting le même ordre de grandeur (écart ≤ 0,03).
+Nous avons choisi des **modèles petits et frugaux** (Varoquaux, Luccioni et Whittaker, 2025), **codés à la main** en TypeScript pour le navigateur et **vérifiés contre scikit-learn** (`verification/RESULTATS.md`) : AUC-PR à 0,003 près en logistique, à 0,03 près en boosting.
 
-Un **LLM pré-entraîné**, sans entraînement supplémentaire, est prévu en V2 pour reformuler les gabarits de courriels. Il reste sous validation humaine, ne reçoit que des champs non libres (pas de notes du CRM, contre l'injection de requêtes) et n'a aucun droit d'inventer un montant. Ce choix crée un transfert de données vers un fournisseur. Ses risques sont traités en sections 7 et 8.
+Un **LLM pré-entraîné** reformulera les gabarits de courriels en V2, sous validation humaine, sans champ libre en entrée et sans droit d'inventer un montant (sections 7 et 8).
 
 ### 4.3 Requis de performance
 
-Fixés **avant** l'entraînement (Huyen, 2022, ch. 2 : relier métrique ML et métrique d'affaires). Ils sont vérifiés automatiquement à chaque réentraînement.
+Les requis relient la métrique ML à la métrique d'affaires (Huyen, 2022, ch. 2). Ils sont vérifiés automatiquement à chaque réentraînement.
 
 | Id | Métrique et seuil | Lien avec l'affaire |
 |---|---|---|
 | R1 | AUC-PR ≥ 2 × taux de base | Faire nettement mieux que le hasard ; **condition de déploiement** avec R2 |
-| R2 | Écart d'AUC-PR avec RFM > 0 avec 95 % de confiance (bootstrap apparié) | Justifier l'IA ; **condition de déploiement** avec R1 |
+| R2 | Écart d'AUC-PR avec RFM > 0 avec 95 % de confiance (bootstrap apparié) | Justifier l'IA ; **condition de déploiement** avec R1 |
 | R3 | Précision des 50 premiers noms ≥ RFM | Capacité hebdomadaire d'une petite équipe |
 | R4 | Score de Brier < prédiction constante | Valeur attendue = probabilité × montant |
 | R5 | AUC du test temporel ≥ AUC du test − 0,05 | Stabilité face à la dérive |
-| R6 | Calibration par tranche d'âge (prédit / observé) entre 0,67 et 1,5. Seules les tranches mesurables comptent : au moins 100 cas et au moins 5 positifs | Équité (section 8) |
+| R6 | Calibration par tranche d'âge (prédit / observé) entre 0,67 et 1,5. Seules les tranches d'au moins 100 cas et 5 positifs comptent | Équité (section 8) |
 
-**Gouvernance.** Un modèle n'est déployé que s'il fait au moins 2 fois mieux que le hasard (R1) **et** bat RFM de façon significative (R2). Sinon, l'application classe les donateurs avec la règle RFM, calibrée en probabilité. La décision est affichée dans la page Modèle IA.
+**Fixé avant, changé après.** Les seuils de R1 à R6 ont été fixés en séance 6, avant l'entraînement, et n'ont pas bougé. Trois façons de tester ont changé après les premiers résultats. R2 comparait deux IC, test trop conservateur : il est devenu un bootstrap apparié. Le test temporel de R5 est passé de 2 à 4 dates : 2 dates (environ 180 exemples) donnaient des résultats erratiques. Le filtre de R6 (100 cas, 5 positifs) a été ajouté en v3, pour ne pas juger une tranche sur deux conversions. Ces changements ont été faits en voyant les résultats ; nous les déclarons (leçon 2).
 
-**Règle unique : R1 et R2 sont bloquants ; R3 à R6 sont des alertes.** L'application bloque seulement sur R1 et R2. Un échec à R3, R4, R5 ou R6 ne retire pas le modèle : il doit être examiné et levé par une personne responsable avant tout usage réel. Sur le jeu synthétique, deux modèles déployés portent une alerte : le passage au mensuel (R6, calibration par âge) et la réactivation (R5, dérive temporelle ; R6). Le prototype ne l'affiche pas encore à côté de la décision de déploiement (section 6.4).
+**Gouvernance : R1 et R2 bloquent ; R3 à R6 alertent.** Sans R1 **et** R2, l'application classe avec la règle RFM, calibrée en probabilité. Un échec à R3, R4, R5 ou R6 ne retire pas le modèle, mais une personne responsable doit le lever avant tout usage réel. Deux modèles déployés portent une alerte : le passage au mensuel (R6) et la réactivation (R5, R6).
 
-**Pourquoi l'AUC-PR plutôt que l'exactitude ?** Avec 2 à 8 % de positifs, prédire « non » partout donne plus de 92 % d'exactitude. La précision moyenne (aire sous la courbe précision-rappel) est plus informative en classes déséquilibrées (Saito et Rehmsmeier, 2015).
+**Pourquoi l'AUC-PR ?** Avec 2 à 8 % de positifs, prédire « non » partout donne plus de 92 % d'exactitude. L'aire sous la courbe précision-rappel est plus informative (Saito et Rehmsmeier, 2015).
 
 ### 4.4 Système d'IA
 
@@ -237,27 +225,21 @@ Fixés **avant** l'entraînement (Huyen, 2022, ch. 2 : relier métrique ML et m�
 
 ### 4.5 Déploiement et technologies
 
-La solution cible suit le schéma du scénario 4 de la séance 5 : une API, un conteneur Docker, un déploiement infonuagique. Tous les services sont dans la région AWS ca-central-1 (Montréal), pour garder les données au Canada.
+La cible suit le scénario 4 de la séance 5 : une API, un conteneur Docker, un déploiement infonuagique, tout dans la région AWS ca-central-1 (Montréal).
 
 | | Prototype (livré) | Solution cible |
 |---|---|---|
-| Interface | React 19 + TypeScript + Tailwind, site statique (GitHub Pages) ; image Docker nginx (étape `web` du `Dockerfile`) | Identique, servie par la même image nginx, derrière l'authentification |
-| API | Aucune : tout tourne dans le navigateur | **FastAPI** (Python), dans un conteneur Docker : lit les listes et les scores, enregistre les validations et les envois |
-| Calcul des modèles | Dans le navigateur (Web Worker) ; modèle pré-entraîné `model.json` | **Python et scikit-learn** (`LogisticRegression`, `HistGradientBoostingClassifier`), dans un conteneur Docker sur **AWS ECS Fargate**. Scoring hebdomadaire et réentraînement trimestriel lancés par **Amazon EventBridge Scheduler** |
-| Authentification | Aucune | **Amazon Cognito** : un compte par personne, rattaché à une organisation ; double authentification ; journal des accès (RF20) |
-| Données | Générées localement ou importées en CSV, jamais envoyées | **Amazon RDS for PostgreSQL**, chiffré, une base par organisation |
-| Courriels | Simulés | **Amazon SES**, même région. Les données restent au Canada, mais quittent le Québec : ÉFVP avant la mise en service (section 8.3) |
-| Vérification | `npm test` (24 tests), contrôle de reproductibilité et script scikit-learn | Tests et contrôle de reproductibilité dans l'intégration continue (GitHub Actions, déjà en place) |
+| Interface | React 19 + TypeScript, site statique (GitHub Pages) ; image Docker nginx | Identique, derrière l'authentification |
+| API | Aucune | **FastAPI** (Python) dans un conteneur Docker |
+| Calcul des modèles | Navigateur (Web Worker) ; modèle pré-entraîné `model.json` | **Python et scikit-learn** sur **AWS ECS Fargate**, lancé par **EventBridge Scheduler** (scoring hebdomadaire, réentraînement trimestriel) |
+| Authentification | Aucune | **Amazon Cognito**, double authentification, journal des accès (RF20) |
+| Données | Locales ou CSV, jamais envoyées | **Amazon RDS for PostgreSQL**, chiffré, une base par organisation |
+| Courriels | Simulés | **Amazon SES** ; données hors Québec : ÉFVP d'abord (section 8.3) |
+| Vérification | `npm test` (24 tests), reproductibilité, scikit-learn | Mêmes contrôles en intégration continue (GitHub Actions) |
 
-Le prototype exécute le modèle **côté client** (edge). Coût d'hébergement nul, et les données de l'organisation ne quittent jamais le poste. Contrepartie : maintenance et surveillance plus difficiles, ce qui justifie le passage à une tâche serveur en production.
+Le prototype exécute le modèle **côté client** (edge) : hébergement gratuit, données qui ne quittent pas le poste, mais surveillance difficile. D'où la tâche serveur en production.
 
-**Un seul langage pour le ML cible : Python.** L'interface reste en TypeScript, mais elle n'affiche que des scores calculés par le serveur. Les variables, l'entraînement et le scoring sont tous en Python : un seul calcul de variables, donc pas de décalage entre entraînement et service.
-
-**Pourquoi ne pas garder les modèles maison ?** Pour le prototype, les coder en TypeScript avait deux avantages : tout tourne dans le navigateur, sans serveur, et rien n'est « magique », car chaque ligne du calcul est lisible. Mais c'est une entorse au principe KISS : une bibliothèque maison doit être maintenue, testée et corrigée par l'équipe, alors que scikit-learn l'est par sa communauté. En production, nous passons donc à scikit-learn. Le script de vérification (`verification/verify_sklearn.py`) sert de point de départ : il entraîne déjà les mêmes modèles sur les mêmes données. La vérification croisée devient le garde-fou de la migration : le modèle scikit-learn ne remplace le modèle maison que s'il donne la même AUC-PR, à la tolérance mesurée près (`verification/RESULTATS.md`).
-
-**Langages :**
-- TypeScript pour l'interface (prototype et cible) et pour les modèles du prototype.
-- Python et scikit-learn pour la vérification indépendante aujourd'hui, et pour le ML de la solution cible.
+**Langages : TypeScript pour l'interface, Python pour tout le ML cible.** Un seul calcul des variables évite le décalage entre entraînement et service. Garder nos modèles maison violerait le principe KISS : l'équipe devrait les maintenir, alors que scikit-learn l'est par sa communauté. `verification/verify_sklearn.py` entraîne déjà les mêmes modèles ; il sert de garde-fou à la migration (même AUC-PR, à la tolérance mesurée près).
 
 ---
 
@@ -267,20 +249,18 @@ Le prototype exécute le modèle **côté client** (edge). Coût d'hébergement 
 
 | Source | Rôle | Format | Disponibilité |
 |---|---|---|---|
-| **S1. Jeu synthétique** (`src/data/generate.ts`) | Entraînement et démonstration, 4 cas d'usage | Objets JSON ; export CSV | Généré, reproductible (graine) |
-| **S2. KDD Cup 1998** (archive UCI) | Validation de la **méthode** sur **vrais donateurs**, sur deux tâches voisines : réactivation et don plus élevé que le dernier | Texte délimité, 95 412 lignes × 481 champs | Public, sous conditions (`docs/DATASHEET-kdd98.md`) |
-| **S3. CRM de l'organisation** (production) | Entraînement et scoring réels | Export CSV : donateurs, dons, consentement | Accord de l'organisation ; Loi 25 |
-| **S4. Outil de courriels** (production) | Ouvertures mensuelles | CSV ou API | Uniquement pour les donateurs consentants |
+| **S1. Jeu synthétique** (`src/data/generate.ts`) | Entraînement et démonstration | JSON ; export CSV | Généré, reproductible (graine) |
+| **S2. KDD Cup 1998** (UCI KDD Archive, s. d.) | Validation de la **méthode** sur **vrais donateurs** : réactivation, don plus élevé que le dernier | Texte délimité, 95 412 lignes × 481 champs | Public, sous conditions (`docs/DATASHEET-kdd98.md`) |
+| **S3. CRM de l'organisation** | Entraînement et scoring réels | Export CSV | Accord de l'organisation ; Loi 25 |
+| **S4. Outil de courriels** | Ouvertures mensuelles | CSV ou API | Donateurs consentants seulement |
 
-Aucune donnée réelle d'organisation n'est utilisée dans le projet, conformément aux consignes. S2 est un jeu public de recherche.
-
-**Ce que KDD 98 valide, et ce qu'il ne valide pas.** La « hausse » n'a pas la même définition dans les deux sources. Dans le jeu synthétique, c'est un mensuel actif qui augmente son prélèvement dans les 180 jours. Dans KDD 98, c'est un donateur inactif dont la réponse à la relance dépasse son dernier don (`TARGET_D > LASTGIFT`). KDD 98 valide donc la méthode sur une tâche voisine, pas le modèle de hausse du mensuel. Ce dernier n'est d'ailleurs pas déployé.
+Aucune donnée réelle d'organisation n'est utilisée. **Limite de KDD 98 :** sa « hausse » est un inactif dont la réponse dépasse son dernier don (`TARGET_D > LASTGIFT`), pas un mensuel qui augmente son prélèvement. KDD 98 valide la méthode sur des tâches voisines, pas nos modèles.
 
 ### 5.2 Transformation
 
-1. **Photos temporelles :** pour chaque date T (tous les 2 à 6 mois selon le modèle, au plus 42 mois en arrière ; `src/ml/pipeline.ts`), on ne garde que les dons antérieurs à T, ce qui évite les fuites. On calcule 18 variables puis l'étiquette sur l'horizon.
-2. **Transformations :** logarithme des variables asymétriques (montants, récence, ancienneté). Imputation explicite du taux d'ouverture manquant, avec un indicateur dédié. Standardisation pour la régression logistique, découpage en quantiles pour le boosting.
-3. **Découpage par donateur :** 60 % entraînement, 20 % validation, 20 % test. Un donateur photographié à plusieurs dates reste dans un seul jeu.
+1. **Photos temporelles :** à chaque date T (tous les 2 à 6 mois, au plus 42 mois en arrière ; `src/ml/pipeline.ts`), seuls les dons antérieurs à T servent, ce qui évite les fuites. On calcule 18 variables, puis l'étiquette sur l'horizon.
+2. **Transformations :** logarithme des variables asymétriques ; ouverture manquante imputée, avec un indicateur ; standardisation (logistique) ou quantiles (boosting).
+3. **Découpage par donateur :** 60 % entraînement, 20 % validation, 20 % test. Un donateur photographié à plusieurs dates reste dans un seul jeu.
 4. **Test temporel :** entraînement sur les dates anciennes, test sur les plus récentes.
 
 Détail des variables : `docs/DATASHEET-synthetique.md`, section 4.
@@ -289,62 +269,49 @@ Détail des variables : `docs/DATASHEET-synthetique.md`, section 4.
 
 | Dimension | S1 synthétique | S2 KDD 98 | S3 CRM réel (anticipé) | S4 outil de courriels (anticipé) |
 |---|---|---|---|---|
-| Exactitude | Exacte par construction | Élevée (transactionnel) | Risque de saisie manuelle, doublons | **Moyenne** : l'ouverture est mesurée par un pixel invisible. Images bloquées = ouverture non comptée ; préchargement automatique par certains logiciels de messagerie = ouverture comptée à tort |
-| Crédibilité | Moyenne (calibrée) | Élevée (référence en recherche) | Élevée | Moyenne : bon signal de tendance, mauvais signal individuel exact |
-| Actualité | Configurable | Faible (1997) | Bonne si synchronisation hebdomadaire | Agrégat mensuel par donateur ; export hebdomadaire suffisant |
-| Complétude | 14 % sans ouvertures (documenté) | Âge manquant à 25 % | Ouvertures absentes sans consentement | Absente pour les donateurs sans courriel ou sans consentement au suivi ; parfois absente si l'organisation n'a pas d'outil de courriels |
-| Pertinence | 4 cas d'usage | Tâches voisines de la réactivation et de la hausse | Totale | Élevée : source de la variable la plus utile au modèle d'attrition (section 1.3) |
-| Représentativité | Hypothèses du générateur | États-Unis, cause unique, aînés | Propre à l'organisation | Biaisée vers les donateurs qui ont une adresse courriel et qui consentent |
-| Accessibilité | Locale | Publique, conditions d'usage | Export CSV, consentement, Loi 25 ; voir ci-dessous | Export CSV ou API selon l'outil ; certains outils n'exportent que par campagne, pas par donateur |
-| Interprétabilité | Dictionnaire de données | Dictionnaire fourni (`cup98dic.txt`) | Variable selon le CRM | Définition de « ouverture » propre à chaque outil |
+| Exactitude | Exacte par construction | Élevée (transactionnel) | Saisie manuelle, doublons | **Moyenne** : pixel invisible, faussé par les images bloquées ou le préchargement |
+| Crédibilité | Moyenne (calibrée) | Élevée | Élevée | Bonne tendance, mauvais signal individuel |
+| Actualité | Configurable | Faible (1997) | Bonne si export hebdomadaire | Agrégat mensuel |
+| Complétude | 14 % sans ouvertures | Âge manquant à 25 % | Ouvertures absentes sans consentement | Absente sans courriel ou sans consentement |
+| Pertinence | 4 cas d'usage | Tâches voisines | Totale | Élevée (section 1.3) |
+| Représentativité | Hypothèses du générateur | États-Unis, aînés, cause unique | Propre à l'organisation | Biaisée vers les donateurs avec courriel |
+| Accessibilité | Locale | Publique, sous conditions | Export CSV, Loi 25 | CSV ou API ; parfois par campagne seulement |
+| Interprétabilité | Dictionnaire de données | `cup98dic.txt` | Variable selon le CRM | « Ouverture » définie par chaque outil |
 
-**S4 demande une prudence propre.** Le taux d'ouverture est la variable la plus utile au modèle d'attrition, mais c'est aussi la mesure la moins fiable : un pixel ne prouve pas qu'un courriel a été lu. Nous l'utilisons donc comme une tendance (sur 3 mois), jamais comme un fait sur une personne. Il n'est lu que pour les donateurs qui ont consenti au suivi (ligne Collecte de la section 8.1, requis RD5 ci-dessous). Sans S4, le modèle reste utilisable grâce à la variable d'absence, avec une performance moindre (risque « pas d'historique d'ouvertures », section 7).
+**S4 demande une prudence propre.** Le taux d'ouverture est la variable la plus utile, mais la moins fiable : un pixel ne prouve pas une lecture. Il sert de tendance sur 3 mois, jamais de fait sur une personne, et seulement avec consentement (RD5).
 
-**L'accessibilité est le vrai risque pour un petit OBNL.** Vial et al. (2021) montrent que de nombreux projets d'IA restent bloqués au laboratoire parce que les données ne sont pas accessibles en production. Ce n'est pas d'abord un problème technique, mais un problème de gestion. Chez un OBNL de 1 à 5 personnes, les dons sont souvent dans un CRM, les ouvertures dans un outil de courriels, et personne n'est chargé de les relier. Fidélia réduit ce frein : un simple export CSV par source, un gabarit de fichier fourni et des contrôles automatiques à l'import.
+**L'accessibilité est le vrai risque.** Beaucoup de projets d'IA restent au laboratoire parce que les données ne sont pas accessibles en production ; c'est d'abord un problème de gestion (Vial et al., 2021). Chez un petit OBNL, les dons sont dans un CRM, les ouvertures dans un outil de courriels, et personne ne les relie. Fidélia demande un simple export CSV par source, avec un gabarit et des contrôles automatiques. Pour KDD 98, nous avons remonté jusqu'à la source et noté ses conditions d'usage, car la provenance des jeux publics est souvent mal documentée (Longpre et al., 2025).
 
-**La provenance compte aussi.** Longpre et al. (2025), lus en séance 3, montrent que la licence et l'origine des jeux de données publics sont souvent mal documentées. Pour KDD 98, nous avons donc remonté jusqu'à la source (archive UCI) et noté ses conditions d'usage : ne pas nommer l'organisation commanditaire, prévenir Epsilon en cas de publication (`docs/DATASHEET-kdd98.md`).
-
-Les contrôles mesurables sont **automatisés** dans la page **Données** : courriels valides, ouvertures, montants aberrants, dates futures, doublons d'identifiants et de courriels, dons orphelins, dons antérieurs à l'inscription, actualité du dernier don, taux de consentement. Le principe directeur est « fit for use » : une donnée est de qualité si elle convient à l'usage visé.
+Les contrôles mesurables sont **automatisés** dans la page **Données** (doublons, dons orphelins, dates futures, montants aberrants, actualité, consentement), selon le principe « fit for use ».
 
 ### 5.4 Volume minimal de données et démarrage à froid
 
-« Y a rien de magique » : un modèle n'apprend rien sans assez d'exemples. Les courbes d'apprentissage (`reports/evaluate-42.txt`) donnent un ordre de grandeur. Le nombre de positifs ci-dessous est estimé : exemples d'entraînement × taux de base.
+« Y a rien de magique » : un modèle n'apprend rien sans assez d'exemples. Les courbes d'apprentissage (`reports/evaluate-42.txt`) donnent un ordre de grandeur. Positifs estimés = exemples × taux de base.
 
-| Modèle | Exemples d'entraînement | Positifs (environ) | AUC-PR | Seuil R1 (2 × taux de base) |
+| Modèle | Exemples d'entraînement | Positifs (environ) | AUC-PR | Seuil R1 |
 |---|---|---|---|---|
 | Attrition | 321 | 22 | 0,129 | 0,134 : **échoue** |
-| Attrition | 802 | 54 | 0,174 | réussit |
-| Attrition | 1 603 | 108 | 0,225 | réussit |
-| Attrition | 3 207 | 216 | 0,243 | réussit |
+| Attrition | 1 603 | 108 | 0,225 | réussit |
+| Attrition | 3 207 | 216 | 0,243 | réussit |
 | Réactivation | 464 | 18 | 0,063 | 0,079 : **échoue** |
-| Réactivation | 2 311 | 91 | 0,111 | réussit |
-| Réactivation | 4 624 | 182 | 0,123 | réussit |
+| Réactivation | 2 311 | 91 | 0,111 | réussit |
 
-**Requis de données (RD1).** Un modèle n'est utilisé que si l'historique contient **au moins 100 événements positifs** pour ce modèle (par exemple 100 départs de mensuels). En dessous, Fidélia classe automatiquement avec la règle RFM (`governanceDecision`, `src/ml/pipeline.ts`). Sous un minimum technique (10 positifs à l'entraînement, 3 en validation et 3 en test), aucun modèle n'est entraîné : la liste n'est pas proposée et un message l'explique. Vers 100 positifs, l'attrition atteint 93 % de son AUC-PR finale (0,225 sur 0,243) et la réactivation 90 % (0,111 sur 0,123). Autour de 20 positifs, les deux échouent à R1. Ce seuil est une règle prudente tirée de nos courbes ; il sera revu avec les données du pilote.
+Autour de 20 positifs, les deux modèles échouent à R1 ; vers 100, ils atteignent 90 à 93 % de leur AUC-PR finale. D'où **RD1 : au moins 100 événements positifs** par modèle, sinon repli sur RFM (`governanceDecision`, `src/ml/pipeline.ts`). Un OBNL de 300 mensuels observe environ 20 départs par trimestre : il lui faut environ **5 trimestres** d'historique.
 
-**Ce que cela veut dire pour un petit OBNL.** Avec 300 mensuels et un taux de départ de 6,7 % par 90 jours, on observe environ 20 départs par trimestre. Il faut donc environ 5 trimestres d'historique pour atteindre 100 départs.
-
-**Le même calcul vaut pour le groupe témoin.** « Y a rien de magique » s'applique aussi à notre propre mesure. Avec 300 mensuels, un témoin de 10 % compte 30 donateurs, soit environ 2 départs par trimestre (30 × 6,7 %). Supposons que la relance réduise les départs de 30 % (hypothèse par défaut de la page Impact) : le taux passerait de 6,7 % à 4,7 %. Pour détecter cet écart (test de deux proportions, risque de 5 %, puissance de 80 % ; calcul de l'équipe), il faut environ **2 100 mensuels par groupe** à parts égales. Avec un témoin de 10 % (1 témoin pour 9 relancés), il faut environ **1 100 à 1 300 mensuels témoins** : 1 100 avec la variance commune sous l'hypothèse nulle, 1 300 avec les variances propres à chaque groupe (6,7 % et 4,7 %). Cela fait environ 11 000 à 13 000 mensuels suivis pendant un trimestre. Un OBNL seul n'y arrive pas, même en plusieurs années. La conversion est encore plus difficile à mesurer : taux de base de 1,8 % et horizon de 6 mois.
-
-Conséquence : le pilote ne peut pas prouver l'effet causal. Il faut **mettre en commun les témoins de plusieurs organisations**. Par exemple, environ 40 clients de 300 mensuels chacun, avec 10 % de témoin, donnent environ 1 200 témoins en un trimestre. Si l'effet réel est plus faible que 30 %, il en faut davantage. Agrandir le témoin pendant le pilote ne suffit pas : à 50 % chez 2 OBNL de 300 mensuels, il faudrait environ 7 trimestres.
-
-**Liste des requis de données.** RD1 découle des courbes ci-dessus. Les autres reprennent les exigences des sections 5.1 à 5.3 et de RF2. La dernière colonne dit si le requis vaut pour l'entraînement (trimestriel), pour le scoring (hebdomadaire) ou pour les deux.
+**Le groupe témoin.** Chez ce même OBNL, un témoin de 10 % compte 30 donateurs, soit environ 2 départs par trimestre. Détecter une baisse de 30 % des départs demande environ **1 100 à 1 300 mensuels témoins**. Il faut donc **mettre en commun les témoins d'environ 40 organisations**. C'est le seul endroit où nous détaillons ce calcul : annexe B.
 
 | # | Requis | Vérification | Vaut pour |
 |---|---|---|---|
-| RD1 | Au moins **100 événements positifs** par modèle dans l'historique | Compté à chaque entraînement ; sinon repli automatique sur RFM. Sous 10 positifs à l'entraînement (ou 3 en validation ou en test) : liste non proposée, message affiché | Entraînement |
-| RD2 | **Schéma minimal** en CSV, dates au format AAAA-MM-JJ. Donateurs : `id` (obligatoire), `email`, `email_consent`, `kind`, `join_date`. Dons : `donor_id`, `date`, `amount` (obligatoires), `kind`, `status`. Ouvertures (facultatif) : `donor_id`, `month`, `open_rate` | Import : lignes illisibles ou mal datées écartées et comptées (`src/lib/csv.ts`) | Les deux |
-| RD3 | **Historique** assez long pour atteindre RD1 : environ 5 trimestres pour 300 mensuels. Les photos remontent au plus à 42 mois | Calculé à l'import | Entraînement |
-| RD4 | **Fraîcheur** : export hebdomadaire ; dernier don enregistré il y a moins de 31 jours | Contrôle « Actualité » de la page Données | Scoring |
-| RD5 | **Consentement** : aucun courriel sans consentement (LCAP) ; ouvertures (S4) lues seulement pour les donateurs qui ont consenti au suivi ; drapeau d'opposition au profilage respecté (RF23) | Contrôle « Accessibilité » ; filtre avant le calcul des variables | Les deux |
-| RD6 | **Seuils de qualité bloquants** (V1) : 0 identifiant en double, 0 don orphelin, 0 don daté dans le futur. Les autres contrôles de RF2 (courriels valides ≥ 95 %, montants aberrants ≤ 0,1 %, dons antérieurs à l'inscription ≤ 0,1 %, etc.) restent des avertissements | Page Données (`src/lib/quality.ts`) | Les deux |
+| RD1 | Au moins **100 événements positifs** par modèle dans l'historique | Compté à chaque entraînement ; sinon repli sur RFM ; sous 10 positifs, liste non proposée | Entraînement |
+| RD2 | **Schéma minimal** en CSV : donateurs (`id`, `email`, `email_consent`…), dons (`donor_id`, `date`, `amount`…), ouvertures facultatives ; liste complète en annexe B | Lignes illisibles écartées et comptées (`src/lib/csv.ts`) | Les deux |
+| RD3 | **Historique** suffisant pour RD1 (environ 5 trimestres pour 300 mensuels) | Calculé à l'import | Entraînement |
+| RD4 | **Fraîcheur** : dernier don enregistré il y a moins de 31 jours | Contrôle « Actualité » de la page Données | Scoring |
+| RD5 | **Consentement** : courriels (LCAP), suivi des ouvertures, opposition au profilage (RF23) | Filtre avant le calcul des variables | Les deux |
+| RD6 | **Seuils bloquants** (V1) : 0 doublon d'identifiant, 0 don orphelin, 0 don futur ; le reste en avertissement | Page Données (`src/lib/quality.ts`) | Les deux |
 
-Dans le prototype, les contrôles de RF2 signalent sans bloquer, et un champ `email_consent` absent vaut « oui ». En V1, RD6 bloquera l'import et un consentement absent vaudra « non ».
+Dans le prototype, les contrôles signalent sans bloquer et un consentement absent vaut « oui » ; en V1, RD6 bloquera et il vaudra « non ».
 
-**Sous le seuil : trois options.**
-1. **Repli sur RFM.** C'est le comportement par défaut. La gouvernance R1 + R2 le prévoit déjà : sans modèle valable, la liste est classée par la règle RFM calibrée.
-2. **Attendre.** L'historique s'accumule ; le modèle est réévalué à chaque trimestre.
-3. **Modèle initial commun (V2).** Pré-entraîner un modèle sur les données de plusieurs organisations clientes, avec leur accord, puis l'ajuster à chaque OBNL. Cette option demande un accord de partage de données et une ÉFVP (section 8.3). Le modèle commun doit lui aussi passer R1 et R2 sur les données de l'organisation avant d'être utilisé.
+**Sous le seuil :** repli sur RFM (par défaut), attente d'un historique suffisant, ou, en V2, un modèle commun à plusieurs organisations, avec leur accord, une ÉFVP, et R1 et R2 vérifiés chez chacune.
 
 ### 5.5 Documentation
 
@@ -357,42 +324,24 @@ Dans le prototype, les contrôles de RF2 signalent sans bloquer, et un champ `em
 
 ### 6.1 Ce qu'il démontre
 
-Application web complète, en français, disponible en local, dans un conteneur Docker et en ligne, sans installation : https://wtigg.github.io/fidelia/ (code : https://github.com/wtigg/fidelia).
-
-| Page | Contenu |
-|---|---|
-| Tableau de bord | Revenus, segments, valeur à risque, priorités, santé des modèles face à RFM |
-| Recommandations | Les listes par action, classées par valeur attendue, avec raisons et préparation des courriels en un clic |
-| Impact | Dons récupérables selon la capacité de l'équipe et l'effet supposé ; modèle, RFM et hasard ; preuve sur données réelles |
-| Donateurs | Fiche détaillée : probabilités, explication, historique de 24 mois, variables |
-| Courriels | Brouillons, validation, envoi simulé, groupe témoin |
-| Automatisations | Seuils, validation humaine, cycle hebdomadaire, garde-fous |
-| Modèle IA | Méthode, requis de performance et décision de déploiement, comparaison avec IC et écart apparié contre RFM, courbes PR / ROC / gain, importance par permutation, calibration, test temporel, équité, simulateur, validation sur KDD 98 |
-| Données | Import CSV, contrôles de qualité, génération, exports |
+Application web complète, en français, en local, dans Docker et en ligne sans installation (https://wtigg.github.io/fidelia/). Huit pages : **Tableau de bord** (revenus, valeur à risque, santé des modèles) ; **Recommandations** (listes par action, raisons, courriels en un clic) ; **Impact** (valeur ciblée : modèle, RFM, hasard) ; **Donateurs** (fiche, probabilités, explication) ; **Courriels** (brouillons, validation, envoi simulé, témoin) ; **Automatisations** (seuils, garde-fous) ; **Modèle IA** (requis, décision de déploiement, écart apparié, courbes, calibration, équité, KDD 98) ; **Données** (import CSV, qualité, exports).
 
 ### 6.2 Résultats principaux
 
 **Jeu synthétique, test (donateurs jamais vus, graine 42) :**
 
-| Modèle | Taux de base | Fidélia AUC-PR [IC 95 %] | RFM AUC-PR [IC 95 %] | Écart [IC 95 % apparié] | Précision@50 (Fidélia / RFM) | Utilisé |
+| Modèle | Taux de base | Fidélia AUC-PR [IC 95 %] | RFM AUC-PR [IC 95 %] | Écart [IC 95 % apparié] | Précision@50 (Fidélia / RFM) | Utilisé |
 |---|---|---|---|---|---|---|
-| Attrition | 6,7 % | **0,243** [0,162–0,377] | 0,091 [0,068–0,139] | +0,152 [0,058 ; 0,255] | 34 % / 8 % | Modèle (boosting) |
-| Passage au mensuel | 1,8 % | **0,113** [0,076–0,195] | 0,043 [0,031–0,080] | +0,070 [0,028 ; 0,124] | 24 % / 12 % | Modèle (ensemble) |
-| Réactivation | 3,9 % | **0,123** [0,080–0,241] | 0,039 [0,027–0,060] | +0,084 [0,036 ; 0,187] | 18 % / 2 % | Modèle (boosting) |
-| Hausse | 4,1 % | 0,076 [0,047–0,134] | 0,066 [0,042–0,113] | +0,011 [−0,024 ; 0,059] | 10 % / 4 % | **Règle RFM** (repli) |
+| Attrition | 6,7 % | **0,243** [0,162–0,377] | 0,091 [0,068–0,139] | +0,152 [0,058 ; 0,255] | 34 % / 8 % | Modèle (boosting) |
+| Passage au mensuel | 1,8 % | **0,113** [0,076–0,195] | 0,043 [0,031–0,080] | +0,070 [0,028 ; 0,124] | 24 % / 12 % | Modèle (ensemble) |
+| Réactivation | 3,9 % | **0,123** [0,080–0,241] | 0,039 [0,027–0,060] | +0,084 [0,036 ; 0,187] | 18 % / 2 % | Modèle (boosting) |
+| Hausse | 4,1 % | 0,076 [0,047–0,134] | 0,066 [0,042–0,113] | +0,011 [−0,024 ; 0,059] | 10 % / 4 % | **Règle RFM** (repli) |
 
-**Requis de performance R1 à R6 validés par le meilleur candidat : 17 sur 24 (6 requis × 4 modèles).** Les requis portent sur le meilleur modèle candidat de chaque tâche, pas sur ce qui est livré : pour la hausse, c'est la règle RFM qui classe, et ses 4 échecs portent sur un modèle non déployé.
+**Requis R1 à R6 validés par le meilleur candidat : 17 sur 24 (6 requis × 4 modèles).** Attrition : 6 sur 6. Passage au mensuel : échec à R6. Réactivation : échecs à R5 et R6. Hausse : échecs à R1, R2, R4 et R6, sur un modèle non déployé. Nous n'avons modifié ni les seuils ni le générateur pour corriger ces échecs.
 
-| Modèle | Requis non validés |
-|---|---|
-| Attrition | aucun (6/6) |
-| Hausse | R1, R2, R4, R6 : modèle remplacé par la règle RFM |
-| Passage au mensuel | R6 (calibration par âge) |
-| Réactivation | R5 (dérive temporelle), R6 |
+**Pourquoi RFM ne fait pas mieux que le hasard ici.** À 100 contacts, RFM cible 140 $ contre 191 $ pour le hasard en attrition, et 11,7 $ contre 17,6 $ en réactivation (`reports/impact-42.json`). La cause est le générateur : un mensuel actif donne chaque mois, sa récence varie très peu, et RFM perd sa meilleure variable. Les départs y viennent de signaux que RFM ne voit pas : échecs de paiement, carte expirée, baisse des ouvertures, recrutement dans la rue. Sur KDD 98 aussi, RFM fait à peine mieux que le hasard (AUC 0,53), car tous les donateurs y sont inactifs depuis 13 à 24 mois. Battre RFM est donc une barre basse ; c'est pourquoi R1 exige aussi de battre nettement le hasard. Ce n'est pas un homme de paille taillé pour flatter le modèle : pour la hausse, l'application garde RFM, alors que RFM n'y cible que 0,56 fois la valeur du hasard.
 
-Les échecs sont discutés en sections 8 et 10 ; nous ne les avons pas « corrigés » en modifiant les seuils ou le générateur.
-
-- **Robustesse :** sur 5 autres jeux générés (`npm run robustness`), le modèle a une AUC-PR supérieure à RFM dans **20 cas sur 20**. Il remplit la condition de déploiement (R1 + R2) dans **15 cas sur 20** :
+**Robustesse :** sur 5 autres jeux générés (`npm run robustness`), le modèle a une AUC-PR supérieure à RFM dans **20 cas sur 20**. Il remplit la condition de déploiement (R1 + R2) dans **15 cas sur 20** :
 
 | Modèle | Fidélia AUC-PR | RFM AUC-PR | Déployé (R1 + R2) |
 |---|---|---|---|
@@ -401,115 +350,52 @@ Les échecs sont discutés en sections 8 et 10 ; nous ne les avons pas « corrig
 | Passage au mensuel | 0,106 ± 0,065 | 0,042 ± 0,018 | 4/5 |
 | Hausse | 0,103 ± 0,040 | 0,057 ± 0,011 | 1/5 |
 
-- **Justesse :** résultats équivalents à scikit-learn (`verification/RESULTATS.md`).
+**Données réelles, KDD Cup 1998 (18 824 donateurs de test, sur 95 412) :**
 
-**Données réelles, KDD Cup 1998 (18 824 donateurs de test, sur 95 412) :**
-
-| Tâche | Taux de base | Fidélia AUC-PR [IC 95 %] | RFM AUC-PR [IC 95 %] | Écart apparié [IC 95 %] | R1 (≥ 2 × taux de base) | Déployable (R1 + R2) |
+| Tâche | Taux de base | Fidélia AUC-PR [IC 95 %] | RFM AUC-PR [IC 95 %] | Écart apparié [IC 95 %] | R1 (≥ 2 × taux de base) | Déployable (R1 + R2) |
 |---|---|---|---|---|---|---|
-| Réactivation | 5,08 % | **0,083** [0,075–0,094] | 0,053 [0,049–0,058] | [0,022 ; 0,039] | 0,083 < 0,102 : **échoue** | Non |
-| Don plus élevé que le dernier | 1,73 % | **0,040** [0,033–0,050] | 0,019 [0,017–0,021] | [0,016 ; 0,031] | 0,040 ≥ 0,035 : réussit | Oui |
+| Réactivation | 5,08 % | **0,083** [0,075–0,094] | 0,053 [0,049–0,058] | [0,022 ; 0,039] | 0,083 < 0,102 : **échoue** | Non |
+| Don plus élevé que le dernier | 1,73 % | **0,040** [0,033–0,050] | 0,019 [0,017–0,021] | [0,016 ; 0,031] | 0,040 ≥ 0,035 : réussit | **Oui** |
 
-Le modèle de réactivation bat RFM de façon significative, mais reste trop faible face au hasard pour notre propre règle (leçon 3). Profit net de la relance avec 20 % des envois : **2 133 $ contre 1 413 $** pour RFM.
+- **Don plus élevé que le dernier : R1 et R2 passent.** Le modèle double l'AUC-PR de RFM. C'est notre preuve, sur données réelles, qu'un modèle de cette famille peut remplir nos deux conditions. La tâche reste voisine de la nôtre, pas identique (section 5.1).
+- **Réactivation : R2 passe, R1 échoue.** Avec 20 % des envois, le profit net de la relance est de **2 133 $ contre 1 413 $** pour RFM (+51 %). Mais 0,083 reste sous 2 × 0,051 = 0,102, et même la borne haute de l'IC (0,094). Plus de données n'y change rien : la courbe d'apprentissage est plate (0,082 avec 7 660 exemples, 0,083 avec 76 588). Selon notre propre règle, **nous ne déploierions pas ce modèle**. Il valide la méthode de classement, pas un modèle prêt à l'emploi. Le reste du rapport renvoie à ce paragraphe.
 
 ### 6.3 Reproduire
 
-**Prérequis :** Node.js 22 ou plus et npm ; Python 3.11 ou plus avec scikit-learn, pandas et numpy ; `curl` et `unzip` pour télécharger KDD 98. Le détail des versions est dans le `README.md`.
-
-**Avec Docker (sans installer Node) :** le `Dockerfile` fige la version de Node et installe les dépendances exactes du `package-lock.json` (`npm ci`). C'est la démarche de portabilité vue en séance 5 (scénario 4).
-
-```bash
-docker build -t fidelia . && docker run --rm -p 8080:80 fidelia     # application sur http://localhost:8080
-docker build --target eval -t fidelia-eval .
-docker run --rm fidelia-eval                                        # 24 tests, puis contrôle de reproductibilité
-```
-
-La cible `eval` lance les 24 tests, puis le contrôle de reproductibilité (`npm run check:repro`). Celui-ci réentraîne la graine 42 dans un dossier temporaire et compare le résultat au rapport versionné `reports/synthetique-42.json`, à 1e-9 près (seuls l'horodatage et la durée sont ignorés). Message attendu : « Reproductible : rapport graine 42 identique à reports/synthetique-42.json ». Rien n'est écrit dans `reports/`.
-
-Pour régénérer le rapport sur le poste, il faut une commande à part :
-
-```bash
-docker run --rm -v "$PWD/reports:/app/reports" fidelia-eval npm run evaluate 42
-```
-
-**Sans Docker :**
-
-```bash
-npm ci                                             # dépendances exactes du package-lock.json
-npm test                                           # 24 tests : métriques, RFM, pipeline, requis, CSV, actions
-npm run check:repro                                # réentraîne la graine 42 et compare au rapport versionné
-npm run dev                                        # lance l'application
-npm run calibration > reports/calibration.txt      # compare le synthétique aux taux publiés
-npm run train                                      # entraîne et écrit src/data/model.json
-npm run evaluate 42 > reports/evaluate-42.txt      # écrit aussi reports/synthetique-42.json
-npm run robustness > reports/robustesse.txt        # écrit aussi reports/robustesse.json
-./scripts/download-kdd98.sh
-npm run kdd98 > reports/kdd98.txt                  # écrit aussi reports/kdd98.json
-npm run export-rows
-python3 verification/verify_sklearn.py > reports/sklearn.txt
-```
-
-**Intégration continue.** À chaque push et à chaque pull request, GitHub Actions (`.github/workflows/deploy.yml`) enchaîne :
-1. `npm ci`, le linter, puis les tests ;
-2. le contrôle de reproductibilité (`npm run check:repro`, tolérance 1e-9) ;
-3. la construction du site ;
-4. la construction des deux images Docker (`web` et `eval`), puis l'exécution de l'image `eval` ;
-5. la publication sur GitHub Pages, seulement pour un push sur `main`.
-
-Une étape qui échoue bloque la publication. Le contrôle ne dépend pas de git : il fonctionne aussi dans le conteneur.
-
-### 6.5 Peut-on rendre l'IA meilleure ? Trois tentatives
-
-Après la v3, nous avons cherché à améliorer les modèles, avec une règle stricte : toute décision se prend sur la validation, le jeu de test n'est évalué qu'une fois à la fin, et ni les seuils R1 et R2, ni la séparation des données, ni le générateur ne changent.
-
-| Tentative | Ce qui a été essayé | Avant (test) | Après (test) | Conclusion |
-|---|---|---|---|---|
-| KDD 98, plus de variables | 74 variables candidates connues avant juin 1997 (historique des codes RFA, cartes, relances, richesse du quartier…), sélection par familles et élagage sur la validation | AUC-PR 0,0825 | 0,0825 (configuration inchangée) | Aucune famille ne gagne en validation ; les 16 variables actuelles captent déjà le signal |
-| KDD 98, réglage du modèle | Environ 30 réglages : profondeur et nombre d'arbres, taux d'apprentissage, pondération des classes, interactions, ensembles | AUC-PR 0,0825 | 0,0813 | Léger recul dans le bruit ; le modèle plafonne vers 0,085 en validation |
-| Données synthétiques, « hausse du don » | 12 nouvelles variables d'historique (tendance, régularité, ratio au don médian, saison) | AUC-PR 0,076 | 0,084 sur la graine 42 | Le gain ne tient pas sur les 5 autres jeux générés ; R2 échoue toujours, la règle RFM reste utilisée |
-
-Sur KDD 98, même la borne haute de l'intervalle de confiance (0,094) reste sous le seuil R1 de 0,102. Ce que contient ce jeu de données (historique postal) limite la performance plus que le choix du modèle. Les signaux qui comptent le plus dans notre jeu synthétique, comme les ouvertures de courriels et les paiements échoués, n'existent pas dans KDD 98.
+Le `Dockerfile` fige Node et les dépendances (`npm ci`), selon la démarche de portabilité de la séance 5. `docker run --rm fidelia-eval` lance les 24 tests, réentraîne la graine 42 et compare le résultat à `reports/synthetique-42.json`, à 1e-9 près. GitHub Actions refait ces contrôles à chaque push et bloque la publication en cas d'échec. Commandes complètes : `README.md` et annexe C.
 
 ### 6.4 Différences entre le prototype et la solution cible
 
-Déclarées en toute transparence :
-- courriels simulés ;
-- calcul côté navigateur plutôt que serveur ;
-- pas d'authentification ;
-- données synthétiques plutôt que CRM réel ;
-- gabarits plutôt que LLM ;
-- modèles maison en TypeScript plutôt que scikit-learn ;
-- pas d'opposition au profilage ni de purge des données (RF23, RF24) ;
-- alertes R3 à R6 visibles dans la liste des requis, mais pas encore à côté de la décision de déploiement (section 4.3).
+Courriels simulés ; calcul dans le navigateur ; pas d'authentification ; données synthétiques ; gabarits plutôt que LLM ; modèles maison plutôt que scikit-learn ; ni opposition au profilage ni purge (RF23, RF24) ; alertes R3 à R6 pas encore affichées à côté de la décision de déploiement. La cible garde les mêmes variables et algorithmes, réécrits avec scikit-learn (section 4.5).
 
-La solution cible reprend les mêmes variables et les mêmes algorithmes, réécrits avec scikit-learn et validés par la vérification croisée (section 4.5).
+### 6.5 Peut-on rendre l'IA meilleure ? Trois tentatives
+
+Après la v3, règle stricte : décisions sur la validation, test évalué une seule fois, seuils, séparation et générateur inchangés.
+- **KDD 98, plus de variables** (74 candidates) : aucune famille ne gagne en validation ; AUC-PR inchangée à 0,0825.
+- **KDD 98, réglage du modèle** (une trentaine de réglages) : 0,0813, léger recul dans le bruit.
+- **Synthétique, hausse** (12 nouvelles variables) : 0,084 sur la graine 42, mais le gain ne tient pas sur les 5 autres jeux ; R2 échoue toujours.
+
+Sur KDD 98, le contenu du jeu (historique postal) limite plus que le modèle. Détail en annexe D.
 
 ---
 
 ## 7. Risques
 
+Les onze risques principaux ; les risques secondaires sont en annexe E.
+
 | Catégorie | Risque | Probabilité / gravité | Mesure |
 |---|---|---|---|
-| Données | Données réelles sales (doublons, montants saisis à la main) | Élevée / moyenne | Contrôles automatiques à l'import (RF2), rejet ou signalement |
-| Données | Historique trop court : moins de 100 événements positifs (petit OBNL, nouvelle organisation) | Élevée / moyenne | Requis RD1 (section 5.4) : repli automatique sur RFM sous 100 positifs ; liste non proposée sous le minimum technique ; modèle commun en V2 |
-| Données | Pas d'historique d'ouvertures (organisation sans outil de courriels) | Moyenne / moyenne | Variable d'absence ; modèle utilisable sans, avec une performance moindre |
-| Modèle | Modèle appris sur synthétique, inadapté au réel | Élevée / élevée | Réentraînement obligatoire sur les données de l'organisation ; R1 et R2 bloquants ; alertes R3 à R6 examinées et levées par un humain avant mise en service (section 4.3) |
-| Modèle | Signal trop faible sur données réelles (comme la réactivation sur KDD 98, qui échoue à R1) | Moyenne / moyenne | Gouvernance R1 + R2 : la liste reste classée par RFM |
-| Modèle | Dérive : crise, inflation, nouvelle campagne | Moyenne / moyenne | Requis R5, suivi hebdomadaire, réentraînement trimestriel, retour à la version précédente |
-| Usage | Confondre propension et effet causal | Élevée / moyenne | Groupe témoin (RF14), effet traité comme hypothèse dans la page Impact |
+| Données | Données réelles sales (doublons, montants saisis à la main) | Élevée / moyenne | Contrôles automatiques à l'import (RF2) ; seuils bloquants (RD6) |
+| Données | Historique trop court : moins de 100 événements positifs | Élevée / moyenne | RD1 : repli automatique sur RFM ; modèle commun en V2 (section 5.4) |
+| Modèle | Modèle inadapté au réel, ou signal trop faible (réactivation sur KDD 98) | Élevée / élevée | Réentraînement sur les données de l'organisation ; R1 et R2 bloquants ; alertes levées par un humain |
+| Modèle | Dérive : crise, inflation, nouvelle campagne | Moyenne / moyenne | R5, suivi hebdomadaire, réentraînement trimestriel, retour à la version précédente |
+| Usage | Confondre propension et effet causal | Élevée / moyenne | Groupe témoin (RF14) ; effet traité comme hypothèse dans la page Impact |
 | Usage | Automatisation excessive, envois sans relecture | Moyenne / élevée | Validation humaine par défaut (RF11) |
 | Légal | Profilage sans information ni droit d'opposition (Loi 25) | Moyenne / élevée | Avis de profilage, opposition (RF23), accès et purge (RF24), section 8.3 |
-| Légal | Courriels sans consentement (LCAP) | Faible / élevée | RF13, désabonnement dans chaque courriel |
-| Légal | Fournisseur de courriels hors Québec : noms, adresses et contenu des messages transmis | Moyenne / élevée | Fournisseur hébergé au Canada en priorité ; sinon ÉFVP et contrat avant le transfert (section 8.3) |
 | Infrastructure | Fuite de la base de donateurs | Faible / très élevée | Prototype : rien ne quitte le navigateur. Cible : hébergement au Canada, chiffrement, comptes séparés |
-| Individuel | Donateur sans adresse courriel ou sans consentement au suivi : jamais contacté par l'outil, ou mal classé (variable d'ouverture manquante) | Moyenne / moyenne | Variable d'absence dans le modèle ; listes « hors courriel » à traiter par téléphone ou par la poste ; part des donateurs exclus affichée dans la page Données |
-| Individuel | Donateur qui s'oppose au profilage | Faible / moyenne | RF23 : exclu des modèles, jamais scoré ; RF24 : accès et suppression |
-| Sociétal | Fatigue de sollicitation : si tous les OBNL ciblent les mêmes « bons » donateurs, ceux-ci reçoivent plus de demandes | Moyenne / moyenne | Plafond d'un courriel par 30 jours (RF12), remerciement avant demande ; limite propre à chaque organisation, rien entre organisations |
-| Sociétal | Emploi dans les petites équipes : l'outil pourrait servir à justifier moins de personnel | Faible / moyenne | Outil d'augmentation, pas d'automatisation (section 8.4) : il trie, l'équipe écrit et décide |
-| LLM (V2) | Fuite : données de donateurs envoyées à un fournisseur de LLM, souvent hors Canada | Moyenne / élevée | Envoyer seulement le gabarit et des champs non nominatifs (prénom remplacé par un jeton) ; ÉFVP ; sinon modèle ouvert hébergé au Canada ou localement. Démarche du guide d'usage responsable de Meta (2024) : définir le cas d'usage, filtrer l'entrée et la sortie, tester par attaque (*red teaming*) |
-| LLM (V2) | Hallucination : montant, fait ou promesse inventés dans un courriel | Moyenne / élevée | Contrôle automatique de la sortie (Meta, 2024) : tout montant ou date du brouillon doit venir des données ; validation humaine obligatoire |
-| LLM (V2) | Injection de requêtes par un champ libre | Faible / moyenne | Aucun champ libre transmis (notes du CRM exclues) |
-| Réputation | Donateur choqué d'être « scoré » | Faible / élevée | Transparence, ton des messages, aucune donnée sensible utilisée |
+| Individuel | Donateur sans courriel ou sans consentement : jamais contacté, ou mal classé | Moyenne / moyenne | Variable d'absence ; listes « hors courriel » ; part des exclus affichée |
+| Sociétal | Fatigue : tous les OBNL ciblent les mêmes « bons » donateurs | Moyenne / moyenne | Plafond d'un courriel par 30 jours (RF12) ; aucune limite entre organisations |
+| LLM (V2) | Fuite vers un fournisseur hors Canada ; montant inventé | Moyenne / élevée | Champs non nominatifs, ÉFVP ; tout montant ou date de la sortie vérifié contre les données ; validation humaine (Meta, 2024) |
 
 ---
 
@@ -517,221 +403,140 @@ La solution cible reprend les mêmes variables et les mêmes algorithmes, rééc
 
 ### 8.1 Sources de tort tout au long du cycle (Suresh et Guttag, 2021)
 
-La consigne demande de couvrir tout le cycle de vie. La première colonne situe chaque source de tort dans ce cycle. Les lignes Collecte et Maintenance complètent le cadre de Suresh et Guttag.
+La première colonne situe chaque source dans le cycle de vie ; les lignes Collecte et Maintenance complètent le cadre.
 
-| Étape du cycle | Source | Dans Fidélia | Mesure |
+| Étape | Source | Dans Fidélia | Mesure |
 |---|---|---|---|
-| Collecte | Suivi des ouvertures | La variable la plus utile au modèle d'attrition, le taux d'ouverture, vient d'un pixel invisible dans les courriels. Le donateur ne sait pas toujours qu'il est suivi | Ouvertures utilisées seulement pour les donateurs qui ont consenti au suivi ; mention dans l'avis de profilage (section 8.3) ; sinon, variable d'absence |
-| Données | Biais historique | Dans nos données, les aînés donnent et redonnent plus : le modèle les classe plus haut pour la conversion (ratio de sélection 1,80 chez les 70 ans et plus, IC 95 % [1,51 ; 2,10], `reports/impact-42.json`). **Attention :** cet effet vient d'une hypothèse du générateur, qui lie l'attachement à l'âge (`src/data/generate.ts`). Il ne prouve rien sur de vrais donateurs | Plafond de sollicitation, remerciement avant demande, suivi du ratio par âge ; audit à refaire sur les données réelles de l'organisation |
-| Collecte | Représentation | Synthétique = nos hypothèses ; KDD 98 = Américains, vétérans, 1997 | Réentraînement sur les données de l'organisation ; limites écrites |
-| Données | Mesure | « Inactif » = 12 ou 13 mois sans don : définition arbitraire | Documentée dans la datasheet, paramétrable |
-| Modèle | Agrégation | Un même modèle pour tous les donateurs d'une organisation | Modèles séparés par segment (mensuel, ponctuel, inactif) |
-| Modèle | Apprentissage | Sans l'âge en variable, le modèle de conversion **sous-estime** les 70 ans et plus (prédit / observé = 0,54, sur environ 38 conversions) et **sur-estime** les 35-54 ans (2,24, sur environ 8 conversions seulement) | Audit par sous-groupe (R6) ; options discutées en leçon 5 |
-| Évaluation | Évaluation | Petits jeux de test pour les mensuels ; petits effectifs par tranche d'âge | Intervalles de confiance par bootstrap pour les métriques globales, test temporel, 5 graines, données réelles. Ratios de sélection par âge : IC 95 % par bootstrap par donateur (`reports/impact-42.json`). Les ratios de calibration (R6) n'en ont pas encore |
-| Utilisation | Déploiement | Usage du score hors de son but (ex. retirer des services) | Fiche modèle : usages exclus ; aide à la décision seulement |
-| Maintenance | Boucle de rétroaction | Le modèle est réentraîné sur des données que ses propres relances ont changées. Un donateur relancé qui reste semble « peu à risque » ; le modèle apprend alors à ne plus le cibler. La dérive (crise, inflation) s'ajoute | Groupe témoin de 10 % jamais contacté (RF14) : seul échantillon non biaisé par les relances ; R5 et AUC-PR glissante (section 8.2) ; retour à la version précédente |
-
-**Prudence sur l'audit d'équité.** Les ratios de calibration par âge reposent sur peu de cas positifs. Le ratio de 2,24 des 35-54 ans s'appuie sur environ 8 conversions parmi 1 290 exemples (taux observé 0,62 %, `reports/synthetique-42.json`). Une ou deux conversions de plus ou de moins changeraient beaucoup ce ratio. Ces écarts reflètent surtout les hypothèses du générateur. L'audit devra être refait sur les données réelles de chaque organisation, avec des intervalles de confiance.
+| Collecte | Suivi des ouvertures | Le taux d'ouverture vient d'un pixel invisible ; le donateur ne le sait pas toujours | Lu seulement avec consentement ; mentionné dans l'avis de profilage |
+| Collecte | Représentation | Synthétique = nos hypothèses ; KDD 98 = Américains, vétérans, 1997 | Réentraînement sur les données de l'organisation |
+| Données | Biais historique | Le modèle de conversion classe plus haut les 70 ans et plus (ratio de sélection 1,80, IC 95 % [1,51 ; 2,10], `reports/impact-42.json`). L'effet vient du générateur, qui lie attachement et âge | Plafond de sollicitation, suivi du ratio par âge, audit sur données réelles |
+| Données | Mesure | « Inactif » = 12 ou 13 mois sans don : définition arbitraire | Documentée, paramétrable |
+| Modèle | Agrégation | Un même modèle pour tous les donateurs | Modèles séparés par segment |
+| Modèle | Apprentissage | Sans l'âge, le modèle de conversion **sous-estime** les 70 ans et plus (prédit / observé = 0,54, environ 38 conversions) et **surestime** les 35-54 ans (2,24, environ 8 conversions) | Audit R6 ; arbitrage vie privée et calibration en annexe G |
+| Évaluation | Évaluation | Petits effectifs par tranche d'âge : une conversion de plus change beaucoup le ratio | IC par bootstrap, test temporel, 5 graines, données réelles ; R6 sans IC pour l'instant |
+| Utilisation | Déploiement | Score utilisé hors de son but (ex. retirer des services) | Fiche modèle : usages exclus |
+| Maintenance | Boucle de rétroaction | Le modèle apprend sur des données que ses relances ont changées | Témoin de 10 % jamais contacté (RF14) ; R5 ; retour arrière |
 
 ### 8.2 De la composante au tort (Rismani et al., 2025)
 
-| Composante | Attribut | Mesure (seuil) | Danger | Tort |
-|---|---|---|---|---|
-| Score de conversion | Équité par âge | Ratio de sélection des 70 ans et plus > 1,5 (mesuré : 1,80, IC 95 % [1,51 ; 2,10]) ; calibration hors de [0,67 ; 1,5] (mesuré : 0,54 et 2,24, sur de petits effectifs) | Sur-sollicitation des aînés, montants mal calibrés par âge | Pression financière, perte de confiance |
-| Score d'attrition | Calibration | Brier < constante (R4) | Probabilités trop optimistes | Mauvaise allocation du temps de l'équipe |
-| Brouillon de courriel (gabarits) | Fidélité aux données | 0 montant inventé | Message erroné | Atteinte à la réputation |
-| Brouillon de courriel (LLM, V2) | Fidélité et confidentialité | 0 montant ou fait absent des données ; 0 donnée nominative envoyée au fournisseur | Hallucination, fuite de données | Donateur trompé, atteinte à la vie privée, sanction (Loi 25) |
-| Cycle automatique | Fréquence de contact | ≤ 1 courriel par 30 jours (RF12) | Harcèlement | Désabonnements, plaintes |
-| Modèle en production | Stabilité | R5 ; AUC-PR glissante > RFM | Dérive non détectée | Décisions dégradées sans le savoir |
+Chaque composante est reliée à un attribut, un seuil mesurable, un danger et un tort. Trois exemples ; tableau complet en annexe F.
+
+| Composante | Mesure (seuil) | Danger | Tort |
+|---|---|---|---|
+| Score de conversion | Ratio de sélection des 70 ans et plus ≤ 1,5 (mesuré : 1,80) ; calibration dans [0,67 ; 1,5] | Sur-sollicitation des aînés | Pression financière |
+| Brouillon par LLM (V2) | 0 montant inventé ; 0 donnée nominative envoyée | Hallucination, fuite | Donateur trompé, sanction (Loi 25) |
+| Modèle en production | R5 ; AUC-PR glissante > RFM | Dérive non détectée | Décisions dégradées |
 
 ### 8.3 Cadre légal et normatif
 
-- **Loi 25 (Québec)** : le scoring est un **profilage**. Vial, Crowe et Mesana (2024) rappellent que protéger la vie privée en analytique est un arbitrage : plus on protège, moins la donnée est utile. Le risque de réidentification vient aussi des quasi-identifiants, comme l'âge ou le quartier. Mesures prévues :
-  - informer les donateurs, dans la politique de confidentialité, de l'usage d'une technologie de profilage et des moyens de s'y opposer (RF23) ;
-  - permettre l'accès aux données et aux scores, leur rectification et leur suppression, avec une durée de conservation définie (RF24) ;
-  - minimiser les données : ni âge, ni région, ni quartier dans le modèle ;
-  - mener une évaluation des facteurs relatifs à la vie privée (ÉFVP) avant tout transfert hors Québec : hébergement, fournisseur de courriels, fournisseur de LLM en V2 ;
-  - désigner un responsable de la protection des renseignements personnels dans l'organisation.
-- **LCAP (Loi canadienne anti-pourriel)** : consentement, identification de l'expéditeur, désabonnement.
-- **NIST AI RMF (NIST, 2023)** :
-
-| Fonction | Dans Fidélia |
-|---|---|
-| Gouverner | Fiche modèle, responsable désigné |
-| Cartographier | Canevas, risques |
-| Mesurer | Requis R1 à R6, audit d'équité |
-| Gérer | Surveillance, retour arrière, groupe témoin |
-
-- **Déclaration de Montréal pour une IA responsable** : principes d'autonomie (l'humain décide), de protection de l'intimité, de prudence et de responsabilité.
+- **Loi 25 (Québec)** : le scoring est un **profilage**. Plus on protège la vie privée, moins la donnée est utile, et les quasi-identifiants comme l'âge permettent la réidentification (Vial, Crowe et Mesana, 2024). Mesures : avis de profilage et droit d'opposition (RF23) ; accès, rectification, suppression et durée de conservation (RF24) ; ni âge, ni région dans le modèle ; ÉFVP avant tout transfert hors Québec ; responsable de la protection des renseignements personnels désigné.
+- **LCAP** : consentement, identification de l'expéditeur, désabonnement.
+- **NIST AI RMF (NIST, 2023)** : *Gouverner* (fiche modèle, responsable) ; *Cartographier* (canevas, risques) ; *Mesurer* (R1 à R6, équité) ; *Gérer* (surveillance, retour arrière, témoin).
+- **Déclaration de Montréal** (Université de Montréal, 2018) : autonomie, intimité, prudence, responsabilité.
 
 ### 8.4 Humain dans la boucle
 
-Fidélia suggère et l'équipe décide. C'est une forme d'**augmentation** plutôt que d'automatisation (Raisch et Krakowski, 2021), alignée sur l'idée d'*engaged augmentation* : l'utilisateur comprend et questionne la recommandation grâce aux raisons affichées (Lebovitz et al., 2022).
+Fidélia suggère, l'équipe décide : c'est de l'**augmentation**, pas de l'automatisation (Raisch et Krakowski, 2021). Les raisons affichées permettent de questionner la recommandation (*engaged augmentation* ; Lebovitz et al., 2022).
 
-### 8.5 Trois questions de la séance 4
+### 8.5 Trois questions de la séance 4 (Varoquaux, Luccioni et Whittaker, 2025)
 
-La séance 4 pose trois questions à partir de Varoquaux, Luccioni et Whittaker (2025).
-
-- **Conséquences environnementales ?** Faibles. Aucun GPU : les modèles s'entraînent en quelques secondes sur un processeur (section 9.2), environ 20 s dans le navigateur pour l'entraînement complet (leçon 8). Le scoring hebdomadaire demande environ une minute de CPU par organisation. Le LLM de la V2 ajouterait un coût par brouillon ; c'est une raison de plus de le garder optionnel.
-- **Plus de données, à quel risque ?** Le prototype n'utilise que l'historique des dons et des ouvertures, sans âge ni région. Le vrai risque est le modèle commun de la V2 (section 5.4) : regrouper les donateurs de plusieurs OBNL chez un seul fournisseur augmente l'effet d'une fuite et demande un accord de partage. Nous ne le ferons que si un modèle par organisation échoue à RD1, et après une ÉFVP.
-- **Concentration de pouvoir ?** Les outils prédictifs du secteur sont vendus par de grands CRM, à des prix hors de portée d'un très petit OBNL (section 1.4). Fidélia vise l'inverse : méthode publiée, modèle exportable (`model.json`), données importées et exportées en CSV. Un client peut partir avec ses données et revenir à RFM sans perte.
+- **Environnement :** impact faible ; aucun GPU, quelques secondes de CPU par entraînement.
+- **Plus de données, à quel risque ?** Le modèle commun de la V2 regrouperait plusieurs OBNL : seulement après échec à RD1 et une ÉFVP.
+- **Concentration de pouvoir ?** Méthode publiée ; le client part avec ses données et son modèle. Détail en annexe F.
 
 ---
 
 ## 9. Estimations
 
-### 9.1 Ressources humaines (V1, 2 mois)
+### 9.1 Ressources humaines (V1, 2 mois)
 
-**Point de départ.** La V1 ne part pas de zéro : le prototype contient déjà les variables, les quatre modèles, l'évaluation, les règles de déploiement, l'interface et les tests. Il reste à porter le calcul côté serveur, à ajouter l'authentification, les vrais envois de courriels et les droits prévus par la Loi 25. Fidèles au principe KISS, nous visons un seul développeur à temps plein pendant 2 mois, appuyé à temps partiel.
+Le prototype contient déjà modèles, évaluation, interface et tests. Reste le serveur, l'authentification, les vrais envois et la Loi 25. Principe KISS : un développeur à temps plein, appuyé à temps partiel. Taux : salaires médians à Montréal (Gouvernement du Canada, 2025), plus 25 % de charges (hypothèse) ; détail en annexe H.
 
-**Taux de référence.** Salaire horaire médian dans la région de Montréal, selon le Guichet-Emplois (données 2023-2024) :
-- scientifique de données (CNP 21211) : 45,64 $ ;
-- programmeur en développement de logiciels (CNP 21232) : 45,67 $.
-
-Nous retenons 45,65 $ pour le rôle combiné de chef de produit et designer UX (hypothèse simplificatrice). Nous ajoutons 25 % pour les charges sociales et les avantages (hypothèse de l'équipe). Un ETP compte 1 820 heures par an (35 h × 52 semaines), soit environ 303 heures sur 2 mois.
-
-| Rôle | Charge | Heures (2 mois) | Taux | Coût salarial | Tâches |
-|---|---|---|---|---|---|
-| Développeur web | 1 ETP | 303 | 45,67 $ | 13 838 $ | Serveur et tâche planifiée, authentification, connecteur CSV, courriels, droits Loi 25 |
-| Scientifique de données | 0,25 ETP | 76 | 45,64 $ | 3 469 $ | Portage des modèles en Python, surveillance, audit d'équité sur les données du pilote |
-| Chef de produit et designer UX | 0,15 ETP | 45 | 45,65 $ | 2 054 $ | Entrevues avec les OBNL, tests utilisateurs, accessibilité |
-| **Total** | **1,4 ETP** | **424** | | **19 361 $** | |
-| **Total chargé** (+ 25 %) | | | | **24 201 $** | |
+| Rôle | Charge | Heures | Coût salarial | Tâches |
+|---|---|---|---|---|
+| Développeur web | 1 ETP | 303 | 13 838 $ | Serveur, tâche planifiée, authentification, CSV, courriels, Loi 25 |
+| Scientifique de données | 0,25 ETP | 76 | 3 469 $ | Portage en Python, surveillance, audit d'équité du pilote |
+| Chef de produit et designer UX | 0,15 ETP | 45 | 2 054 $ | Entrevues, tests utilisateurs, accessibilité |
+| **Total** | **1,4 ETP** | **424** | **19 361 $** ; **24 201 $** chargé | |
 
 ### 9.2 Ressources matérielles
 
-**Exploitation, par mois, pour 50 organisations clientes :**
-
-| Poste | Estimation |
-|---|---|
-| Base de données gérée au Canada (PostgreSQL, AWS ca-central-1 ou équivalent) | 50 à 150 $ |
-| Tâches d'entraînement et de scoring (conteneurs, environ 1 min de CPU par organisation et par semaine) | 20 à 50 $ |
-| Hébergement de l'interface | 0 à 20 $ |
-| Fournisseur de courriels | 25 à 100 $ |
-| LLM pour la reformulation (V2, environ 2 000 brouillons par mois) | 10 à 30 $ |
-| **Total** | **105 à 350 $** |
-
-**Stockage.** Le jeu de démonstration compte 4 000 donateurs et 17 909 dons (`reports/evaluate-42.txt`). Cela représente quelques mégaoctets. Nous prévoyons au plus 50 Mo par organisation, historique des scores et des envois compris, soit moins de 3 Go pour 50 organisations. Le stockage n'est donc pas un poste de coût important.
-
-**Au-delà de 50 organisations.** Le seuil de rentabilité (section 9.3) demande 24 à 78 clients. Nous supposons que l'infrastructure croît de façon à peu près linéaire : 2,10 à 7 $ par organisation et par mois, soit 882 à 2 940 $ par an pour 35 clients et 1 966 à 6 552 $ par an pour 78 clients (hypothèse de l'équipe). Le seuil de rentabilité ci-dessous utilise ce coût par client, pas le total pour 50.
-
-**Calcul.** Aucune carte graphique n'est nécessaire : les modèles s'entraînent en quelques secondes sur un processeur.
-
-**Environnement de développement.** Les ordinateurs portables de l'équipe, GitHub et son intégration continue (offre gratuite) suffisent. Coût supplémentaire : nul.
+Exploitation pour 50 organisations : **105 à 350 $ par mois** (AWS ca-central-1) : base PostgreSQL 50 à 150 $ ; conteneurs de scoring 20 à 50 $ (environ 1 min de CPU par organisation et par semaine) ; interface 0 à 20 $ ; courriels 25 à 100 $ ; LLM en V2 10 à 30 $. Soit 2,10 à 7 $ par client, supposé linéaire au-delà. **Stockage :** au plus 50 Mo par organisation. **Calcul :** aucune carte graphique. **Développement :** portables et offre gratuite de GitHub.
 
 ### 9.3 Ressources financières
 
-**Coût de la V1 (2 mois) :**
-
-| Poste | Montant | Source |
+| Coût de la V1 | Montant | Source |
 |---|---|---|
-| Équipe, charges comprises | 24 201 $ | Section 9.1 |
-| Conseiller juridique (Loi 25), environ 10 h | 2 000 $ | Hypothèse : 200 $/h, à confirmer par soumission |
-| Pilote avec 2 OBNL (3 mois d'hébergement et de courriels, borne haute) | 1 050 $ | 3 × 350 $ (section 9.2) |
-| **Sous-total V1** | **environ 27 000 $** (27 251 $) | |
-| Réserve pour imprévus, 10 à 20 % | 2 700 à 5 500 $ | Hypothèse de l'équipe |
-| **Total V1** | **environ 30 000 à 33 000 $** | |
+| Équipe, charges comprises | 24 201 $ | Section 9.1 |
+| Conseiller juridique (Loi 25), environ 10 h | 2 000 $ | Hypothèse : 200 $/h |
+| Pilote avec 2 OBNL (3 mois, borne haute) | 1 050 $ | 3 × 350 $ |
+| Réserve pour imprévus, 10 à 20 % | 2 700 à 5 500 $ | Hypothèse |
+| **Total V1** | **environ 30 000 à 33 000 $** | |
 
-**Coût annuel récurrent après le lancement :**
-
-| Poste | Montant par an | Calcul |
+| Coût annuel récurrent | Montant | Calcul |
 |---|---|---|
-| Maintenance du modèle, corrections et support aux OBNL (0,25 ETP) | 25 963 $ | 455 h × 45,65 $ × 1,25 |
-| Obligations légales récurrentes : mise à jour de l'ÉFVP, appui au responsable de la protection des renseignements personnels, environ 10 h | 2 000 $ | Hypothèse : 200 $/h, comme en V1 |
-| Assurance responsabilité et cyberrisques | non chiffrée | À obtenir par soumission |
-| **Coûts fixes** | **environ 28 000 $** (2 330 $ par mois) | Hors assurance |
-| Infrastructure | 2,10 à 7 $ par client et par mois | Section 9.2, croissance linéaire supposée |
+| Maintenance et support aux OBNL (0,25 ETP) | 25 963 $ | 455 h × 45,65 $ × 1,25 |
+| Obligations légales (ÉFVP, responsable), environ 10 h | 2 000 $ | Hypothèse : 200 $/h |
+| Assurance responsabilité et cyberrisques | non chiffrée | Soumission à obtenir |
+| **Coûts fixes** | **environ 28 000 $** (2 330 $ par mois) | Hors assurance |
 
-La vente se fait d'abord par les fondateurs et par une fédération d'OBNL partenaire, sans poste dédié la première année (hypothèse de l'équipe).
+La vente passe par les fondateurs et une fédération d'OBNL, sans poste dédié la première année (hypothèse).
 
-**Seuil de rentabilité.** Prix envisagé : abonnement de 49 à 99 $ par mois par OBNL. L'infrastructure coûte 2,10 à 7 $ par organisation et par mois. La marge par client est donc d'environ 42 à 47 $ par mois à 49 $, et 92 à 97 $ par mois à 99 $.
-- **Exploitation seule** (coûts fixes d'environ 2 330 $ par mois, hors assurance) : rentable à partir d'environ 24 à 26 clients à 99 $, ou 50 à 56 clients à 49 $.
-- **Avec amortissement de la V1 sur 3 ans** (30 000 à 33 000 $ ÷ 36 = 833 à 908 $ par mois, soit environ 3 160 à 3 240 $ de coûts fixes par mois) : rentable à partir d'environ 33 à 36 clients à 99 $, ou 67 à 78 clients à 49 $.
+**Seuil de rentabilité.** Prix envisagé : 49 à 99 $ par mois ; marge de 42 à 47 $ ou de 92 à 97 $ après infrastructure. Exploitation seule : environ 24 à 26 clients à 99 $ (50 à 56 à 49 $). Avec la V1 amortie sur 3 ans (833 à 908 $ par mois) : **33 à 36 clients à 99 $** (67 à 78 à 49 $).
 
-Ces seuils excluent l'assurance et supposent qu'un quart de poste suffit pour maintenir et soutenir une trentaine de clients ; au-delà, il faut ajouter du support. Une subvention ou un partenariat avec une fédération d'OBNL pourrait financer la V1 et offrir une version gratuite aux très petits OBNL.
+**Hypothèse forte : le support.** Un quart de poste pour environ 35 clients laisse 13 h par client et par an, environ une heure par mois. C'est plausible seulement si l'import reste un CSV standard et si la fédération assure le premier niveau d'aide. Nous ne l'avons pas vérifié. **Sensibilité :** si le support double (0,5 ETP), les coûts fixes passent à environ 4 490 $ par mois ; le seuil monte à 47 à 49 clients à 99 $, et à **55 à 59 clients** avec l'amortissement de la V1.
 
-### 9.4 Échéancier de la V1 (2 mois, puis pilote)
+### 9.4 Échéancier de la V1 (2 mois, puis pilote)
 
-L'échéancier suit la logique de feuille de route d'Anderson et Coveyduc (2020), vue en séance 2 : partir du besoin d'affaires, valider les données, puis piloter avant de lancer.
+Feuille de route d'Anderson et Coveyduc (2020) : besoin d'affaires, données, pilote, lancement.
 
 | Période | Livrable | Requis |
 |---|---|---|
-| Mois 1 | Entrevues avec 5 OBNL, connecteur CSV, schéma de données. Portage des variables et des modèles en Python et scikit-learn, tâche serveur planifiée, API. Authentification ; opposition au profilage, accès et purge, prêts **avant** de scorer de vrais donateurs | RF1 à RF9, RF15 à RF18, RF20 à RF24 |
-| Mois 2 | Interface reprise du prototype, courriels réels, validation, plafond, consentement, groupe témoin, journal des envois. Documentation Loi 25 | RF11 à RF14, RF19, RD1 à RD6 |
-| Mois 3 à 5 | **Pilote** avec 2 OBNL sur leurs données (accord écrit) : audit d'équité sur données réelles, R1 et R2 sur les données de chaque OBNL, corrections ; lancement à la fin du pilote | RF17 (équité) |
-| Après le lancement | Suivi de la cohorte jusqu'à 6 mois pour la conversion. Effet causal mesuré sur les témoins mis en commun (section 5.4) | RF14 |
+| Mois 1 | Entrevues avec 5 OBNL, connecteur CSV, portage en Python et scikit-learn, tâche planifiée, API, authentification ; opposition au profilage, accès et purge prêts **avant** de scorer de vrais donateurs | RF1 à RF9, RF15 à RF18, RF20 à RF24 |
+| Mois 2 | Interface, courriels réels, validation, plafond, consentement, groupe témoin, documentation Loi 25 | RF11 à RF14, RF19, RD1 à RD6 |
+| Mois 3 à 5 | **Pilote** avec 2 OBNL (accord écrit) : R1, R2 et équité sur leurs données ; lancement à la fin | RF17 |
+| Après | Suivi de la conversion sur 6 mois ; effet causal sur témoins mis en commun | RF14 |
 
-**V1 :** RF1 à RF9 et RF11 à RF24. RF18 y est en version simple : scoring hebdomadaire automatique, réentraînement trimestriel lancé à la main. R1 et R2 bloquent automatiquement ; une personne examine et lève les alertes R3 à R6 avant la mise en service. RF10 reste en gabarits.
-
-**V2 :** reformulation des courriels par LLM (RF10), connecteurs API vers les CRM, modèle initial commun (section 5.4).
+**V1 :** RF1 à RF9 et RF11 à RF24 ; RF18 en version simple (réentraînement lancé à la main) ; RF10 en gabarits. **V2 :** LLM (RF10), connecteurs API, modèle commun.
 
 ---
 
 ## 10. Leçons apprises
 
-1. **Un modèle entraîné sur des données synthétiques apprend d'abord le générateur.** Sur nos données, l'AUC des modèles déployés atteint 0,71 à 0,82 ; sur de vrais donateurs (KDD 98), elle tombe à environ 0,62. Le synthétique est indispensable pour respecter la confidentialité et démontrer le système, mais il ne remplace pas une validation sur données réelles. Il faut écrire noir sur blanc ce qu'il prouve et ce qu'il ne prouve pas (Jarrahi, Memariani et Guha, 2023 ; Sambasivan et al., 2021).
+Cinq leçons ; deux autres (équité par âge, versionnage du modèle) sont en annexe G.
 
-2. **Méfiez-vous des résultats trop beaux : nous avons trouvé deux fuites de données.**
-   - Le contrôle de qualité a d'abord révélé des dons datés avant l'inscription.
-   - En corrigeant ce défaut, le modèle de réactivation est passé à une AUC de 0,94, un résultat suspect.
-   - L'enquête a révélé deux fuites. Un donateur inscrit le jour même de la photo était compté comme « inactif », son premier don devenant une « réactivation ». Un nouveau mensuel comptait comme une « hausse » de 0 $.
-   - Après correction, l'AUC est revenue à 0,75 et la hausse ne bat plus RFM.
+1. **Un modèle entraîné sur du synthétique apprend d'abord le générateur.** L'AUC des modèles déployés atteint 0,71 à 0,82 sur nos données, mais 0,62 à 0,68 sur KDD 98. Ses variables « les plus utiles » sont celles que nous avions placées dans le générateur (section 1.3). Le synthétique protège la confidentialité et démontre le système ; il ne remplace pas une validation réelle. Il faut écrire ce qu'il prouve et ce qu'il ne prouve pas (Jarrahi, Memariani et Guha, 2023 ; Sambasivan et al., 2021).
 
-   Sans contrôle de qualité ni esprit critique, nous aurions présenté des performances fausses (Sculley et al., 2015 ; Kapoor et Narayanan, 2023).
+2. **Méfiez-vous des résultats trop beaux, et de vos propres règles d'évaluation.** Après correction de dons datés avant l'inscription, la réactivation a atteint une AUC suspecte de 0,94. Deux fuites : un donateur inscrit le jour de la photo comptait comme « inactif », et un nouveau mensuel comme une « hausse » de 0 $. Corrigée, l'AUC est revenue à 0,75 (Sculley et al., 2015 ; Kapoor et Narayanan, 2023). La façon de tester compte aussi : comparer deux IC aurait rejeté notre modèle de conversion, 2,6 fois meilleur que RFM. Mais nous avons changé ce test, le test temporel et le filtre de R6 après avoir vu des résultats (section 4.3). Il faut fixer d'avance les seuils **et** la façon de les tester, ou déclarer chaque changement.
 
-3. **La règle RFM est une référence sérieuse, et l'IA n'a de valeur qu'au bon endroit.**
-   - Sur KDD 98, quand on écrit à 68 % des donateurs (12 894 envois), RFM fait même un peu mieux : 2 422 $ contre 2 320 $ (`reports/kdd98.txt`). L'avantage du modèle est de bien classer **les premiers noms** : +51 % de profit avec 20 % des envois.
-   - Sur KDD 98, le modèle de réactivation bat RFM de façon significative, mais **échoue à notre requis R1** (0,083 contre un seuil de 0,102). Plus de données n'y change rien : sa courbe d'apprentissage est plate, de 0,082 avec 7 660 exemples à 0,083 avec 76 588. La limite vient donc des variables disponibles, pas du volume. Battre RFM ne suffit pas ; il faut aussi battre nettement le hasard.
-   - Sur nos données, le modèle de hausse ne bat pas RFM : la règle de gouvernance garde donc RFM pour cette liste.
+3. **RFM est une référence sérieuse, et de meilleures données valent mieux qu'un meilleur modèle.** Sur KDD 98, quand on écrit à 68 % des donateurs, RFM fait un peu mieux que le modèle (2 422 $ contre 2 320 $) : l'avantage du modèle est de bien classer les premiers noms. Battre RFM ne suffit pas, il faut aussi battre nettement le hasard (section 6.2). Trois tentatives d'amélioration, dont une trentaine de réglages, n'ont rien gagné (section 6.5) ; choisir la meilleure sur le test aurait été facile. Pour progresser, il faut des données plus riches (Jarrahi, Memariani et Guha, 2023). L'IA doit gagner sa place cas d'usage par cas d'usage.
 
-   L'IA doit gagner sa place cas d'usage par cas d'usage.
+4. **Prédire n'est pas causer.** Un modèle de propension cible des donateurs qui auraient peut-être agi seuls. Seul un groupe témoin mesure l'effet de l'action. La page Impact sépare donc le mesuré (la valeur ciblée, × 4,8 à 100 contacts) du supposé (l'effet de la relance).
 
-4. **Prédire n'est pas causer.** Un modèle de propension cible les donateurs qui allaient peut-être convertir d'eux-mêmes. Pour mesurer ce que l'action change vraiment, il faut un groupe témoin. C'est ce qui nous a fait séparer clairement, dans la page Impact, ce qui est mesuré (la qualité du ciblage) de ce qui est supposé (l'effet de l'action).
-
-5. **Retirer l'âge du modèle ne suffit pas à le rendre équitable.**
-   - Nous avons exclu l'âge des variables : minimisation des données, Loi 25.
-   - Mais, dans notre générateur, l'âge influence la fidélité. Le modèle sous-estime donc les 70 ans et plus et sur-estime les 35-54 ans (R6 non validé).
-   - Ces écarts reposent sur de petits effectifs et sur nos hypothèses. Il faudra les mesurer à nouveau sur des données réelles.
-   - Corriger demanderait d'utiliser l'âge, au moins pour recalibrer par groupe. C'est un arbitrage entre vie privée et calibration (Vial, Crowe et Mesana, 2024).
-   - Les critères d'équité sont en général mathématiquement incompatibles (Kleinberg, Mullainathan et Raghavan, 2017).
-
-   Nous documentons l'écart, le surveillons et laissons la décision à l'organisation.
-
-6. **La façon de comparer compte autant que le modèle.**
-   - Comparer deux intervalles de confiance qui se chevauchent est trop conservateur : notre modèle de conversion, 2,6 fois meilleur que RFM, aurait été rejeté. Le bon test est un **bootstrap apparié** de l'écart, sur les mêmes donateurs.
-   - Inversement, un test temporel sur 2 dates seulement (environ 180 exemples) donnait des résultats erratiques ; nous l'avons élargi à 4 dates.
-   - Fixer les requis **avant** de voir les résultats nous a empêchés d'ajuster les seuils pour qu'ils passent.
-
-7. **Un petit OBNL a peu de données : la faisabilité se calcule avant de coder.** Nos courbes d'apprentissage montrent qu'autour de 20 événements positifs, l'attrition et la réactivation échouent à R1. Un OBNL de 300 mensuels observe environ 20 départs par trimestre. Il lui faut donc plus d'un an d'historique avant qu'un modèle soit utile. Nous en avons tiré un requis de données (RD1) et un repli explicite sur RFM (section 5.4). C'est le conseil de Ng (2019) : vérifier tôt, par de petites expériences, que les données suffisent. C'est aussi le constat de Vial et al. (2021) : le frein principal est souvent l'accès aux données, pas l'algorithme.
-
-8. **Pré-entraîner et versionner le modèle simplifie tout.** L'entraînement complet prend environ 20 s dans le navigateur. Sérialiser un modèle versionné (`model.json`) donne une application instantanée, un retour arrière simple et une traçabilité. Ce sont des pratiques MLOps vues en séance 7 (Kreuzberger, Kühl et Hirschl, 2023).
-
-9. **De meilleures données valent mieux qu'un meilleur modèle.** Plus de 100 configurations testées honnêtement (variables, réglages, ensembles) n'ont pas battu la version actuelle (section 6.5). Gonfler les chiffres aurait été facile : choisir la meilleure configuration sur le test, ou baisser le seuil R1. Nous avons préféré documenter ce résultat négatif. Pour progresser, il faut des données plus riches (ouvertures de courriels, paiements échoués), ce qui rejoint Jarrahi et al. (2023) sur l'IA centrée sur les données.
+5. **La faisabilité se calcule avant de coder.** Autour de 20 positifs, nos modèles échouent à R1. Un OBNL de 300 mensuels observe environ 20 départs par trimestre : plus d'un an d'historique est nécessaire, et son groupe témoin ne prouvera jamais seul l'effet des relances. D'où RD1, le repli sur RFM et la mise en commun des témoins (section 5.4). C'est le conseil de Ng (2019) et le constat de Vial et al. (2021) : le frein est souvent l'accès aux données, pas l'algorithme.
 
 ---
 
 ## 11. Conclusion et viabilité
 
-**Ce qui est prouvé.** La méthode classe mieux que la règle RFM. Sur le jeu synthétique, 3 modèles sur 4 remplissent la condition de déploiement (R1 + R2), et 15 cas sur 20 sur 5 autres jeux générés. Sur de vrais donateurs (KDD Cup 1998), la méthode de classement rapporte 2 133 $ contre 1 413 $ pour RFM avec 20 % des envois (+51 %), mais ce modèle de réactivation échoue à R1 : c'est une validation de la méthode, pas un modèle que nous déploierions. La gouvernance fonctionne : elle garde RFM pour la hausse.
+**Ce qui est prouvé.** La méthode classe mieux que RFM : 3 modèles sur 4 remplissent R1 et R2 sur le jeu synthétique, et 15 cas sur 20 sur 5 autres jeux. Sur de vrais donateurs, une tâche passe R1 et R2 ; l'autre bat RFM mais échoue à R1 (section 6.2). La gouvernance fonctionne : elle garde RFM pour la hausse.
 
-**Ce qui ne l'est pas.** L'effet causal des relances : la page Impact le suppose ; seuls des témoins mis en commun entre organisations le mesureront, après la V1. La performance sur les données d'un vrai OBNL québécois : nos modèles ont appris un générateur (leçon 1). Et le modèle de réactivation échoue à R1 sur KDD 98 : nous ne le déploierions pas.
+**Ce qui ne l'est pas.** L'effet causal des relances, que la page Impact suppose. La performance chez un vrai OBNL québécois (leçon 1).
 
 **Trois menaces pour la pérennité.**
-1. **Le volume de données.** Un OBNL de 300 mensuels doit accumuler environ 5 trimestres d'historique avant qu'un modèle d'attrition soit utile (section 5.4). Les plus petits clients resteront sur RFM ; la valeur ajoutée de l'IA sera alors nulle pour eux.
-2. **Le seuil de rentabilité.** Il faut environ 35 clients à 99 $ par mois pour couvrir l'exploitation et le support, et amortir la V1 sur 3 ans (section 9.3). C'est atteignable avec une fédération d'OBNL ; le risque est plutôt de trouver ces clients sur un marché de niche.
-3. **La Loi 25.** Profilage, opposition, ÉFVP, purge : ces obligations ajoutent du travail juridique et technique (RF23, RF24). Une organisation peut renoncer par prudence.
+1. **Le volume de données.** Environ 5 trimestres d'historique pour un OBNL de 300 mensuels (section 5.4). Les plus petits resteront sur RFM, sans gain de l'IA.
+2. **La rentabilité.** Environ 35 clients à 99 $ par mois, ou 55 à 59 si le support coûte le double (section 9.3), sur un marché de niche.
+3. **La Loi 25.** Profilage, opposition, ÉFVP, purge : une organisation peut renoncer par prudence.
 
-**Dans la vraie vie**, Fidélia pourrait donc ne pas être réalisable comme produit vendu seul. Un financement par subvention ou par une fédération d'OBNL est plus réaliste.
+**Dans la vraie vie**, Fidélia pourrait ne pas être viable comme produit vendu seul. Une subvention ou une fédération d'OBNL est plus réaliste.
 
-**Condition de poursuite.** Un pilote de 3 mois (mois 3 à 5, après les 2 mois de la V1, section 9.4) avec 2 OBNL, sur leurs propres données. On continue seulement si, chez chacun, au moins un modèle valide R1 et R2, et si l'équipe utilise réellement les listes chaque semaine. Sinon, l'outil reste une aide RFM simple, ce qui a déjà une valeur.
-
-**Ce que le pilote ne peut pas prouver.** L'effet causal des relances. Chez un OBNL de 300 mensuels, le témoin de 10 % compte 30 donateurs et environ 2 départs par trimestre. Pour détecter une baisse de 30 % des départs, il faut environ 1 100 à 1 300 mensuels témoins (section 5.4). La conversion se mesure sur 6 mois, au-delà du pilote. L'effet sera donc mesuré **après la V1**, en mettant en commun les témoins d'environ 40 organisations de 300 mensuels, avec leur accord. D'ici là, la page Impact reste une simulation fondée sur une hypothèse.
+**Condition de poursuite.** Un pilote de 3 mois avec 2 OBNL (section 9.4). On continue si, chez chacun, au moins un modèle valide R1 et R2, et si l'équipe utilise les listes chaque semaine. Sinon, l'outil reste une aide RFM simple, ce qui a déjà une valeur. L'effet causal se mesurera après la V1, avec les témoins d'environ 40 organisations.
 
 ---
 
 ## Références
 
-Format APA 7. Les DOI ont été vérifiés sur Crossref ; les pages Web ont été consultées le 9 novembre 2026.
+Format APA 7. Les DOI ont été vérifiés sur Crossref ; les pages Web ont été consultées le 9 novembre 2026. Certaines références ne sont citées que dans les annexes.
 
 **Académiques** (revues et actes avec comité de lecture)
 1. Enholm, I. M., Papagiannidis, E., Mikalef, P. et Krogstie, J. (2022). Artificial intelligence and business value: A literature review. *Information Systems Frontiers*, *24*(5), 1709-1734. https://doi.org/10.1007/s10796-021-10186-w
@@ -765,8 +570,8 @@ Format APA 7. Les DOI ont été vérifiés sur Crossref ; les pages Web ont ét�
 
 **Autres sources**
 27. AFP et GivingTuesday (2026). *Fundraising Effectiveness Project, Quarterly Report Q4 2025*. https://data.givingtuesday.org/fep-report/
-28. Bloomerang (s. d.). *Donor retention* [glossaire, données du Fundraising Effectiveness Project, 4e trimestre 2025]. Consulté le 9 novembre 2026, à https://bloomerang.com/nonprofit-glossary/donor-retention
-29. Bloomerang (s. d.). *Pricing*. Consulté le 9 novembre 2026, à https://bloomerang.com/pricing/
+28. Bloomerang (s. d.-a). *Donor retention* [glossaire, données du Fundraising Effectiveness Project, 4e trimestre 2025]. Consulté le 9 novembre 2026, à https://bloomerang.com/nonprofit-glossary/donor-retention
+29. Bloomerang (s. d.-b). *Pricing*. Consulté le 9 novembre 2026, à https://bloomerang.com/pricing/
 30. Charity Insights Canada Project (2026, 8 octobre). *Mind the gap: Demand and capacity in Canada's charitable sector*. Carleton University. https://carleton.ca/cicp-pcpob/2026/mind-the-gap-demand-and-capacity-in-canadas-charitable-sector/
 31. Dataro (s. d.-a). *Plans and pricing*. Consulté le 9 novembre 2026, à https://dataro.io/pricing/
 32. Dataro (s. d.-b). *Available Dataro Predict models*. Consulté le 9 novembre 2026, à https://support.dataro.io/knowledge/available-dataro-predict-models

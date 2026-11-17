@@ -103,7 +103,7 @@ export default function Dashboard() {
         <Stat label="Dons mensuels récurrents" value={formatMoney(kpi.mrr)} hint={`soit ${formatMoney(kpi.mrr * 12)} par an`} icon={<Repeat className="size-4" />} tone="good" />
         <Stat label="Dons mensuels à risque" value={formatMoney(kpi.atRisk)} hint="par an, selon la chance que chacun arrête" icon={<AlertTriangle className="size-4" />} tone="bad" />
         <Link to="/impact" className="block transition-transform hover:-translate-y-0.5">
-          <Stat label="Récupérable (300 contacts)" value={formatMoney(kpi.recoverable)} hint={<span className="text-brand-700">+{formatMoney(kpi.vsRfm)} de plus que la méthode habituelle →</span>} icon={<HandCoins className="size-4" />} tone="gold" />
+          <Stat label="Récupérable estimé (300 contacts)" value={formatMoney(kpi.recoverable)} hint={<span className="text-brand-700">+{formatMoney(kpi.vsRfm)} de plus que la méthode habituelle →</span>} icon={<HandCoins className="size-4" />} tone="gold" />
         </Link>
       </div>
 

@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """Construit l'affiche Fidélia (48 x 36 po) et sa fiche technique (lettre) à partir de reports/.
 
-Affiche (affiche.html → Affiche-Fidelia.pdf, apercu.png) : 5 blocs, 150 à 220 mots.
-  * grand chiffre du résultat : multiplicateur contre la méthode habituelle à 300 contacts
+Affiche (affiche.html → Affiche-Fidelia.pdf, apercu.png) : 5 blocs, 150 à 220 mots, un seul message :
+  « L'IA n'est utilisée que là où elle gagne : 3 listes sur 4 ».
+  * graphique des 4 listes (modèle ÷ méthode habituelle, vert = modèle utilisé), reports/synthetique-42.json
+  * grand chiffre du ciblage (dons à risque ciblés, pas récupérés) : multiplicateur contre la méthode habituelle à 300 contacts
     (reports/impact-42.json, bloc « app », identique à l'écran Impact de l'application)
-  * pictogramme « vrais donateurs » : taille du jeu de test KDD Cup 1998 (reports/kdd98.json)
+  * ligne « vrais donateurs » : KDD Cup 1998, réactivation et don plus élevé (reports/kdd98.json)
   * QR code vers la démo (segno si installé, sinon qr.svg)
   * captures de la fiche donateur (fiche-risque.png, fiche-raisons.png) :
-    node docs/affiche/capture_fiche.mjs (après npm run build)
+    node docs/affiche/capture_fiche.mjs (après npm run build), recadrées ici en *-affiche.png
 
 Fiche technique (fiche-technique.html → Fiche-technique.pdf, fiche-technique.png) : tout le détail
 retiré de l'affiche : graphique AUC-PR (reports/synthetique-42.json), deux conditions R1/R2,
@@ -139,13 +141,67 @@ def svg_aucpr(synth):
 
 
 # ================================================================ AFFICHE
+ORANGE = "#c2410c"
+VERT_AFF = "#17663f"
+NOMS_LISTES = [("churn", "Relancer"), ("conversion", "Proposer|le mensuel"),
+               ("reactivation", "Réactiver"), ("upgrade", "Solliciter|plus")]
+
+
+def svg_listes(synth):
+    """Petit graphique de l'affiche : précision du modèle ÷ méthode habituelle, une barre par liste.
+    Vert = modèle utilisé (R1 et R2 remplies), orange = méthode habituelle gardée."""
+    W, H = 1580, 500
+    haut, bas = 140, 140  # place pour la légende et les ×N, puis pour les noms
+    ph = H - haut - bas
+    rmax = 3.4
+
+    def y(v):
+        return haut + ph * (1 - v / rmax)
+
+    o = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" role="img" '
+         'aria-label="Précision du modèle divisée par celle de la méthode habituelle, pour les quatre listes">']
+    o.append(f'<rect x="0" y="6" width="50" height="50" rx="10" fill="{VERT_AFF}"/>'
+             f'<text x="66" y="48" font-size="44" font-weight="700" fill="#0a2f1e">IA utilisée</text>'
+             f'<rect x="420" y="6" width="50" height="50" rx="10" fill="{ORANGE}"/>'
+             f'<text x="486" y="48" font-size="44" font-weight="700" fill="#0a2f1e">méthode habituelle gardée</text>')
+    gw = W / 4
+    bw = 220
+    for i, (k, nom) in enumerate(NOMS_LISTES):
+        t = synth[k]
+        ev = {e["algorithm"]: e for e in t["evaluations"]}
+        ratio = ev[t["selected"]]["ap"] / ev["rfm"]["ap"]
+        coul = VERT_AFF if t["deployed"] != "rfm" else ORANGE
+        cx = gw * i + gw / 2
+        o.append(f'<rect x="{cx - bw / 2:.1f}" y="{y(ratio):.1f}" width="{bw}" height="{y(0) - y(ratio):.1f}" rx="14" fill="{coul}"/>')
+        o.append(f'<text x="{cx:.1f}" y="{y(ratio) - 20:.1f}" font-size="80" font-weight="800" fill="{coul}" text-anchor="middle">×{fr(ratio, 1)}</text>')
+        for n, l in enumerate(nom.split("|")):
+            o.append(f'<text x="{cx:.1f}" y="{y(0) + 62 + 54 * n:.1f}" font-size="48" font-weight="700" fill="#0a2f1e" text-anchor="middle">{l}</text>')
+    o.append(f'<line x1="0" y1="{y(0):.1f}" x2="{W}" y2="{y(0):.1f}" stroke="#0a2f1e" stroke-width="5"/>')
+    o.append("</svg>")
+    return '<div class="graph-listes">' + "".join(o) + "</div>"
+
+
 def html_resultat(impact):
     t = par_capacite(impact)[300]
     m = round(t["multiplierVsRfm"])
-    return (f'<div class="res-haut"><div class="gros-chiffre">×{m}</div>'
-            f'<p class="res-txt">plus de dons à risque repérés, à effort égal.</p></div>'
-            f'<p class="res-note">Comparé à la méthode habituelle, avec {t["contacted"]} contacts.'
-            f'<small>Donateurs fictifs de test.</small></p>')
+    return (f'<div class="x3"><span class="badge">Démo 2</span><b><span class="fois">×</span>{m}</b>'
+            f'<p>de dons à risque ciblés, à effort égal<small>{t["contacted"]} contacts parmi 4&nbsp;000 donateurs fictifs, '
+            f'contre la méthode habituelle</small></p></div>')
+
+
+def kdd_hausse_ok(kdd):
+    """La tâche « don plus élevé » de KDD 98 remplit-elle R1 et R2 ?"""
+    h = kdd["hausse"]
+    ev = {e["algorithm"]: e for e in h["evaluations"]}
+    m = ev[h["selected"]]
+    return m["ap"] >= 2 * h["baseRate"] and m["apDiffVsRfmCI"][0] > 0, m, ev["rfm"], h
+
+
+def html_kdd(kdd):
+    n = kdd["reactivation"]["nTest"]
+    ok, *_ = kdd_hausse_ok(kdd)
+    gagne = "l'IA gagne pour le don plus élevé, pas pour la réactivation" if ok else "l'IA ne gagne pas : méthode habituelle gardée"
+    return f'<p class="reel"><b>{milliers(n)} vrais donateurs</b> : {gagne}.</p>'
 
 
 ICONE_GENS = ('<svg viewBox="0 0 24 24" fill="none" stroke="#163e6e" stroke-width="2" stroke-linecap="round" '
@@ -153,10 +209,13 @@ ICONE_GENS = ('<svg viewBox="0 0 24 24" fill="none" stroke="#163e6e" stroke-widt
               '<path d="M2 20a7 7 0 0 1 14 0M15 14.5a5 5 0 0 1 7 5.5"/></svg>')
 
 
-def html_kdd(kdd):
-    n = kdd["reactivation"]["nTest"]
-    return (f'<li><span class="ico">{ICONE_GENS}</span><span>Testé sur {milliers(n)} vrais donateurs.'
-            f'<small>Là, l\'IA ne gagne pas : on garde la méthode habituelle.</small></span></li>')
+def recadrer_captures():
+    """Recadre les captures de la fiche donateur pour l'affiche : ligne clé (risque, action, raisons) lisible à 2 m."""
+    from PIL import Image
+    for src, dst, boite in [("fiche-risque.png", "fiche-risque-affiche.png", (40, 60, 1600, 710)),
+                            ("fiche-raisons.png", "fiche-raisons-affiche.png", (40, 360, 1600, 900))]:
+        if (ICI / src).exists():
+            Image.open(ICI / src).crop(boite).save(ICI / dst, optimize=True)
 
 
 def svg_qr():
@@ -202,7 +261,8 @@ def html_ciblage(impact, synth, robust):
     return (f'<p>À contacts égaux, valeur des dons à risque visée, Fidélia contre la méthode habituelle : '
             f'<b>×{mult(par[100]["multiplierVsRfm"])}</b> avec 100 contacts, '
             f'<b>×{mult(par[300]["multiplierVsRfm"])}</b> avec 300 '
-            f'({fr(par[300]["multiplierVsRfm"], 2)} exactement).</p>'
+            f'({fr(par[300]["multiplierVsRfm"], 2)} exactement). Contre le hasard : ×{mult(par[100]["multiplierVsRandom"])} et '
+            f'×{mult(par[300]["multiplierVsRandom"])}. Donateurs fictifs.</p>'
             f'<p>Attrition : {round(p10["x"] * 100)} % des mensuels contactés couvrent '
             f'<b>{round(p10["y"] * 100)} %</b> des dons à risque.</p>'
             f'<p>Robustesse : {ok} cas sur {tot} retenus (5 autres jeux de données × 4 modèles).</p>'
@@ -217,13 +277,20 @@ def html_kdd_detail(kdd):
     pr = k["profit"]
     gain20 = pr["modelTop20"]["net"] / pr["rfmTop20"]["net"] - 1
     pct20 = round(pr["modelTop20"]["mailed"] / k["nTest"] * 100)
-    return (f'<p><b>Méthode validée, modèle non utilisé.</b> {milliers(k["nTest"])} vrais donateurs américains '
-            f'inactifs (données publiques, 1998) : le modèle obtient une AUC-PR de {fr(ap)}, sous le seuil R1 '
-            f'({fr(2 * k["baseRate"])}). Il ne fait pas 2 fois mieux que le hasard.</p>'
-            f'<p>À gros volume ({milliers(pr["rfmSameVolume"]["mailed"])} envois), la méthode habituelle fait même un peu mieux : '
-            f'{milliers(round(pr["rfmSameVolume"]["net"]))}&nbsp;$ de profit net contre {milliers(round(pr["modelExpectedValue"]["net"]))}&nbsp;$.</p>'
-            f'<p>Seul signe positif : avec {pct20} % des envois, <b>+{round(gain20 * 100)} %</b> de profit net '
-            f'contre la méthode habituelle. Selon nos propres conditions, on garde la méthode habituelle.</p>')
+    return (f'<p><b>Réactivation : modèle non utilisé.</b> {milliers(k["nTest"])} vrais donateurs américains '
+            f'inactifs (données publiques, 1998) : AUC-PR {fr(ap)}, sous le seuil R1 ({fr(2 * k["baseRate"])}). '
+            f'Profit net : la méthode habituelle fait un peu mieux à gros volume ({milliers(round(pr["rfmSameVolume"]["net"]))}&nbsp;$ '
+            f'contre {milliers(round(pr["modelExpectedValue"]["net"]))}&nbsp;$) ; le modèle, <b>+{round(gain20 * 100)} %</b> avec {pct20} % des envois. '
+            f'On garde la méthode habituelle.</p>'
+            + html_kdd_hausse(kdd))
+
+
+def html_kdd_hausse(kdd):
+    ok, m, r, h = kdd_hausse_ok(kdd)
+    lo, hi = m["apDiffVsRfmCI"]
+    verdict = "<b>R1 et R2 remplies</b> : résultat positif sur données réelles." if ok else "R1 ou R2 non remplie."
+    return (f'<p>Don plus élevé que le dernier : AUC-PR <b>{fr(m["ap"])}</b> contre {fr(r["ap"])} pour RFM '
+            f'(seuil R1 : {fr(2 * h["baseRate"])} ; écart : {fr(lo)} à {fr(hi)}). {verdict}</p>')
 
 
 def html_equite(impact):
@@ -245,7 +312,7 @@ def inserer(html, cle, contenu):
 
 
 def chrome(*args):
-    subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--hide-scrollbars", *args], check=True, capture_output=True)
+    subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--hide-scrollbars", "--virtual-time-budget=15000", *args], check=True, capture_output=True)
 
 
 def rendre(nom_html, nom_pdf, nom_png, largeur, hauteur, apercu):
@@ -276,6 +343,8 @@ def main():
     robust = charger("robustesse.json")
 
     html = (ICI / "affiche.html").read_text(encoding="utf-8")
+    recadrer_captures()
+    html = inserer(html, "LISTES", svg_listes(synth))
     html = inserer(html, "RESULTAT", html_resultat(impact))
     html = inserer(html, "KDD", html_kdd(kdd))
     html = inserer(html, "QR", svg_qr())

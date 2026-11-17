@@ -71,7 +71,7 @@ export default function Impact() {
     <>
       <PageHeader
         title="Impact"
-        subtitle={<>Ce que votre organisme pourrait récupérer en contactant les bons donateurs, comparé à la <Term k="methode">méthode habituelle</Term> et au hasard, avec le même effort.</>}
+        subtitle={<>Les dons à risque que votre organisme cible en contactant les bons donateurs, et ce qu'il pourrait récupérer si l'effet supposé se vérifie, comparé à la <Term k="methode">méthode habituelle</Term> et au hasard, avec le même effort.</>}
       />
 
       <section className="mb-6 rounded-2xl border border-amber-200 bg-amber-50/60 p-5">
@@ -136,7 +136,7 @@ export default function Impact() {
         </Card>
 
         <div className="space-y-6">
-          <Card title="Dons récupérés estimés par an" subtitle={`Pour ${capacity} donateurs contactés, répartis entre les quatre actions selon les dons en jeu`}>
+          <Card title="Dons récupérés estimés par an (effet supposé)" subtitle={`Pour ${capacity} donateurs contactés, répartis entre les quatre actions selon les dons en jeu`}>
             {training || !lines.length ? (
               <p className="px-5 py-16 text-center text-sm text-stone-500">Calcul en cours…</p>
             ) : (
@@ -158,7 +158,7 @@ export default function Impact() {
                 </div>
                 <div className="flex flex-col justify-center gap-3">
                   <div className="rounded-2xl bg-brand-900 p-5 text-white">
-                    <p className="text-sm text-brand-100/80">Avec les mêmes {capacity} contacts, Fidélia récupère</p>
+                    <p className="text-sm text-brand-100/80">Avec les mêmes {capacity} contacts, Fidélia vise</p>
                     <p className="mt-1 font-display text-4xl font-semibold tabular-nums" data-check="gain" data-capacity={capacity} data-model={totals.model} data-rfm={totals.rfm}>+{formatMoney(totals.model - totals.rfm)}</p>
                     <p className="mt-1 text-sm text-brand-100/80">de plus par an que la méthode habituelle, soit {fx((totals.model / Math.max(totals.rfm, 1)), 1)} fois plus.</p>
                   </div>
@@ -172,7 +172,7 @@ export default function Impact() {
             )}
           </Card>
 
-          <Card title="Détail par action" subtitle="Dons récupérés estimés par an, à effort égal">
+          <Card title="Détail par action" subtitle="Dons récupérés estimés par an, à effort égal, si l'effet supposé se vérifie">
             <div className="h-64 p-4">
               <ResponsiveContainer>
                 <BarChart data={byKind} margin={{ left: 0, right: 8, top: 8 }}>
