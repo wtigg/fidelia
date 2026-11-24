@@ -30,7 +30,7 @@ export function parseCsv(text: string): Record<string, string>[] {
   return body.map((r) => Object.fromEntries(keys.map((k, i) => [k, (r[i] ?? '').trim()])))
 }
 
-function toCsv(rows: Record<string, unknown>[]): string {
+export function toCsv(rows: Record<string, unknown>[]): string {
   if (!rows.length) return ''
   const keys = Object.keys(rows[0])
   const esc = (v: unknown) => {
@@ -41,7 +41,7 @@ function toCsv(rows: Record<string, unknown>[]): string {
 }
 
 export function download(filename: string, content: string) {
-  const url = URL.createObjectURL(new Blob([content], { type: 'text/csv;charset=utf-8' }))
+  const url = URL.createObjectURL(new Blob(['\ufeff' + content], { type: 'text/csv;charset=utf-8' }))
   const a = document.createElement('a')
   a.href = url
   a.download = filename

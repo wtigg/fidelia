@@ -45,6 +45,7 @@ export default function Impact() {
   const lines = useMemo(() => (Object.keys(reports).length ? simulate(scores, reports, capacity, effect) : []), [scores, reports, capacity, effect])
   const total = (key: 'model' | 'rfm' | 'random') => lines.reduce((s, l) => s + l[key], 0)
   const totals = { model: total('model'), rfm: total('rfm'), random: total('random') }
+  const churnLine = lines.find((l) => l.kind === 'churn')
   const bars = [
     { name: 'Au hasard', value: totals.random, color: '#d6d3d1' },
     { name: 'Méthode habituelle', value: totals.rfm, color: '#a8a29e' },
@@ -64,36 +65,20 @@ export default function Impact() {
   type KddReac = { baseRate: number; selected: string; evaluations: { algorithm: string; ap: number; apDiffVsRfmCI?: [number, number] }[]; profit: { nTest: number; modelTop20: { net: number }; rfmTop20: { net: number } } }
   const reac = (kdd as unknown as { reactivation: KddReac }).reactivation
   const profit = reac.profit
-  const reacSel = reac.evaluations.find((e) => e.algorithm === reac.selected)
-  const reacReady = !!reacSel && reacSel.ap >= 2 * reac.baseRate && (reacSel.apDiffVsRfmCI?.[0] ?? -1) > 0
+  const ready = (t: KddReac) => {
+    const sel = t.evaluations.find((e) => e.algorithm === t.selected)
+    return !!sel && sel.ap >= 2 * t.baseRate && (sel.apDiffVsRfmCI?.[0] ?? -1) > 0
+  }
+  const reacReady = ready(reac)
+  const hausseReady = ready((kdd as unknown as { hausse: KddReac }).hausse)
 
   return (
     <>
       <PageHeader
         title="Impact"
-        subtitle={<>Les dons à risque que votre organisme cible en contactant les bons donateurs, et ce qu'il pourrait récupérer si l'effet supposé se vérifie, comparé à la <Term k="methode">méthode habituelle</Term> et au hasard, avec le même effort.</>}
+        subtitle={<>Combien de dons vous pourriez récupérer en contactant les bons donateurs, comparé à la <Term k="methode">méthode habituelle</Term> et au hasard, pour le même effort. Le ciblage est mesuré ; l'effet d'un courriel est une hypothèse, réglable ici.</>}
       />
 
-      <section className="mb-6 rounded-2xl border border-amber-200 bg-amber-50/60 p-5">
-        <p className="flex items-center gap-2 text-sm font-semibold text-amber-900"><Lightbulb className="size-4" />Pourquoi Fidélia</p>
-        <ul className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-3">
-          <li>
-            <p className="font-display text-3xl font-semibold text-stone-900">53 %</p>
-            <p className="mt-1 text-sm text-stone-700">des OBNL canadiens de moins de 1 M$ confient la technologie et les données à des employés sans formation dans ce domaine.</p>
-            <p className="mt-1 text-xs text-stone-500">CanadaHelps, 2024</p>
-          </li>
-          <li>
-            <p className="font-display text-3xl font-semibold text-stone-900">92 %</p>
-            <p className="mt-1 text-sm text-stone-700">des OBNL utilisent déjà l'IA, surtout pour écrire, rarement pour cibler.</p>
-            <p className="mt-1 text-xs text-stone-500">Virtuous et Fundraising.AI, 2026</p>
-          </li>
-          <li>
-            <p className="font-display text-3xl font-semibold text-stone-900">43,3 %</p>
-            <p className="mt-1 text-sm text-stone-700">des donateurs seulement redonnent l'année suivante.</p>
-            <p className="mt-1 text-xs text-stone-500">FEP, 2025</p>
-          </li>
-        </ul>
-      </section>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {stakes.map((s) => (
@@ -101,7 +86,7 @@ export default function Impact() {
             key={s.kind}
             label={s.kind === 'churn' ? 'Dons mensuels à risque' : s.kind === 'upgrade' ? 'Potentiel de hausse' : s.kind === 'conversion' ? 'Potentiel du passage au mensuel' : 'Potentiel de réactivation'}
             value={<span data-check={`stake-${s.kind}`} data-value={s.atStake}>{formatMoney(s.atStake)}</span>}
-            hint={`par an · ${s.population.toLocaleString('fr-CA')} donateurs concernés`}
+            hint={`par an · ${s.population.toLocaleString('fr-CA')} donateur${s.population > 1 ? 's' : ''} concerné${s.population > 1 ? 's' : ''}`}
             tone={s.kind === 'churn' ? 'bad' : 'good'}
           />
         ))}
@@ -118,6 +103,12 @@ export default function Impact() {
               </div>
               <input type="range" min={25} max={1500} step={25} value={capacity} onChange={(e) => setCapacity(Number(e.target.value))} className="mt-1.5 w-full" />
               <p className="text-xs text-stone-400">Capacité de l'équipe pour une campagne (courriels relus, appels).</p>
+              {/* sur téléphone et tablette, le résultat est loin du curseur : on le répète juste en dessous */}
+              {lines.length > 0 && !training && (
+                <p className="mt-2 rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-900 xl:hidden">
+                  Fidélia <b className="tabular-nums">{formatMoney(totals.model)}</b> contre <span className="tabular-nums">{formatMoney(totals.rfm)}</span> avec la méthode habituelle, soit <b>{fx(totals.model / Math.max(totals.rfm, 1), 1)} fois plus</b>.
+                </p>
+              )}
             </label>
             <div>
               <p className="flex items-center gap-1.5 text-sm font-medium text-stone-800"><FlaskConical className="size-4 text-stone-400" /><Term k="effet">Effet de l'action</Term> (hypothèse)</p>
@@ -161,6 +152,9 @@ export default function Impact() {
                     <p className="text-sm text-brand-100/80">Avec les mêmes {capacity} contacts, Fidélia vise</p>
                     <p className="mt-1 font-display text-4xl font-semibold tabular-nums" data-check="gain" data-capacity={capacity} data-model={totals.model} data-rfm={totals.rfm}>+{formatMoney(totals.model - totals.rfm)}</p>
                     <p className="mt-1 text-sm text-brand-100/80">de plus par an que la méthode habituelle, soit {fx((totals.model / Math.max(totals.rfm, 1)), 1)} fois plus.</p>
+                    {churnLine && churnLine.rfm > 0 && (
+                      <p className="mt-2 border-t border-white/10 pt-2 text-xs text-brand-100/70">Ce total dépend des effets supposés. Pour «&nbsp;Relancer&nbsp;» seul : {fx(churnLine.model / churnLine.rfm, 1)} fois plus, quel que soit l'effet.</p>
+                    )}
                   </div>
                   <TechDetails>
                     <p className="text-xs text-stone-500">
@@ -180,7 +174,7 @@ export default function Impact() {
                   <XAxis dataKey="name" interval={0} tickLine={false} axisLine={false} height={44} tick={<WrapTick />} />
                   <YAxis {...axis} tickLine={false} axisLine={false} width={56} tickFormatter={kTick} />
                   <Tooltip contentStyle={tooltipStyle} formatter={(v) => formatMoney(Number(v))} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Legend itemSorter={null} wrapperStyle={{ fontSize: 12 }} />
                   <Bar isAnimationActive={false} dataKey="Au hasard" fill="#d6d3d1" radius={[4, 4, 0, 0]} />
                   <Bar isAnimationActive={false} dataKey="Méthode habituelle" fill="#a8a29e" radius={[4, 4, 0, 0]} />
                   <Bar isAnimationActive={false} dataKey="Fidélia" fill="#1f7a4d" radius={[4, 4, 0, 0]} />
@@ -191,7 +185,7 @@ export default function Impact() {
               {lines.map((l) => (
                 <li key={l.kind} className="bg-white px-4 py-3">
                   <p className="text-xs text-stone-500">{MODEL_SPECS[l.kind].action}</p>
-                  <p className="font-medium tabular-nums text-stone-900">{l.contacted} contactés / {l.population.toLocaleString('fr-CA')}</p>
+                  <p className="font-medium tabular-nums text-stone-900">{l.contacted} contactés <span className="whitespace-nowrap font-normal text-stone-500">sur {l.population.toLocaleString('fr-CA')}</span></p>
                 </li>
               ))}
             </ul>
@@ -200,7 +194,7 @@ export default function Impact() {
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <Card title="Part de la valeur captée selon l'effort" subtitle={<>Mesurée sur des <Term k="jamaisVus">donateurs jamais vus</Term></>}>
+        <Card title="Part de la valeur captée selon l'effort" subtitle={<>Mesurée sur des <Term k="jamaisVus">donateurs gardés pour le test</Term></>}>
           <div className="px-5 pt-4">
             <WrapTabs<ModelKind> value={curveKind} onChange={setCurveKind} items={MODEL_KINDS.map((k) => ({ value: k, label: MODEL_SPECS[k].action }))} />
           </div>
@@ -211,7 +205,7 @@ export default function Impact() {
                 <XAxis dataKey="x" {...axis} unit="%" label={{ value: 'Part des donateurs contactés', position: 'insideBottom', offset: -6, fontSize: 11, fill: '#78716c' }} />
                 <YAxis {...axis} width={44} domain={[0, 1]} tickFormatter={(v) => `${Math.round(v * 100)}%`} />
                 <Tooltip contentStyle={tooltipStyle} formatter={(v) => `${Math.round(Number(v) * 100)} %`} labelFormatter={(v) => `${v} % contactés`} />
-                <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                <Legend itemSorter={null} wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
                 <Line dataKey="Au hasard" stroke="#d6d3d1" strokeDasharray="4 4" dot={false} isAnimationActive={false} />
                 <Line dataKey="Méthode habituelle" stroke="#a8a29e" strokeWidth={2} dot={false} isAnimationActive={false} />
                 <Line dataKey="Fidélia" stroke="#1f7a4d" strokeWidth={2.5} dot={false} isAnimationActive={false} />
@@ -220,7 +214,8 @@ export default function Impact() {
           </div>
           {at10 && (
             <p className="border-t border-stone-100 px-5 py-3 text-sm text-stone-600">
-              En contactant <b>10 %</b> des donateurs concernés, Fidélia capte <b>{Math.round(at10.Fidélia * 100)} %</b> de la valeur, contre {Math.round((at10['Méthode habituelle'] ?? 0) * 100)} % pour la méthode habituelle et 10 % au hasard.
+              En contactant <b>10 %</b> des donateurs concernés, Fidélia capte <b>{Math.round(at10.Fidélia * 100)} %</b> de la valeur, soit {fx(at10.Fidélia / 0.1, 1)} fois plus qu'au hasard (10 %).
+              {' '}La méthode habituelle capte {Math.round((at10['Méthode habituelle'] ?? 0) * 100)} %{(at10['Méthode habituelle'] ?? 0) < 0.1 ? " : ici, moins bien que le hasard. Elle reste le point de comparaison, car c'est ce que font la plupart des OBNL." : '.'}
             </p>
           )}
         </Card>
@@ -230,11 +225,12 @@ export default function Impact() {
             <div className="flex gap-4 p-5">
               <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-sky-600 text-white"><Database className="size-5" /></span>
               <div className="text-sm text-stone-600">
-                <p className="font-semibold text-stone-900">Vérifié sur de vrais donateurs</p>
+                <p className="font-semibold text-stone-900">Testé sur de vrais donateurs</p>
                 <p className="mt-1">
                   Sur {profit.nTest.toLocaleString('fr-CA')} donateurs réels de test (tirés de {kdd.n.toLocaleString('fr-CA')}, KDD Cup 1998), avec un budget limité à 20 % des envois, le ciblage par le modèle rapporte{' '}
                   <b>{formatMoney(profit.modelTop20.net)}</b> de profit net contre {formatMoney(profit.rfmTop20.net)} avec la méthode habituelle, soit <b>+{Math.round((profit.modelTop20.net / profit.rfmTop20.net - 1) * 100)} %</b>.
-                  {' '}{reacReady ? 'Ce modèle de réactivation remplit nos deux conditions.' : <>Ce modèle de réactivation ne remplit pas encore <Term k="conditions">nos deux conditions pour utiliser le modèle</Term> : la méthode est validée, pas un modèle prêt à l'emploi.</>}
+                  {' '}{reacReady ? 'Ce modèle de réactivation remplit nos deux conditions.' : <>Ce profit vient du classement des inactifs à relancer : il valide la méthode. Mais ce modèle de réactivation ne remplit pas encore <Term k="conditions">nos deux conditions pour utiliser le modèle</Term> : dans l'application, il reste à l'essai.</>}
+                  {' '}{hausseReady ? 'Un second test, sur qui donnera plus que son dernier don, remplit nos deux conditions (méthode validée sur de vrais donateurs).' : 'Un second test, sur qui donnera plus que son dernier don, ne remplit pas nos deux conditions.'}
                 </p>
                 <Link to="/modele" className="mt-2 inline-block font-medium text-brand-600">Voir la validation complète</Link>
               </div>
@@ -251,6 +247,27 @@ export default function Impact() {
           </Card>
         </div>
       </div>
+
+      <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50/60 p-5">
+        <p className="flex items-center gap-2 text-sm font-semibold text-amber-900"><Lightbulb className="size-4" />Pourquoi ce problème compte</p>
+        <ul className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-3">
+          <li>
+            <p className="font-display text-3xl font-semibold text-stone-900">53 %</p>
+            <p className="mt-1 text-sm text-stone-700">des OBNL canadiens de moins de 1 M$ confient la technologie et les données à des employés sans formation dans ce domaine.</p>
+            <p className="mt-1 text-xs text-stone-500">CanadaHelps, 2024</p>
+          </li>
+          <li>
+            <p className="font-display text-3xl font-semibold text-stone-900">92 %</p>
+            <p className="mt-1 text-sm text-stone-700">des OBNL utilisent déjà l'IA, surtout pour écrire, rarement pour cibler.</p>
+            <p className="mt-1 text-xs text-stone-500">Virtuous et Fundraising.AI, 2026</p>
+          </li>
+          <li>
+            <p className="font-display text-3xl font-semibold text-stone-900">43,3 %</p>
+            <p className="mt-1 text-sm text-stone-700">des donateurs seulement redonnent l'année suivante.</p>
+            <p className="mt-1 text-xs text-stone-500">FEP, 2025</p>
+          </li>
+        </ul>
+      </section>
     </>
   )
 }

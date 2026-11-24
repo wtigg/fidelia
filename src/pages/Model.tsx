@@ -7,7 +7,7 @@ import { Term } from '../components/plain/Term.tsx'
 import { WHO, times } from '../components/plain/words.ts'
 import { formatMoney, formatPct, fx } from '../lib/dates.ts'
 import { MODEL_COLOR } from '../lib/labels.ts'
-import { REQUIREMENTS } from '../lib/requirements.ts'
+import { REQUIREMENTS, failedAlerts } from '../lib/requirements.ts'
 import type { Features, ModelKind } from '../lib/types.ts'
 import type { Algorithm, Evaluation, ExperimentResult } from '../ml/experiment.ts'
 import { FEATURE_KEYS, FEATURE_LABELS, toVector } from '../ml/features.ts'
@@ -30,7 +30,7 @@ export default function Model() {
     <>
       <PageHeader
         title="Modèle IA"
-        subtitle={<>Quatre <Term k="modele">modèles qui apprennent des dons passés</Term>. Chacun est testé sur des <Term k="jamaisVus">donateurs jamais vus</Term> et comparé à la <Term k="methode">méthode habituelle</Term> (dernier don, fréquence, montant).</>}
+        subtitle={<>Quatre <Term k="modele">modèles qui apprennent des dons passés</Term>. Chacun est testé sur des <Term k="jamaisVus">donateurs gardés pour le test</Term> et comparé à la <Term k="methode">méthode habituelle</Term> (dernier don, fréquence, montant).</>}
         actions={
           <>
             <Badge>Version {modelVersion}</Badge>
@@ -67,6 +67,10 @@ export default function Model() {
   )
 }
 
+/** Tranches d'âge dans l'ordre (les autres groupes, par exemple les régions, restent par ordre alphabétique) */
+const AGE_ORDER = ['Moins de 35 ans', '35 à 54 ans', '55 à 69 ans', '70 ans et plus']
+const groupOrder = (g: string) => (AGE_ORDER.includes(g) ? AGE_ORDER.indexOf(g) : 0)
+
 function ModelDetail({ report, kind, choice, onChoice, trainMs }: { report: ModelReport; kind: ModelKind; choice: AlgoChoice; onChoice: (c: AlgoChoice) => void; trainMs?: number }) {
   // algorithme réellement utilisé (choix manuel compris) ; en repli RFM, on montre le meilleur candidat
   const shown = report.deployed === 'rfm' ? report.selected : report.deployed
@@ -82,6 +86,11 @@ function ModelDetail({ report, kind, choice, onChoice, trainMs }: { report: Mode
   const t = times(ratio)
   const fallback = report.deployed === 'rfm'
   const manual = !report.deployedAuto
+  const alerts = failedAlerts(report)
+  // réactivation : utilisé sur nos données, mais pas encore validé sur de vrais donateurs (KDD 98) : « à l'essai »
+  const kddReac = (kdd as unknown as Record<string, KddTask>).reactivation
+  const kddReacSel = kddReac.evaluations.find((e) => e.algorithm === kddReac.selected)
+  const trial = kind === 'reactivation' && !fallback && !manual && !(kddReacSel && kddReacSel.ap >= 2 * kddReac.baseRate && (kddReacSel.apDiffVsRfmCI?.[0] ?? -1) > 0)
   return (
     <>
       <Card>
@@ -93,26 +102,40 @@ function ModelDetail({ report, kind, choice, onChoice, trainMs }: { report: Mode
             <div className="min-w-0">
               <p className="text-sm text-stone-500">{MODEL_SPECS[kind].question}</p>
               <h2 className="mt-1 font-display text-xl font-semibold leading-snug text-stone-900 sm:text-2xl">
-                {fallback
-                  ? <>Pour trouver {WHO[kind]}, le modèle ne fait pas assez nettement mieux que la méthode habituelle. Fidélia garde donc la méthode habituelle.</>
-                  : <>Parmi les 50 premiers noms proposés par Fidélia, <span className="text-brand-600">{formatPct(sel.p50)}</span> sont de vrais cas, contre {formatPct(rfm.p50)} avec la méthode habituelle.</>}
+                {fallback && manual
+                  ? <>Choix manuel : la méthode habituelle classe cette liste, le modèle n'est pas utilisé.</>
+                  : fallback
+                  ? <>Pour trouver {WHO[kind]}, le modèle ne fait pas assez nettement mieux que la méthode habituelle. Fidélia garde donc la méthode habituelle.{rfm.p50 < report.baseRate * 1.5 ? " Liste indicative : ni le modèle ni la méthode habituelle ne sont fiables ici." : ''}</>
+                  : <>Parmi les 50 premiers noms proposés par Fidélia, <span className="text-brand-600">{formatPct(sel.p50)}</span> sont de vrais cas, contre {formatPct(report.baseRate)} au hasard et {formatPct(rfm.p50)} avec la méthode habituelle.</>}
               </h2>
-              <p className="mt-2 text-sm text-stone-500">Résultat mesuré sur {report.nTest.toLocaleString('fr-CA')} cas de <Term k="jamaisVus">donateurs jamais vus</Term> pendant l'apprentissage.</p>
+              <p className="mt-2 text-sm text-stone-500">Résultat mesuré sur {report.nTest.toLocaleString('fr-CA')} cas de <Term k="jamaisVus">donateurs gardés de côté pour le test</Term>, que le modèle n'a pas vus pendant son apprentissage.</p>
+              {rfm.p50 < report.baseRate * 1.5 && (
+                <p className="mt-1 text-sm text-stone-500">La méthode habituelle est faible ici, proche du hasard. {kind === 'reactivation' ? 'Chez les inactifs, le dernier don dit peu de chose.' : kind === 'conversion' ? '' : 'Tous les mensuels donnent chaque mois : le « dernier don » ne les distingue pas.'} Nous la gardons comme point de comparaison, car c'est ce que font la plupart des OBNL.</p>
+              )}
             </div>
           </div>
           <div className="mt-5">
-            <div className={cx('rounded-xl p-4', fallback || manual ? 'bg-amber-50' : 'bg-brand-50')}>
+            <div className={cx('rounded-xl p-4', fallback || manual || trial || alerts.length ? 'bg-amber-50' : 'bg-brand-50')}>
               <p className="text-xs font-medium text-stone-500">Décision</p>
-              <p className={cx('mt-1 flex items-start gap-1.5 text-sm', fallback || manual ? 'text-amber-900' : 'text-brand-900')}>
-                {fallback || manual ? <AlertTriangle className="mt-0.5 size-4 shrink-0" /> : <CheckCircle2 className="mt-0.5 size-4 shrink-0" />}
+              <p className={cx('mt-1 flex items-start gap-1.5 text-sm', fallback || manual || trial ? 'text-amber-900' : 'text-brand-900')}>
+                {fallback || manual || trial ? <AlertTriangle className="mt-0.5 size-4 shrink-0" /> : <CheckCircle2 className="mt-0.5 size-4 shrink-0" />}
                 <span>
                   {manual
                     ? <>Choix imposé à la main. <button className="font-medium underline underline-offset-2" onClick={() => onChoice('auto')}>Revenir au choix automatique</button></>
                     : fallback
                       ? <>Le modèle ne remplit pas <Term k="conditions">nos deux conditions</Term>. Fidélia garde la méthode habituelle pour cette liste.</>
-                      : <><Term k="conditions">Nos deux conditions</Term> sont remplies : Fidélia utilise le modèle pour classer vos donateurs.</>}
+                      : trial
+                        ? <>À l'essai : <Term k="conditions">nos deux conditions</Term> sont remplies sur nos données, pas encore prouvé sur de vrais donateurs (onglet Données réelles).</>
+                        : <><Term k="conditions">Nos deux conditions</Term> sont remplies : Fidélia utilise le modèle pour classer vos donateurs.</>}
                 </span>
               </p>
+              {!fallback && !manual && alerts.length > 0 && (
+                <p className="mt-2 flex items-start gap-1.5 text-sm text-amber-900">
+                  <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                  <span>Point{alerts.length > 1 ? 's' : ''} à surveiller avant un usage réel : {alerts.join(', ')}. Détail dans « Voir le détail technique ».</span>
+                </p>
+              )}
+
             </div>
           </div>
         </div>
@@ -262,7 +285,7 @@ function Comparison({ report, choice, onChoice }: { report: ExperimentResult | M
                   <span className="flex items-center gap-2 font-medium text-stone-900">
                     <i className="size-2.5 rounded-full" style={{ background: ALGO_COLOR[e.algorithm] }} />
                     {ALGORITHM_LABELS[e.algorithm]}
-                    {e.ap === bestAp && <Badge className="bg-amber-50 text-amber-800 ring-amber-200">Meilleur au test</Badge>}
+                    {e.ap === bestAp && <Badge className="bg-stone-100 text-stone-600 ring-stone-200">AUC-PR test la plus haute (info)</Badge>}
                   </span>
                 </Td>
                 <Td className="text-right tabular-nums"><b>{fx(e.ap, 3)}</b> <span className="text-xs text-stone-400">[{ci(e.apCI)}]</span></Td>
@@ -271,18 +294,18 @@ function Comparison({ report, choice, onChoice }: { report: ExperimentResult | M
                     <span className={e.apDiffVsRfmCI[0] > 0 ? 'text-brand-700' : 'text-stone-500'}>
                       {e.ap - rfmAp >= 0 ? '+' : ''}{fx(e.ap - rfmAp, 3)} <span className="text-xs text-stone-400">[{fx(e.apDiffVsRfmCI[0], 3)} ; {fx(e.apDiffVsRfmCI[1], 3)}]</span>
                     </span>
-                  ) : <span className="text-xs text-stone-400">—</span>}
+                  ) : <span className="text-xs text-stone-400">–</span>}
                 </Td>
                 <Td className="text-right tabular-nums">{fx(e.auc, 3)} <span className="text-xs text-stone-400">[{ci(e.aucCI)}]</span></Td>
                 <Td className="text-right tabular-nums">{formatPct(e.p50)}</Td>
                 <Td className="text-right tabular-nums">{fx(e.top10.lift, 2)}×</Td>
-                <Td className="text-right tabular-nums text-stone-500">{e.brier !== undefined ? fx(e.brier, 4) : '—'}</Td>
+                <Td className="text-right tabular-nums text-stone-500">{e.brier !== undefined ? fx(e.brier, 4) : '–'}</Td>
                 {onChoice && (
                   <Td className="text-right">
                     {(('deployed' in report ? (report as ModelReport).deployed : report.selected) === e.algorithm) ? (
                       <CheckCircle2 className="ml-auto size-5 text-brand-600" />
                     ) : (
-                      <Button size="sm" variant="ghost" onClick={() => onChoice(e.algorithm as AlgoChoice)}>Utiliser</Button>
+                      <Button size="sm" variant="ghost" title="Choix manuel, déconseillé : contourne la décision automatique (R1, R2, choix sur la validation) ; la page l'affiche en orange" onClick={() => onChoice(e.algorithm as AlgoChoice)}>Imposer</Button>
                     )}
                   </Td>
                 )}
@@ -325,7 +348,7 @@ function Curves({ evaluations, selected, baseRate }: { evaluations: Evaluation[]
             <XAxis type="number" dataKey="x" domain={[0, 1]} tickFormatter={pctTick} {...axis} label={{ value: meta.x, position: 'insideBottom', offset: -6, fontSize: 11, fill: '#78716c' }} />
             <YAxis type="number" dataKey="y" domain={[0, kind === 'pr' ? 'auto' : 1]} tickFormatter={pctTick} {...axis} width={44} />
             <Tooltip contentStyle={tooltipStyle} formatter={(v) => `${Math.round(Number(v) * 100)} %`} labelFormatter={(v) => `${meta.x} : ${Math.round(Number(v) * 100)} %`} />
-            <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+            <Legend itemSorter={null} wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
             <Line data={meta.ref} dataKey="y" name="Hasard" stroke="#d6d3d1" strokeDasharray="4 4" dot={false} isAnimationActive={false} />
             {evaluations.map((e) => (
               <Line key={e.algorithm} data={e[kind]} dataKey="y" name={ALGORITHM_LABELS[e.algorithm]} stroke={ALGO_COLOR[e.algorithm]} strokeWidth={e.algorithm === selected ? 2.5 : 1.5} dot={false} isAnimationActive={false} />
@@ -399,7 +422,7 @@ function Validation({ report }: { report: ModelReport }) {
             {report.hyper.validation.map((v, i) => (
               <tr key={i}>
                 <Td className="text-stone-600">{ALGORITHM_LABELS[v.algorithm]}</Td>
-                <Td className="text-stone-600">{v.setting}</Td>
+                <Td className="text-stone-600">{v.setting.replace(/(\d)\.(\d)/g, '$1,$2')}</Td>
                 <Td className="text-right tabular-nums">{fx(v.ap, 3)}</Td>
               </tr>
             ))}
@@ -422,26 +445,29 @@ function Validation({ report }: { report: ModelReport }) {
 function Fairness({ report }: { report: ExperimentResult }) {
   if (!report.fairness.length) return null
   return (
-    <Card className="mt-6" title="Équité par sous-groupe" subtitle="Le modèle cible-t-il certains groupes plus que d'autres ? Ratio de sélection = part du groupe parmi les 20 % mieux scorés ÷ part du groupe dans la population. L'âge et la région ne sont jamais des variables du modèle.">
+    <Card className="mt-6" title="Équité par sous-groupe" subtitle="Le modèle cible-t-il certains groupes plus que d'autres ? Ratio de sélection = part du groupe parmi les 20 % mieux scorés ÷ part du groupe dans la population. Prédit / observé = probabilité moyenne prédite ÷ taux réel (alerte hors de 0,67 à 1,5, requis R6). L'âge et la région ne sont jamais des variables du modèle.">
       <div className="grid grid-cols-1 gap-px bg-stone-100 xl:grid-cols-2">
         {report.fairness.map((f) => (
           <div key={f.by} className="min-w-0 overflow-x-auto bg-white p-5">
             <p className="mb-2 text-sm font-medium text-stone-900">{f.by === 'age' ? 'Tranche d\'âge' : 'Région'}</p>
-            <table className="w-full min-w-[420px] text-sm">
-              <thead><tr><Th className="px-0">Groupe</Th><Th className="text-right">n</Th><Th className="text-right">Taux réel</Th><Th className="text-right">AUC</Th><Th className="text-right">Ratio sélection</Th></tr></thead>
+            <table className="w-full min-w-[500px] text-sm">
+              <thead><tr><Th className="px-0">Groupe</Th><Th className="text-right">n</Th><Th className="text-right">Taux réel</Th><Th className="text-right">AUC</Th><Th className="text-right">Ratio sélection</Th><Th className="text-right">Prédit / observé</Th></tr></thead>
               <tbody>
-                {f.groups.map((g) => {
-                  const flag = g.selectionRatio > 1.25 || g.selectionRatio < 0.8
+                {[...f.groups].sort((a, b) => groupOrder(a.group) - groupOrder(b.group) || a.group.localeCompare(b.group, 'fr')).map((g) => {
+                  // l'alerte porte sur la calibration (requis R6 : prédit / observé entre 0,67 et 1,5), pas sur le ratio de sélection
+                  const calib = g.baseRate > 0 ? g.meanPred / g.baseRate : null
+                  const flag = calib !== null && g.n >= 100 && g.baseRate * g.n >= 5 && (calib < 0.67 || calib > 1.5)
                   return (
                     <tr key={g.group} className="border-t border-stone-100">
                       <Td className="px-0 text-stone-700">{g.group}</Td>
                       <Td className="text-right tabular-nums text-stone-500">{g.n}</Td>
                       <Td className="text-right tabular-nums">{fx((g.baseRate * 100), 1)} %</Td>
-                      <Td className="text-right tabular-nums">{g.auc !== null ? fx(g.auc, 2) : '—'}</Td>
+                      <Td className="text-right tabular-nums">{g.auc !== null ? fx(g.auc, 2) : '–'}</Td>
+                      <Td className="text-right tabular-nums text-stone-700">{fx(g.selectionRatio, 2)}</Td>
                       <Td className="text-right">
                         <span className={cx('inline-flex items-center gap-1 tabular-nums', flag ? 'font-semibold text-amber-700' : 'text-stone-700')}>
                           {flag && <AlertTriangle className="size-3.5" />}
-                          {fx(g.selectionRatio, 2)}
+                          {calib !== null ? fx(calib, 2) : '–'}
                         </span>
                       </Td>
                     </tr>
@@ -453,7 +479,7 @@ function Fairness({ report }: { report: ExperimentResult }) {
         ))}
       </div>
       <p className="border-t border-stone-100 px-5 py-3 text-xs text-stone-500">
-        Un écart n'est pas forcément injuste s'il reflète un vrai écart de comportement (comparer avec le taux réel). Il doit cependant être surveillé : sur-solliciter un groupe (par exemple les aînés) est un risque identifié. Garde-fous : plafond de sollicitation, validation humaine.
+        Un ratio de sélection élevé n'est pas forcément injuste s'il reflète un vrai écart de comportement (comparer avec le taux réel) ; l'alerte porte donc sur la colonne prédit / observé, qui montre si le modèle sur-estime ou sous-estime un groupe. Il doit cependant être surveillé : sur-solliciter un groupe (par exemple les aînés) est un risque identifié. Garde-fous : plafond de sollicitation, validation humaine.
       </p>
     </Card>
   )
@@ -484,7 +510,7 @@ const RANGES: Record<keyof Features, { min: number; max: number; step: number; f
 const SIMPLE_KEYS: (keyof Features)[] = ['recencyDays', 'failed90d', 'openRate3m', 'avgGift', 'gifts12m']
 const SIMPLE_LABELS: Partial<Record<keyof Features, string>> = {
   recencyDays: 'Dernier don, il y a',
-  failed90d: 'Paiements refusés (3 derniers mois)',
+  failed90d: 'Paiements échoués (3 derniers mois)',
   openRate3m: 'Courriels ouverts',
   avgGift: 'Montant habituel du don',
   gifts12m: 'Dons sur la dernière année',
@@ -498,6 +524,8 @@ function Simulator({ report, kind }: { report: ModelReport; kind: ModelKind }) {
   const x = toVector(f)
   const p = predictReport(report, x)
   const reasons = explain(report, x, f)
+  // les paiements échoués ne concernent que les dons mensuels : ce curseur reste dans « autres signaux » pour les autres listes
+  const simpleKeys = kind === 'churn' || kind === 'upgrade' ? SIMPLE_KEYS : SIMPLE_KEYS.filter((k) => k !== 'failed90d')
   const slider = (k: keyof Features, label: string, size: string) => (
     <label key={k} className="block">
       <div className={cx('flex justify-between gap-2', size)}>
@@ -517,11 +545,11 @@ function Simulator({ report, kind }: { report: ModelReport; kind: ModelKind }) {
       <div className="grid grid-cols-1 gap-8 p-6 xl:grid-cols-[1fr_300px]">
         <div>
           <div className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
-            {SIMPLE_KEYS.map((k) => slider(k, SIMPLE_LABELS[k] ?? FEATURE_LABELS[k], 'text-sm'))}
+            {simpleKeys.map((k) => slider(k, SIMPLE_LABELS[k] ?? FEATURE_LABELS[k], 'text-sm'))}
           </div>
           <TechDetails label="Voir les autres signaux" className="mt-5">
             <div className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
-              {FEATURE_KEYS.filter((k) => !SIMPLE_KEYS.includes(k)).map((k) => slider(k, FEATURE_LABELS[k], 'text-[13px]'))}
+              {FEATURE_KEYS.filter((k) => !simpleKeys.includes(k)).map((k) => slider(k, FEATURE_LABELS[k], 'text-[13px]'))}
             </div>
           </TechDetails>
         </div>
@@ -531,10 +559,10 @@ function Simulator({ report, kind }: { report: ModelReport; kind: ModelKind }) {
           <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
             <div className="h-full rounded-full bg-gold transition-all" style={{ width: `${p * 100}%` }} />
           </div>
-          <p className="mt-2 text-xs text-brand-100/70">En moyenne, chez les vrais donateurs : {formatPct(report.baseRate)}</p>
+          <p className="mt-2 text-xs text-brand-100/70">En moyenne, sur les donateurs de test : {formatPct(report.baseRate)}</p>
           <div className="mt-6 border-t border-white/10 pt-4">
             <p className="text-xs font-medium uppercase tracking-wide text-brand-100/60">Ce qui fait monter le score</p>
-            <ul className="mt-2 space-y-1.5 text-sm">{reasons.length ? reasons.map((r) => <li key={r.feature}>• {r.text}</li>) : <li className="text-brand-100/70">Rien de notable</li>}</ul>
+            <ul className="mt-2 space-y-1.5 text-sm">{p < report.baseRate ? <li className="text-brand-100/70">Score sous la moyenne : rien de notable.</li> : reasons.length ? reasons.map((r) => <li key={r.feature}>• {r.text}</li>) : <li className="text-brand-100/70">Rien de notable</li>}</ul>
           </div>
         </div>
       </div>
@@ -576,10 +604,10 @@ function KddGovernance() {
           <tbody className="divide-y divide-stone-100">
             {tasks.map(({ key, t, sel, r1, r2 }) => (
               <tr key={key}>
-                <Td className="font-medium text-stone-900">{key === 'reactivation' ? 'Réactivation' : 'Hausse du don'}</Td>
+                <Td className="font-medium text-stone-900">{key === 'reactivation' ? 'Réactivation' : 'Don supérieur au dernier'}</Td>
                 <Td>{ALGORITHM_LABELS[t.selected]}</Td>
                 <Td className="text-right tabular-nums">{fx(sel.ap, 3)} vs {fx(2 * t.baseRate, 3)} · {ok(r1)}</Td>
-                <Td className="text-right tabular-nums">{sel.apDiffVsRfmCI ? `[${fx(sel.apDiffVsRfmCI[0], 3)} ; ${fx(sel.apDiffVsRfmCI[1], 3)}]` : '—'} · {ok(r2)}</Td>
+                <Td className="text-right tabular-nums">{sel.apDiffVsRfmCI ? `[${fx(sel.apDiffVsRfmCI[0], 3)} ; ${fx(sel.apDiffVsRfmCI[1], 3)}]` : '–'} · {ok(r2)}</Td>
                 <Td className="text-right">{r1 && r2 ? <Badge className="bg-brand-50 text-brand-700 ring-brand-100">Oui</Badge> : <Badge className="bg-amber-50 text-amber-800 ring-amber-200">Non : règle RFM</Badge>}</Td>
               </tr>
             ))}
@@ -600,18 +628,22 @@ function RealData() {
   const reac = (kdd as unknown as Record<string, KddTask>).reactivation
   const reacSel = reac.evaluations.find((e) => e.algorithm === reac.selected)!
   const reactivationReady = reacSel.ap >= 2 * reac.baseRate && (reacSel.apDiffVsRfmCI?.[0] ?? -1) > 0
+  const hausse = (kdd as unknown as Record<string, KddTask>).hausse
+  const hausseSel = hausse.evaluations.find((e) => e.algorithm === hausse.selected)!
+  const hausseRfm = hausse.evaluations.find((e) => e.algorithm === 'rfm')!
+  const hausseReady = hausseSel.ap >= 2 * hausse.baseRate && (hausseSel.apDiffVsRfmCI?.[0] ?? -1) > 0
   return (
     <>
       <Card>
         <div className="flex flex-col gap-4 p-6 lg:flex-row lg:items-start">
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-sky-600 text-white"><Database className="size-5" /></span>
           <div className="text-sm text-stone-600">
-            <h2 className="text-lg font-semibold text-stone-900">Validation sur de vrais donateurs : KDD Cup 1998</h2>
+            <h2 className="text-lg font-semibold text-stone-900">Testé sur de vrais donateurs (jeu public KDD Cup 1998)</h2>
             <p className="mt-1">
               Jeu public (archive UCI) de <b>{kdd.n.toLocaleString('fr-CA')} donateurs inactifs</b> d'une organisation nationale de vétérans aux États-Unis, qui ont reçu une relance postale en juin 1997.
               On sait qui a répondu et combien il a donné. Mêmes algorithmes, même protocole, mêmes familles de variables que dans l'application (récence, fréquence, montant, tendance, engagement).
             </p>
-            <p className="mt-2 text-xs text-stone-500">Pas de dons mensuels dans ce jeu. Il valide la méthode sur deux tâches voisines (réactivation d'inactifs, don plus élevé que le dernier), pas le modèle de hausse du mensuel ni celui d'attrition. Données non incluses dans le dépôt (script de téléchargement fourni).</p>
+            <p className="mt-2 text-xs text-stone-500">Pas de dons mensuels dans ce jeu. Il valide la méthode sur deux tâches voisines (réactivation d'inactifs, don plus élevé que le dernier), pas les deux modèles de l'application sur les dons mensuels (risque d'arrêt, hausse du don mensuel). Données non incluses dans le dépôt (script de téléchargement fourni).</p>
           </div>
         </div>
       </Card>
@@ -619,10 +651,13 @@ function RealData() {
       <div className="mt-6 rounded-2xl bg-brand-900 p-6 text-white">
         <p className="text-sm text-brand-100/80">En bref</p>
         <p className="mt-1 font-display text-xl font-semibold leading-snug sm:text-2xl">
-          Sur de vrais donateurs, avec le même budget, cibler avec le modèle rapporte <span className="text-gold">{Math.round((profit.modelTop20.net / profit.rfmTop20.net - 1) * 100)} % de profit en plus</span> que la méthode habituelle.
+          Sur de vrais donateurs, avec le même budget, cibler avec le modèle de réactivation (à l'essai) rapporte <span className="text-gold">{Math.round((profit.modelTop20.net / profit.rfmTop20.net - 1) * 100)} % de profit en plus</span> que la méthode habituelle.
         </p>
         <p className="mt-2 text-sm text-brand-100/80">
-          Ce test valide la méthode. {reactivationReady ? 'Le modèle de réactivation remplit nos deux conditions.' : <>Le modèle de réactivation ne remplit pas encore <Term k="conditions" light>nos deux conditions</Term> : Fidélia ne l'utiliserait pas tel quel.</>}
+          Ce profit vient du classement des inactifs à relancer : il valide la méthode. {reactivationReady ? 'Le modèle de réactivation remplit nos deux conditions.' : <>Mais ce modèle de réactivation ne remplit pas encore <Term k="conditions" light>nos deux conditions</Term> : dans l'application, il reste à l'essai.</>}
+          {' '}{hausseReady
+            ? <>Pour repérer qui donnera plus que son dernier don, le modèle remplit nos deux conditions : il les repère {fx(hausseSel.ap / hausseRfm.ap, 1)} fois mieux que la méthode habituelle.</>
+            : 'Pour repérer qui donnera plus que son dernier don, le modèle ne remplit pas nos deux conditions.'}
         </p>
       </div>
 
@@ -638,7 +673,7 @@ function RealData() {
       <TechDetails className="mt-6">
       <KddGovernance />
       <div className="mt-6">
-        <Tabs<'reactivation' | 'hausse'> value={task} onChange={setTask} items={[{ value: 'reactivation', label: 'Réactivation' }, { value: 'hausse', label: 'Hausse du don' }]} />
+        <Tabs<'reactivation' | 'hausse'> value={task} onChange={setTask} items={[{ value: 'reactivation', label: 'Réactivation' }, { value: 'hausse', label: 'Don supérieur au dernier' }]} />
       </div>
       <p className="mt-3 text-sm text-stone-600">{r.title} · taux de base {formatPct(r.baseRate)} · {r.nTrain.toLocaleString('fr-CA')} / {r.nVal.toLocaleString('fr-CA')} / {r.nTest.toLocaleString('fr-CA')} exemples</p>
       <Comparison report={r} />

@@ -11,7 +11,7 @@ import { actionStats } from '../lib/actionStats.ts'
 import { addMonths, formatMoney, monthIndex, fx } from '../lib/dates.ts'
 import { DEFAULT_EFFECT, simulate, valueAtStake } from '../lib/impact.ts'
 import { ACTION_COLOR, ACTION_DESCRIPTIONS, ACTION_LABELS, ACTION_MODEL, ACTION_TONE, ACTION_TYPES, PROB_WORD, SEGMENT_LABELS } from '../lib/labels.ts'
-import { REQUIREMENTS } from '../lib/requirements.ts'
+import { REQUIREMENTS, failedAlerts } from '../lib/requirements.ts'
 import type { Segment } from '../lib/types.ts'
 import { MODEL_KINDS, MODEL_SPECS } from '../ml/pipeline.ts'
 import { useStore } from '../state/store.tsx'
@@ -38,7 +38,8 @@ function realDonorsVerdict(): boolean {
 const SEG_COLOR: Record<Segment, string> = { monthly: '#1f7a4d', annual: '#0284c7', one_time: '#f4c95d', lapsed: '#d6d3d1' }
 
 export default function Dashboard() {
-  const { dataset, scores, donorsById, reports, training, trainingStep } = useStore()
+  const { dataset, scores, donorsById, reports, training, trainingStep, campaign } = useStore()
+  const handled = useMemo(() => new Set(campaign.map((c) => c.donorId)), [campaign])
   const [open, setOpen] = useState<string | null>(null)
 
   const kpi = useMemo(() => {
@@ -53,11 +54,12 @@ export default function Dashboard() {
       mrr,
       atRisk,
       actions: actions.length,
+      draftable: actions.filter((s) => donorsById.get(s.donorId)?.emailConsent && !handled.has(s.donorId)).length,
       active,
       recoverable: recovered.reduce((s, l) => s + l.model, 0),
       vsRfm: recovered.reduce((s, l) => s + l.model - l.rfm, 0),
     }
-  }, [scores, donorsById, reports])
+  }, [scores, donorsById, reports, handled])
 
   const series = useMemo(() => {
     const start = new Date(dataset.historyStart)
@@ -103,12 +105,12 @@ export default function Dashboard() {
         <Stat label="Dons mensuels récurrents" value={formatMoney(kpi.mrr)} hint={`soit ${formatMoney(kpi.mrr * 12)} par an`} icon={<Repeat className="size-4" />} tone="good" />
         <Stat label="Dons mensuels à risque" value={formatMoney(kpi.atRisk)} hint="par an, selon la chance que chacun arrête" icon={<AlertTriangle className="size-4" />} tone="bad" />
         <Link to="/impact" className="block transition-transform hover:-translate-y-0.5">
-          <Stat label="Récupérable estimé (300 contacts)" value={formatMoney(kpi.recoverable)} hint={<span className="text-brand-700">+{formatMoney(kpi.vsRfm)} de plus que la méthode habituelle →</span>} icon={<HandCoins className="size-4" />} tone="gold" />
+          <Stat label="Campagne de 300 contacts" value={formatMoney(kpi.recoverable)} hint={<span className="text-brand-700">récupérés par an si une partie des contactés réagit (hypothèse) : {formatMoney(kpi.vsRfm)} de plus qu'avec la méthode habituelle →</span>} icon={<HandCoins className="size-4" />} tone="gold" />
         </Link>
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <Card className="xl:col-span-2" title="Dons collectés" subtitle="24 derniers mois, par type de don. Pic de décembre : période des fêtes et reçus fiscaux.">
+        <Card className="xl:col-span-2" title="Dons collectés" subtitle={dataset.source === 'demo' ? '24 derniers mois, par type de don. Pic de décembre : période des fêtes et reçus fiscaux.' : '24 derniers mois, par type de don.'}>
           <div className="h-72 px-2 py-4">
             {/* Sans animation d'entrée : Recharts révèle les aires de gauche à droite (1,5 s). Pendant l'entraînement
                 (worker) ou sur une capture d'écran, la révélation s'arrêtait vers 70 % de la largeur alors que l'axe continuait. */}
@@ -116,7 +118,7 @@ export default function Dashboard() {
               <AreaChart data={series} margin={{ left: 4, right: 12, top: 4 }}>
                 <CartesianGrid vertical={false} stroke="#f0eeec" />
                 <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#a8a29e' }} tickLine={false} axisLine={false} interval={2} />
-                <YAxis tick={{ fontSize: 11, fill: '#a8a29e' }} tickLine={false} axisLine={false} width={56} tickFormatter={(v) => `${Math.round(v / 1000)} k$`} />
+                <YAxis tick={{ fontSize: 11, fill: '#a8a29e' }} tickLine={false} axisLine={false} width={56} tickFormatter={(v) => `${(v / 1000).toLocaleString('fr-CA', { maximumFractionDigits: v < 10000 ? 1 : 0 })} k$`} />
                 <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e7e5e4', fontSize: 12 }} formatter={(v, n) => [formatMoney(Number(v)), n === 'monthly' ? 'Mensuel' : n === 'annual' ? 'Annuel' : 'Ponctuel']} />
                 <Area type="monotone" dataKey="monthly" stackId="1" isAnimationActive={false} stroke="#1f7a4d" fill="#1f7a4d" fillOpacity={0.85} />
                 <Area type="monotone" dataKey="annual" stackId="1" isAnimationActive={false} stroke="#0284c7" fill="#0284c7" fillOpacity={0.6} />
@@ -147,7 +149,7 @@ export default function Dashboard() {
             </ul>
           </div>
           <p className="border-t border-stone-100 px-5 py-3 text-xs text-stone-500">
-            Les inactifs sont la majorité : moins d'un donateur sur deux redonne l'année suivante, c'est le problème que Fidélia attaque.
+            {kpi.active < scores.length / 2 ? "Les inactifs sont la majorité : moins d'un donateur sur deux redonne l'année suivante. " : ''}Fidélia aide à garder ceux qui restent et à faire revenir les autres.
           </p>
         </Card>
       </div>
@@ -187,16 +189,20 @@ export default function Dashboard() {
                     <p className="text-sm font-medium text-stone-900">{ACTION_LABELS[type]}</p>
                     <p className="truncate text-xs text-stone-500">{ACTION_DESCRIPTIONS[type]}</p>
                     {ACTION_MODEL[type] && reports[ACTION_MODEL[type]!]?.deployed === 'rfm' && (
-                      <p className="mt-0.5 text-xs text-amber-800">Liste courte : ici, le modèle ne fait pas mieux. Fidélia classe avec la méthode habituelle.</p>
+                      <p className="mt-0.5 text-xs text-stone-500">Petite liste, choisie selon l'historique de dons : ici, le modèle ne fait pas mieux.</p>
                     )}
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-semibold tabular-nums text-stone-900">{count}</p>
-                    <p className="text-xs tabular-nums text-stone-500">{type === 'thank' ? '—' : formatMoney(value)}</p>
+                    <p className="text-xs tabular-nums text-stone-500">{type === 'thank' ? '–' : formatMoney(value)}</p>
                   </div>
                 </Link>
               </li>
             ))}
+            <li className="flex items-center justify-between gap-3 bg-stone-50 px-5 py-3 text-xs text-stone-600">
+              <span>Total espéré pour {kpi.actions} donateurs, si chacun réagissait comme sa chance l'indique. Un courriel n'en convainc qu'une partie : voir « Campagne de 300 contacts » en haut.</span>
+              <span className="shrink-0 text-sm font-semibold tabular-nums text-stone-900">{formatMoney(byAction.reduce((a, b) => a + (b.type === 'thank' ? 0 : b.value), 0))}</span>
+            </li>
             {byAction.some(({ count }) => count === 0) && (
               <li className="px-5 py-3 text-xs text-stone-500">
                 Aucun donateur aujourd'hui pour : {byAction.filter(({ count }) => count === 0).map(({ type }) => ACTION_LABELS[type]).join(', ')}.
@@ -206,7 +212,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <Card className="mt-6" title="Fidélia fait-il mieux que la méthode habituelle ?" subtitle={<>Testé sur des <Term k="jamaisVus">donateurs jamais vus</Term>. <Term k="methode">Méthode habituelle</Term> : trier par dernier don, fréquence et montant.</>} action={
+      <Card className="mt-6" title="Fidélia fait-il mieux que la méthode habituelle ?" subtitle={<>Testé sur des <Term k="jamaisVus">donateurs gardés pour le test</Term>. <Term k="methode">Méthode habituelle</Term> : trier par dernier don, fréquence et montant.</>} action={
         <Link to="/modele" className="flex shrink-0 items-center gap-1.5 text-sm font-medium text-brand-600"><CheckCircle2 className="size-4" />Voir les vérifications</Link>
       }>
         <div className="grid grid-cols-1 gap-px bg-stone-100 sm:grid-cols-2 xl:grid-cols-4">
@@ -226,20 +232,27 @@ export default function Dashboard() {
                     <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800" title="Choix imposé à la main dans la page Modèle IA">Choix manuel</span>
                   ) : fallback ? (
                     <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-600" title="Le modèle ne remplit pas nos deux conditions : Fidélia garde la méthode habituelle">Méthode habituelle</span>
-                  ) : k === 'reactivation' && !reacReal && (
-                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800" title="Testé sur de vrais donateurs : la méthode est validée, mais ce modèle ne remplit pas encore nos deux conditions">À confirmer</span>
+                  ) : r && k === 'reactivation' && !reacReal && (
+                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800" title="Utilisé à titre d'essai : sur de vrais donateurs, ce modèle ne remplit pas encore nos deux conditions">À l'essai</span>
                   )}
                 </p>
-                <p className="mt-1 text-2xl font-semibold tabular-nums text-stone-900">{t ? `×${t}` : '—'}</p>
+                <p className="mt-1 text-2xl font-semibold tabular-nums text-stone-900">{t ? `×${t}` : '–'}</p>
                 <p className="mt-1 text-[13px] leading-snug text-stone-600">
-                  {!r ? 'En attente des données.' : fallback
+                  {!r ? 'En attente des données.' : fallback && !r.deployedAuto
+                    ? <>Choix manuel : la méthode habituelle classe cette liste.</>
+                    : fallback
                     ? <>Le modèle ne fait pas assez nettement mieux pour trouver {WHO[k]}. Fidélia garde donc la méthode habituelle pour cette liste.</>
                     : t
-                      ? <>Fidélia repère {WHO[k]} avec une précision <b>{t} fois</b> plus grande que la méthode habituelle.</>
+                      ? <>Fidélia repère {WHO[k]} <b>{t} fois</b> mieux que la méthode habituelle.</>
                       : <>Ici, Fidélia ne fait pas mieux que la méthode habituelle.</>}
                 </p>
                 {k === 'reactivation' && r && !fallback && !reacReal && (
-                  <p className="mt-2 text-[12px] leading-snug text-amber-800">Sur nos données fictives seulement. Sur de vrais donateurs, ce modèle ne remplit pas encore nos deux conditions (page Impact).</p>
+                  <p className="mt-2 text-[12px] leading-snug text-amber-800">Utilisé à titre d'essai : sur de vrais donateurs, ce modèle n'a pas encore fait ses preuves.</p>
+                )}
+                {r && ev && rfm && !fallback && <p className="mt-2 text-[12px] leading-snug text-stone-500">×{t} sur toute la liste. Sur les 50 premiers noms : {Math.round(ev.p50 * 100)} % de vrais cas, contre {Math.round(rfm.p50 * 100)} % avec la méthode habituelle.</p>}
+                {r && k !== 'reactivation' && <p className="mt-1 text-[12px] leading-snug text-stone-500">Testé sur nos donateurs fictifs.</p>}
+                {r && !fallback && failedAlerts(r).length > 0 && (
+                  <p className="mt-1 text-[12px] leading-snug text-stone-500">Point à surveiller : {failedAlerts(r).join(', ')}. Détail dans Modèle IA.</p>
                 )}
               </div>
             )
@@ -258,8 +271,8 @@ export default function Dashboard() {
                   <div key={k} className="text-xs">
                     <p className="mb-1.5 font-medium text-stone-700">{MODEL_SPECS[k].title} · AUC-PR</p>
                     <div className="space-y-1.5">
-                      <div className="flex items-center gap-2"><span className="w-12 text-stone-500">Modèle</span><div className="h-2 flex-1 rounded-full bg-stone-100"><div className="h-full rounded-full bg-brand-500" style={{ width: `${((ev?.ap ?? 0) / max) * 100}%` }} /></div><span className="w-10 text-right tabular-nums">{fx(ev?.ap, 2) ?? '—'}</span></div>
-                      <div className="flex items-center gap-2"><span className="w-12 text-stone-500">RFM</span><div className="h-2 flex-1 rounded-full bg-stone-100"><div className="h-full rounded-full bg-stone-400" style={{ width: `${((rfm?.ap ?? 0) / max) * 100}%` }} /></div><span className="w-10 text-right tabular-nums">{fx(rfm?.ap, 2) ?? '—'}</span></div>
+                      <div className="flex items-center gap-2"><span className="w-12 text-stone-500">Modèle</span><div className="h-2 flex-1 rounded-full bg-stone-100"><div className="h-full rounded-full bg-brand-500" style={{ width: `${((ev?.ap ?? 0) / max) * 100}%` }} /></div><span className="w-10 text-right tabular-nums">{fx(ev?.ap, 2) ?? '–'}</span></div>
+                      <div className="flex items-center gap-2"><span className="w-12 text-stone-500">RFM</span><div className="h-2 flex-1 rounded-full bg-stone-100"><div className="h-full rounded-full bg-stone-400" style={{ width: `${((rfm?.ap ?? 0) / max) * 100}%` }} /></div><span className="w-10 text-right tabular-nums">{fx(rfm?.ap, 2) ?? '–'}</span></div>
                     </div>
                   </div>
                 )
@@ -279,7 +292,7 @@ export default function Dashboard() {
       <div className="mt-6 flex flex-col gap-3 rounded-2xl bg-brand-900 px-6 py-5 text-white sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <Sparkles className="size-5 shrink-0 text-gold" />
-          <p className="text-sm"><b>{kpi.actions} brouillons de courriels</b> peuvent être préparés en un clic. Chaque envoi reste validé par l'équipe.</p>
+          <p className="text-sm"><b>{kpi.draftable} brouillon{kpi.draftable > 1 ? 's' : ''} de courriel{kpi.draftable > 1 ? 's' : ''}</b> {kpi.draftable > 1 ? 'peuvent être préparés' : 'peut être préparé'} en un clic{kpi.actions > kpi.draftable ? ` (${kpi.actions - kpi.draftable} autre${kpi.actions - kpi.draftable > 1 ? 's' : ''} donateur${kpi.actions - kpi.draftable > 1 ? 's' : ''} déjà traité${kpi.actions - kpi.draftable > 1 ? 's' : ''} ou sans consentement courriel)` : ''}. Chaque envoi reste validé par l'équipe.</p>
         </div>
         <div className="flex gap-2">
           <Link to="/impact" className="flex items-center gap-1 rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/15"><TrendingUp className="size-4" /> Impact</Link>
@@ -287,7 +300,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <p className="mt-4 flex items-center gap-1.5 text-xs text-stone-400"><BrainCircuit className="size-3.5" /> Données de démonstration synthétiques, calibrées sur des taux de rétention publiés. Aucune donnée réelle d'organisation.</p>
+      <p className="mt-4 flex items-center gap-1.5 text-xs text-stone-400"><BrainCircuit className="size-3.5" /> {dataset.source === 'demo' ? "Données de démonstration synthétiques, calibrées sur des taux de rétention publiés. Aucune donnée réelle d'organisation." : 'Données importées : elles restent dans votre navigateur.'}</p>
       <DonorDrawer donorId={open} onClose={() => setOpen(null)} />
     </>
   )

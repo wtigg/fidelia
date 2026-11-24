@@ -25,7 +25,7 @@ const TOUR_STEPS: Step[] = [
   {
     to: '/',
     title: 'Tableau de bord',
-    text: (n) => `Voici vos ${n} donateurs. En haut : la valeur des dons mensuels à risque et les priorités du jour.`,
+    text: (n) => `Voici vos ${n} donateurs. En haut : la valeur des dons mensuels à risque. Plus bas : les priorités du jour.`,
   },
   {
     to: '/recommandations',
@@ -33,7 +33,7 @@ const TOUR_STEPS: Step[] = [
     text: () => 'Fidélia vous dit par où commencer : qui relancer, qui remercier, qui solliciter. Les plus utiles sont en haut.',
   },
   {
-    to: '/recommandations?type=churn_prevention&fiche=auto',
+    to: '/recommandations?type=churn_prevention&fiche=demo',
     title: "La fiche d'un donateur",
     text: () => 'Un donateur à relancer. Fidélia montre son risque, les raisons et son historique. Vous décidez, puis le courriel est préparé.',
     left: true,
@@ -41,7 +41,9 @@ const TOUR_STEPS: Step[] = [
   {
     to: '/impact',
     title: 'Impact',
-    text: () => 'À effort égal, combien de dons à risque Fidélia cible, comparé à la méthode habituelle (dernier don, fréquence, montant). Faites glisser « Donateurs contactés ».',
+    text: () => 'Avec le même nombre de contacts, combien de dons Fidélia permet de récupérer de plus que la méthode habituelle (dernier don, fréquence, montant). Faites glisser « Donateurs contactés ».',
+    // bulle à gauche : elle laisse visibles le curseur et le résultat (encadré vert foncé, à droite)
+    left: true,
     focus: 'capacite',
   },
   {
@@ -52,7 +54,7 @@ const TOUR_STEPS: Step[] = [
   {
     to: '/campagnes',
     title: 'Lundi matin : vos courriels',
-    text: () => 'Le brouillon est prêt, sans montant inventé. Relisez, corrigez si besoin, puis « Approuver » et « Envoyer ». Rien ne part sans vous.',
+    text: () => 'Le brouillon est prêt, sans montant inventé. Relisez, puis « Approuver » et « Envoyer ». Rien ne part sans vous. Lors des envois groupés, 10 % des donateurs sont mis de côté exprès, pour mesurer si les courriels rapportent vraiment.',
     left: true,
     focus: 'courriel-actions',
     needsDraft: true,
@@ -92,7 +94,7 @@ export function GuidedTour({ step, onStep }: { step: number | null; onStep: (s: 
     return () => window.removeEventListener('keydown', onKey)
   }, [step, onStep])
 
-  // Fait défiler jusqu'à l'élément utile (le curseur d'Impact est sous l'encadré « Pourquoi Fidélia »)
+  // Fait défiler jusqu'à l'élément utile (le curseur « Donateurs contactés » de la page Impact)
   useEffect(() => {
     const id = step !== null ? TOUR_STEPS[step]?.focus : undefined
     if (!id) return

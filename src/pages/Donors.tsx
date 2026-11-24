@@ -71,7 +71,7 @@ export default function Donors() {
         </label>
         </div>
       </div>
-      <p className="mb-4 text-xs text-stone-500"><b className="font-medium text-stone-600">Inactif</b> = a arrêté son don mensuel, ou aucun don depuis 12 mois (13 pour un annuel). Un ancien mensuel peut donc être inactif malgré un prélèvement récent.</p>
+      <p className="mb-4 text-xs text-stone-500"><b className="font-medium text-stone-600">Inactif</b> = a arrêté son don mensuel, ou aucun don depuis 12 mois (13 pour un annuel). Un ancien mensuel peut donc être inactif malgré un prélèvement récent. Action « – » : rien à faire pour l'instant (sous le seuil des listes).</p>
       <Card>
         <div className="overflow-x-auto">
           <table className="w-full text-sm sm:min-w-[820px]">
@@ -102,10 +102,10 @@ export default function Donors() {
                     <Td className="hidden text-right tabular-nums text-stone-600 md:table-cell">{Math.round(s.features.openRate3m * 100)} %</Td>
                     <Td className="hidden sm:table-cell">
                       <div className="flex items-center gap-2">
-                        <ProbBar value={s.actionProb} color={color} width="w-16" word={s.segment === 'monthly' ? (s.churnProb !== undefined && s.actionProb === s.churnProb ? 'risque de départ' : 'chance de hausse') : s.segment === 'lapsed' ? 'chance de retour' : 'chance de passer au mensuel'} />
+                        <ProbBar value={s.actionProb} color={color} width="w-16" word={s.segment === 'monthly' ? (s.churnProb !== undefined && s.actionProb === s.churnProb ? "risque d'arrêt" : 'chance de hausse') : s.segment === 'lapsed' ? 'chance de retour' : 'chance de passer au mensuel'} />
                       </div>
                     </Td>
-                    <Td className="text-right sm:text-left">{s.action ? <Badge className={ACTION_TONE[s.action]}>{ACTION_LABELS[s.action]}</Badge> : <span className="text-xs text-stone-400">—</span>}</Td>
+                    <Td className="text-right sm:text-left">{s.action ? <Badge className={ACTION_TONE[s.action]}>{ACTION_LABELS[s.action]}</Badge> : <span className="text-xs text-stone-400">–</span>}</Td>
                   </tr>
                 )
               })}

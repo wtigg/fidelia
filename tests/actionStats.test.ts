@@ -27,3 +27,15 @@ test('Solliciter plus : un mensuel à risque d\'arrêt n\'est pas compté (prior
   const churnFirst = scores.filter((s) => s.action === 'churn_prevention' && (s.upgradeProb ?? 0) >= 0.043)
   for (const s of churnFirst) assert.ok(!donorsForAction(scores, 'upgrade_amount').includes(s))
 })
+
+test("Visite guidée : le donateur de l'affiche (Olivier Gauthier) est à relancer, 35 %, 3 paiements échoués, 63 $", () => {
+  const byId = new Map(ds.donors.map((d) => [d.id, d]))
+  const demo = scores.find((s) => {
+    const d = byId.get(s.donorId)
+    return s.action === 'churn_prevention' && d?.firstName === 'Olivier' && d.lastName === 'Gauthier' && s.features.failed90d > 0
+  })
+  assert.ok(demo, 'Olivier Gauthier doit figurer dans la liste « Relancer »')
+  assert.equal(Math.round(demo.actionProb * 100), 35)
+  assert.equal(demo.features.failed90d, 3)
+  assert.equal(Math.round(demo.expectedValue), 63)
+})

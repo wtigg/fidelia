@@ -259,8 +259,11 @@ function thankReason(gifts: Donation[], T: string, f: Features): string | undefi
   const prev = paid.slice(0, -1)
   const prevAvg = prev.reduce((s, g) => s + g.amount, 0) / prev.length
   if (last.kind !== 'monthly' && last.amount >= Math.max(250, 2 * prevAvg)) return `Don inhabituel de ${last.amount} $`
-  if (last.kind === 'monthly' && f.tenureMonths > 0 && [12, 24, 36, 48].includes(paid.filter((g) => g.kind === 'monthly').length))
-    return `${paid.filter((g) => g.kind === 'monthly').length / 12} an(s) de don mensuel`
+  const monthlyPaid = paid.filter((g) => g.kind === 'monthly').length
+  if (last.kind === 'monthly' && f.tenureMonths > 0 && [12, 24, 36, 48].includes(monthlyPaid)) {
+    const years = monthlyPaid / 12
+    return `${years} an${years > 1 ? 's' : ''} de don mensuel`
+  }
   return undefined
 }
 
