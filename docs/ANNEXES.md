@@ -179,24 +179,41 @@ Charges sociales et avantages : + 25 % (hypothèse de l’équipe). Un ETP com
 | Chef de produit et designer UX | 0,15 ETP | 45 | 45,65 $ | 2 054 $ |
 | **Total** | **1,4 ETP** | **424** | | **19 361 $** (24 201 $ chargé) |
 
-**Infrastructure par client.** 105 à 350 $ par mois pour 50 organisations, soit 2,10 à 7 $ par organisation. Pour 35 clients : 882 à 2 940 $ par an ; pour 78 clients : 1 966 à 6 552 $ par an (croissance linéaire supposée).
+**Infrastructure (section 9.2).** Prix à la demande d’AWS pour ca-central-1, lus le 23 novembre 2026 dans les fichiers officiels de prix (Amazon Web Services, 2026), en dollars américains ($ US) ; mois de 730 heures. Les configurations, basse et haute, sont des hypothèses de l’équipe pour 50 organisations (au plus 50 Mo chacune, voir « Stockage »).
+
+**Tableau H2.** *Coût mensuel d’exploitation pour 50 organisations (AWS ca-central-1)*
+
+| Service | Prix unitaire officiel | Configuration basse | Configuration haute |
+|---|---|---|---|
+| RDS for PostgreSQL : une instance partagée, une base par organisation | db.t4g.small 0,035 $ US/h (Multi-AZ 0,070) ; db.t4g.medium 0,070 (Multi-AZ 0,141) ; stockage gp3 0,127 $ US par Go-mois (Multi-AZ 0,254) | db.t4g.small, une zone, 20 Go : 28 $ US | db.t4g.medium Multi-AZ, 50 Go : 116 $ US |
+| ECS Fargate : API FastAPI permanente et *scoring* hebdomadaire | 0,04456 $ US par vCPU-heure ; 0,004865 $ US par Go-heure | 1 tâche de 0,25 vCPU et 0,5 Go ; *scoring* 3,6 h par mois : 10 $ US | 2 tâches de 0,5 vCPU et 1 Go ; *scoring* et réentraînement : 41 $ US |
+| Répartiteur de charge (ALB) devant l’API | 0,02475 $ US/h ; 0,0088 $ US par unité de capacité-heure | 0,5 unité : 21 $ US | 1 unité : 24 $ US |
+| SES (courriels) | 0,10 $ US les 1 000 courriels ; adresse IP dédiée 24,95 $ US par mois | 15 000 courriels : 2 $ US | 250 000 courriels (plafond RF12 : un par donateur et par 30 jours, 5 000 donateurs par organisation), IP dédiée : 50 $ US |
+| Cognito (authentification) | 10 000 utilisateurs actifs par mois gratuits, puis 0,0055 $ US (Lite) | moins de 500 utilisateurs, double authentification par application (pas de SMS) : 0 $ US | 0 $ US |
+| EventBridge Scheduler | 14 millions d’appels par mois gratuits | environ 250 appels par mois : 0 $ US | 0 $ US |
+| Interface statique, journaux et transfert, LLM (V2) | non vérifiés ligne à ligne (hypothèses de l’équipe) | 0 + 5 + 10 $ US | 20 + 20 + 30 $ US |
+| **Total** | | **76 $ US, soit environ 110 $ CA** | **301 $ US, soit environ 430 $ CA** |
+
+*Note.* Conversion à 1,4369 $ CA pour 1 $ US, taux de la Banque du Canada du 23 novembre 2026 (Banque du Canada, 2026). Taxes et support AWS exclus. Les adresses IPv4 publiques (0,005 $ US par heure chacune, environ 7 $ US par mois pour le répartiteur sur 2 zones) sont comptées dans « journaux et transfert ». Le *scoring* compte environ 1 min de processeur par organisation et par semaine (50 × 4,33 semaines, soit 3,6 h de 1 vCPU et 2 Go : 0,20 $ US). Une instance RDS par organisation coûterait au moins 50 × 13 $ US (db.t4g.micro), d’où l’instance partagée.
+
+**Infrastructure par client.** 110 à 430 $ CA par mois pour 50 organisations, soit 2,20 à 8,60 $ par organisation. Pour 35 clients : 924 à 3 612 $ par an ; pour 81 clients : 2 138 à 8 359 $ par an (croissance linéaire supposée).
 
 **Stockage.** Le jeu de démonstration compte 4 000 donateurs et 17 909 dons (`reports/evaluate-42.txt`), soit quelques mégaoctets. Au plus 50 Mo par organisation, historique des scores et des envois compris : moins de 3 Go pour 50 organisations.
 
-**Sous-total V1 :** 24 201 $ + 2 000 $ + 1 050 $ = 27 251 $ ; avec 10 à 20 % de réserve, environ 30 000 à 33 000 $.
+**Sous-total V1 :** 24 201 $ + 2 000 $ + 1 290 $ = 27 491 $ ; avec 10 à 20 % de réserve, 30 240 à 32 989 $, soit environ 30 000 à 33 000 $ (840 à 916 $ par mois amortis sur 3 ans).
 
 **Sensibilité du support.** Coûts fixes de base : 25 963 $ + 2 000 $ ≈ 28 000 $ par an (2 330 $ par mois). Si le support double (0,5 ETP) : 51 926 $ + 2 000 $ ≈ 53 900 $ par an (4 494 $ par mois).
 
-**Tableau H2.** *Seuil de rentabilité selon le coût du support*
+**Tableau H3.** *Seuil de rentabilité selon le coût du support*
 
-| Coûts fixes par mois | Marge par client à 99 $ | Seuil, exploitation seule | Seuil, V1 amortie sur 3 ans (+ 833 à 908 $) |
+| Coûts fixes par mois | Marge par client à 99 $ | Seuil, exploitation seule | Seuil, V1 amortie sur 3 ans (+ 840 à 916 $) |
 |---|---|---|---|
-| 2 330 $ (0,25 ETP) | 92 à 97 $ | 25 à 26 clients | 33 à 36 clients |
-| 4 494 $ (0,5 ETP) | 92 à 97 $ | 47 à 49 clients | 55 à 59 clients |
+| 2 330 $ (0,25 ETP) | 90 à 97 $ | 25 à 26 clients | 33 à 36 clients |
+| 4 494 $ (0,5 ETP) | 90 à 97 $ | 47 à 50 clients | 56 à 60 clients |
 
 **Taille du marché (section 9.3).** Source : Agence du revenu du Canada (2026), fichiers « Identification » et « Données financières » de la liste des organismes de bienfaisance 2024 (déclarations T3010 des exercices terminés en 2024). Calcul de l’équipe, le 23 novembre 2026 (`scripts/marche-t3010.py`) : dernière déclaration de chaque organisme, province de l’adresse, revenus totaux (ligne 4700).
 
-**Tableau H3.** *Organismes de bienfaisance enregistrés selon les revenus (exercice 2024)*
+**Tableau H4.** *Organismes de bienfaisance enregistrés selon les revenus (exercice 2024)*
 
 | Périmètre | Québec | Canada |
 |---|---|---|

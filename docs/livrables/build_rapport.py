@@ -88,6 +88,12 @@ def postprocess(html: str, prefix: str) -> BeautifulSoup:
         st = p.find("strong")
         if st is not None and p.contents and p.contents[0] == st and re.match(r"(Tableau|Figure) [A-Z]?\d+\.", st.get_text()):
             p["class"] = "caption"
+    # Glossaire compact (une page)
+    for h in soup.find_all("h2"):
+        if h.get_text().strip() == "Glossaire":
+            ul = h.find_next_sibling("ul")
+            if ul is not None:
+                ul["class"] = "glossary"
     # Saut de page avant le résumé, la section 1 et les références seulement
     for h in soup.find_all("h2"):
         if h.get_text().strip() in ("Résumé", "1. Idée", "Références"):
@@ -201,6 +207,8 @@ strong { color: #0f2219; }
 .annexes-title + p { color: #4c5a53; }
 .annexes h2 { break-before: auto; margin-top: 18pt; }
 .annexes h2:first-of-type { break-before: auto; }
+ul.glossary { margin-top: 4pt; }
+ul.glossary li { font-size: 9.2pt; line-height: 1.32; margin-bottom: 1.5pt; }
 /* table des matières */
 .toc { break-after: page; }
 .toc h1 { font-size: 18pt; color: #0f3d2a; margin: 0 0 8pt; }

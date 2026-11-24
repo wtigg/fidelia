@@ -6,11 +6,37 @@
 **Dépôt du code :** https://github.com/wtigg/fidelia  
 **Annexes :** A à I, après les références (détails de calcul, commandes, risques, leçons complémentaires, usage de l’IA générative ; fichier source `docs/ANNEXES.md`)
 
+## Glossaire
+
+Codes et termes employés dans le rapport, en mots simples.
+
+- **OBNL :** organisme à but non lucratif. Les **organismes de bienfaisance enregistrés**, qui délivrent des reçus fiscaux, ont un statut fiscal voisin ; le rapport les range parmi les OBNL au sens large.
+- **Attrition :** un donateur mensuel qui arrête son don. Les trois autres tâches : **passage au mensuel** (un donateur ponctuel devient mensuel), **hausse** (un mensuel augmente son don) et **réactivation** (un ancien donateur redonne).
+- **RFM :** récence, fréquence, montant. La règle de tri classique des collecteurs de fonds (date du dernier don, nombre de dons, montant donné), que l’IA doit battre.
+- **R1 à R6 :** les six requis de performance d’un modèle (tableau 8). R1 et R2 décident du déploiement : faire au moins deux fois mieux que le hasard (R1) et mieux que RFM (R2). R3 à R6 déclenchent une alerte.
+- **RF1 à RF24 :** les requis fonctionnels, ce que l’application doit faire (tableau 6).
+- **RD1 à RD6 :** les requis relatifs aux données, ce que les données d’un OBNL doivent remplir (tableau 13).
+- **Taux de base :** la part de cas positifs dans les données, par exemple 6,7 % de départs. Un tri au hasard trouve des positifs à ce taux.
+- **AUC-PR :** aire sous la courbe précision-rappel, de 0 à 1. Elle dit si les bons donateurs sont en haut de la liste. Le hasard obtient environ le taux de base.
+- **AUC :** aire sous la courbe ROC, de 0,5 (hasard) à 1. Autre mesure du classement, utilisée pour la stabilité (R5).
+- **Précision des 50 premiers :** la part de vrais cas parmi les 50 premiers noms de la liste, ceux qu’une petite équipe contacte vraiment (R3).
+- **Calibration :** une probabilité annoncée de 30 % doit se réaliser environ 3 fois sur 10. Le **score de Brier** mesure l’erreur de ces probabilités (R4).
+- **IC à 95 % et *bootstrap* apparié :** l’intervalle de confiance donne la marge d’erreur d’un chiffre. Le *bootstrap* l’estime en tirant au sort, avec remise, de nombreux échantillons de donateurs ; « apparié » veut dire que le modèle et RFM sont jugés sur les mêmes tirages (R2).
+- **Jeu synthétique :** donateurs fictifs créés par notre générateur. La **graine** est la valeur de départ du tirage au sort ; la même graine redonne les mêmes données.
+- **KDD 98 (KDD Cup 1998) :** un jeu public de vrais donateurs américains, issu d’une compétition de 1998. Il sert à vérifier la méthode sur données réelles.
+- **Régression logistique et *gradient boosting* :** les deux familles de modèles utilisées. La première additionne des effets ; la seconde combine de nombreux petits arbres de décision.
+- **Groupe témoin (*holdout*) :** des donateurs ciblés que l’on ne contacte pas exprès. Comparer leurs dons à ceux des donateurs contactés mesure l’effet réel de la relance.
+- **Propension et effet causal :** la propension est la chance qu’un donateur parte ; l’effet causal est ce que la relance change vraiment. Un donateur très à risque n’est pas forcément sensible à une relance.
+- **Test temporel et dérive :** on teste le modèle sur des dates plus récentes que celles de l’entraînement ; une baisse signale une **dérive**, un changement des comportements dans le temps.
+- **V1, V2 :** première version vendable, puis version suivante (ajout d’un LLM, grand modèle de langage, pour reformuler les courriels).
+- **ETP :** équivalent temps plein. **ÉFVP :** évaluation des facteurs relatifs à la vie privée, exigée par la **Loi 25** (loi québécoise sur les renseignements personnels).
+- **API, AWS, ca-central-1 :** interface de programmation qui relie l’application Web au serveur ; Amazon Web Services, le fournisseur infonuagique ; sa région de Montréal.
+
 ## Résumé
 
 Fidélia aide un petit organisme à but non lucratif (OBNL) à choisir chaque semaine qui relancer, remercier ou solliciter. Quatre petits modèles prédisent l’attrition, le passage au mensuel, la hausse et la réactivation. Un modèle n’est déployé que s’il bat nettement le hasard (R1) et la règle RFM (récence, fréquence, montant ; R2) ; sinon, l’outil garde RFM. Sur le jeu synthétique, 3 modèles sur 4 remplissent R1 et R2. À 100 contacts, les quatre listes réunies ciblent 4,8 fois plus de valeur que RFM et 4,9 fois plus que le hasard, sur des donateurs fictifs ; cette valeur repose sur un effet supposé des relances. Sur de vrais donateurs (KDD Cup 1998), le modèle « don plus élevé que le dernier » remplit R1 et R2. Sur KDD 98, la tâche de réactivation bat RFM mais échoue à R1 : l’application utilise son modèle de réactivation sur le jeu synthétique avec la mention « à l’essai », et nous ne le déploierions pas chez un vrai OBNL sans nouvelle preuve (section 6.2). La performance chez un vrai OBNL se vérifiera au pilote ; l’effet causal des relances, après la V1 (section 11).
 
-> Les chiffres de performance viennent des rapports générés par les scripts du dépôt (`reports/`, `verification/`) et sont reproductibles (section 6.3), sauf les tentatives d’amélioration de la section 6.5, explorations non intégrées à la branche principale. Les coûts (section 9) sont des hypothèses : salaires sourcés, coûts d’infrastructure estimés par l’équipe.
+> Les chiffres de performance viennent des rapports générés par les scripts du dépôt (`reports/`, `verification/`) et sont reproductibles (section 6.3), sauf les tentatives d’amélioration de la section 6.5, explorations non intégrées à la branche principale. Les coûts (section 9) sont des hypothèses : salaires sourcés, coûts d’infrastructure calculés sur les prix officiels d’AWS avec des configurations supposées par l’équipe.
 
 ---
 
@@ -38,7 +64,7 @@ Pour chaque donateur : la probabilité, la valeur attendue (probabilité × mon
 
 **Les petits OBNL manquent de moyens pour analyser leurs données.** Au Canada, 53 % des organismes de moins de 1 M$ de revenus confient leurs données à des employés sans formation ni mandat selon un sondage de CanadaHelps auprès de 1 470 organismes (Gandhi, 2024).
 
-**L’IA est déjà là, mais pas pour cibler les donateurs.** 92 % des OBNL interrogés utilisent un outil d’IA, surtout pour écrire. L’usage prédictif, comme le classement des donateurs, reste rare (346 OBNL interrogés ; Virtuous et Fundraising.AI, 2026). Une petite équipe ne peut pas analyser des milliers de fiches : elle relance tout le monde avec le même message, ou personne. Fidélia concentre son peu de temps sur les bons donateurs. D’autres chiffres sont en annexe A.
+**L’IA est déjà là, mais pas pour cibler les donateurs.** 92 % des OBNL interrogés utilisent un outil d’IA, surtout pour écrire. L’usage prédictif, comme le classement des donateurs, reste rare (346 OBNL interrogés ; Virtuous et Fundraising.AI, 2026). La plupart des dons répondent d’ailleurs à une sollicitation (Bekkers et Wiepking, 2011) : le choix des personnes sollicitées compte. Une petite équipe ne peut pas analyser des milliers de fiches : elle relance tout le monde avec le même message, ou personne. Fidélia concentre son peu de temps sur les bons donateurs. D’autres chiffres sont en annexe A.
 
 ### 1.3 Pourquoi l’IA ?
 
@@ -91,9 +117,9 @@ La valeur d’affaires de l’IA vient d’abord d’effets de premier ordre : 
 
 Les montants appliquent l’effet supposé de chaque relance (ci-dessous). Liste par liste, les multiplicateurs mesurent seulement le **ciblage** et ne dépendent pas de cet effet. Le total pondère chaque liste par son effet supposé. Avec un effet identique pour les quatre listes, il vaudrait × 4,2 contre RFM et × 5,2 contre le hasard à 100 contacts (× 2,9 et × 3,8 à 300). Plus on contacte de monde, moins le classement compte. La liste Relancer seule ne dépend pas de l’effet supposé : avec une campagne de 300 contacts, elle cible 3,1 fois plus que RFM ; avec 100 contacts, 6,1 fois plus (`reports/impact-42.json`). L’application affiche ce chiffre sous le total. Autre lecture de la même mesure : en contactant 10 % des mensuels, le modèle d’attrition couvre 41 % des dons à risque, contre 7 % avec RFM et 10 % au hasard (courbe de valeur du test, `reports/synthetique-42.json`).
 
-**Mesuré sur données réelles** (KDD Cup 1998). Avec 20 % des envois, le profit net de la relance est de **2 133 $ avec le modèle, contre 1 413 $ avec RFM** (+51 %). Ce chiffre valide la méthode de classement, pas un modèle déployable (section 6.2).
+**Mesuré sur données réelles** (KDD Cup 1998). Avec 20 % des envois, le profit net de la relance (dons reçus moins 0,68 $ par envoi, le critère de la compétition ; UCI KDD Archive, s. d. ; Zadrozny et Elkan, 2001) est de **2 133 $ avec le modèle, contre 1 413 $ avec RFM** (+51 %). Ce chiffre valide la méthode de classement, pas un modèle déployable (section 6.2).
 
-**Supposé : l’effet de la relance.** Pour convertir ce ciblage en dons, la page **Impact** suppose qu’une relance change le comportement de 15 à 30 % des donateurs contactés selon la liste. Ces hypothèses, réglables, sont les mêmes pour les trois stratégies. Le groupe témoin (RF14) les mesurera, une fois mis en commun entre organisations (section 5.4).
+**Supposé : l’effet de la relance.** Pour convertir ce ciblage en dons, la page **Impact** suppose qu’une relance change le comportement de 15 à 30 % des donateurs contactés selon la liste. Ces hypothèses, réglables, sont les mêmes pour les trois stratégies. Or cibler les donateurs les plus à risque n’est pas cibler ceux que la relance fait changer d’avis (Ascarza, 2018). Le groupe témoin (RF14) mesurera cet effet, une fois mis en commun entre organisations (section 5.4).
 
 **Pour les donateurs**, un courriel au plus par 30 jours et un remerciement avant toute demande.
 
@@ -187,7 +213,7 @@ Légende : **[IA]** = le requis repose sur un modèle d’apprentissage. **[P]*
 
 - **Tâche :** 4 problèmes de **classification binaire supervisée**, sur données tabulaires et temporelles, avec 2 à 7 % de positifs.
 - **Étiquettes :** construites à partir de l’historique (photo à la date T, résultat observé sur l’horizon).
-- **Algorithmes :** **régression logistique** (lisible, bien calibrée), ***gradient boosting* d’arbres** (Friedman, 2001), qui capte les seuils comme deux échecs de paiement consécutifs, et leur **ensemble**. Choix sur un jeu de validation. Ce choix suit les critères de Lee et Shin (2020) : apprentissage supervisé, données tabulaires de taille modeste, besoin d’interprétabilité ; d’où des modèles linéaires et des arbres plutôt qu’un réseau de neurones.
+- **Algorithmes :** **régression logistique** (lisible, bien calibrée ; Niculescu-Mizil et Caruana, 2005), ***gradient boosting* d’arbres** (Friedman, 2001), qui capte les seuils comme deux échecs de paiement consécutifs, et leur **ensemble**. Choix sur un jeu de validation. Ce choix suit les critères de Lee et Shin (2020) : apprentissage supervisé, données tabulaires de taille modeste, besoin d’interprétabilité ; d’où des modèles linéaires et des arbres plutôt qu’un réseau de neurones. Sur des données tabulaires de taille moyenne, les arbres restent d’ailleurs souvent meilleurs que l’apprentissage profond (Grinsztajn et al., 2022).
 - **Explications (RF9) :** pour chaque donateur, chaque variable est remplacée tour à tour par sa moyenne d’entraînement ; la baisse de la prédiction (en logit) mesure sa contribution. Les trois plus fortes contributions supérieures à 0,05 sont traduites en phrases simples (fiche donateur, section 6.1). La méthode vaut pour la logistique comme pour le *boosting*. Ce sont des contributions locales, pas des causes.
 - **Référence :** règle RFM par quintiles.
 
@@ -215,7 +241,7 @@ Les requis relient la métrique d’apprentissage automatique à la métrique d�
 | Id | Métrique et seuil | Lien avec la métrique d’affaires |
 |---|---|---|
 | R1 | AUC-PR ≥ 2 × taux de base | Faire nettement mieux que le hasard ; **condition de déploiement** avec R2 |
-| R2 | Écart d’AUC-PR avec RFM > 0 avec 95 % de confiance (*bootstrap* apparié : rééchantillonnage des mêmes donateurs pour les deux méthodes) | Justifier l’IA ; **condition de déploiement** avec R1 |
+| R2 | Écart d’AUC-PR avec RFM > 0 avec 95 % de confiance (*bootstrap* apparié : rééchantillonnage des mêmes donateurs pour les deux méthodes ; Efron, 1979) | Justifier l’IA ; **condition de déploiement** avec R1 |
 | R3 | Précision des 50 premiers noms ≥ RFM | Capacité hebdomadaire d’une petite équipe |
 | R4 | Score de Brier (erreur quadratique moyenne des probabilités) < prédiction constante | Valeur attendue = probabilité × montant |
 | R5 | AUC (aire sous la courbe ROC) du test temporel ≥ AUC du test − 0,05 | Stabilité face à la dérive |
@@ -225,7 +251,7 @@ Les requis relient la métrique d’apprentissage automatique à la métrique d�
 
 **Gouvernance : R1 et R2 bloquent ; R3 à R6 alertent.** Sans R1 **et** R2, l’application classe avec la règle RFM, calibrée en probabilité. Un échec à R3, R4, R5 ou R6 ne retire pas le modèle, mais une personne responsable doit le lever avant tout usage réel. Deux modèles déployés portent une alerte : le passage au mensuel (R6) et la réactivation (R5, R6). Un ratio de sélection des 70 ans et plus supérieur à 1,5 (section 8.2) est une alerte au même titre : avant tout envoi réel, la personne responsable plafonne leur part dans la liste de conversion ou accepte l’écart par écrit dans la fiche modèle. Un dernier statut, **« à l’essai »**, signale un modèle qui remplit R1 et R2 sur nos données mais pas sur de vrais donateurs : c’est le cas de la réactivation (section 6.2). Il reste utilisé dans la démonstration, avec cette mention à l’écran. Tous les modèles restent provisoires jusqu’au pilote : l’attrition et le passage au mensuel n’ont pas d’équivalent dans KDD 98. La réactivation porte en plus la mention parce que la tâche voisine sur KDD 98 échoue à R1 ; à l’inverse, la réussite de KDD 98 pour le don plus élevé ne suffit pas à déployer notre modèle de hausse mensuelle, qui échoue sur nos propres données.
 
-**Pourquoi l’AUC-PR ?** Avec 2 à 7 % de positifs, prédire « non » partout donne plus de 93 % d’exactitude. L’aire sous la courbe précision-rappel est plus informative (Saito et Rehmsmeier, 2015).
+**Pourquoi l’AUC-PR ?** Avec 2 à 7 % de positifs, prédire « non » partout donne plus de 93 % d’exactitude. L’aire sous la courbe précision-rappel est plus informative que la courbe ROC sur des classes déséquilibrées (Davis et Goadrich, 2006 ; Saito et Rehmsmeier, 2015). R3 complète ce choix : comme le top-décile utilisé pour juger les modèles d’attrition (Neslin et al., 2006), il juge les premiers noms de la liste, les seuls qui seront contactés.
 
 ### 4.4 Système d’IA
 
@@ -345,7 +371,7 @@ Les contrôles mesurables sont **automatisés** dans la page **Données** (doubl
 
 Les positifs du tableau 12 sont comptés sur l’entraînement et la validation ; RD1 les compte sur tout l’historique. Autour de 20 positifs, les deux modèles échouent à R1 ; vers 100, ils atteignent 90 à 93 % de leur AUC-PR finale. D’où **RD1 : au moins 100 événements positifs** par modèle, sinon repli sur RFM. Un OBNL de 300 mensuels observe environ 20 départs par trimestre : il lui faut environ **5 trimestres** d’historique.
 
-**Le groupe témoin.** Chez ce même OBNL, un témoin de 10 % compte 30 donateurs, soit environ 2 départs par trimestre. Détecter une baisse de 30 % des départs demande environ **1 100 à 1 300 mensuels témoins**. Il faut donc **mettre en commun les témoins d’environ 40 organisations**. Le calcul est détaillé en annexe B.
+**Le groupe témoin.** Chez ce même OBNL, un témoin de 10 % compte 30 donateurs, soit environ 2 départs par trimestre. Or mesurer l’effet d’une action exige une expérience contrôlée assez grande (Kohavi et al., 2009) : détecter une baisse de 30 % des départs demande environ **1 100 à 1 300 mensuels témoins**. Il faut donc **mettre en commun les témoins d’environ 40 organisations**. Le calcul est détaillé en annexe B.
 
 **Tableau 13.** *Requis de données RD1 à RD6*
 
@@ -566,7 +592,7 @@ Le prototype contient déjà modèles, évaluation, interface et tests. Reste le
 
 ### 9.2 Ressources matérielles
 
-Exploitation pour 50 organisations : **105 à 350 $ par mois** (AWS ca-central-1, estimation de l’équipe), soit une base PostgreSQL 50 à 150 $ ; conteneurs de *scoring* 20 à 50 $ (environ 1 min de processeur par organisation et par semaine) ; interface 0 à 20 $ ; courriels 25 à 100 $ ; LLM en V2 10 à 30 $ (inclus par prudence dans les marges de la V1). Soit 2,10 à 7 $ par client, supposé linéaire au-delà. **Stockage :** au plus 50 Mo par organisation. **Calcul :** aucune carte graphique. **Développement :** portables et offre gratuite de GitHub.
+Exploitation pour 50 organisations : **environ 110 à 430 $ par mois**, calculés sur les prix officiels d’AWS pour ca-central-1 (Amazon Web Services, 2026), en dollars américains convertis à 1,4369 $ CA (Banque du Canada, 2026). Soit environ, en dollars américains : une instance PostgreSQL partagée, une base par organisation, 28 à 116 $ ; conteneurs Fargate (API permanente, *scoring* d’environ 1 min de processeur par organisation et par semaine) 10 à 41 $ ; répartiteur de charge 21 à 24 $ ; courriels SES 2 à 50 $ (0,10 $ les 1 000, au plus un courriel par donateur et par 30 jours, RF12) ; Cognito et EventBridge Scheduler 0 $ (offres gratuites) ; interface 0 à 20 $, journaux et transfert 5 à 20 $, LLM en V2 10 à 30 $ (hypothèses de l’équipe ; le LLM est inclus par prudence dès la V1). Détail des configurations en annexe H. Cela fait 2,20 à 8,60 $ CA par client, supposé linéaire au-delà. **Stockage :** au plus 50 Mo par organisation. **Calcul :** aucune carte graphique. **Développement :** portables et offre gratuite de GitHub.
 
 ### 9.3 Ressources financières
 
@@ -576,7 +602,7 @@ Exploitation pour 50 organisations : **105 à 350 $ par mois** (AWS ca-central
 |---|---|---|
 | Équipe, charges comprises | 24 201 $ | Section 9.1 |
 | Conseiller juridique (Loi 25), environ 10 h | 2 000 $ | Hypothèse : 200 $/h |
-| Pilote avec 2 OBNL (3 mois) | 1 050 $ | Borne haute : environnement complet facturé même pour 2 clients, 3 × 350 $ |
+| Pilote avec 2 OBNL (3 mois) | 1 290 $ | Borne haute : environnement complet facturé même pour 2 clients, 3 × 430 $ |
 | Réserve pour imprévus, 10 à 20 % | 2 700 à 5 500 $ | Hypothèse |
 | **Total V1** | **environ 30 000 à 33 000 $** | |
 | Scénario prudent (équipe × 1,5 à 2) | environ 43 000 à 62 000 $ | Section 9.1 |
@@ -594,9 +620,9 @@ La vente passe par les fondateurs et une fédération d’OBNL, sans poste dédi
 
 **Taille du marché.** Pour l’exercice 2024, 15 414 organismes de bienfaisance enregistrés au Québec ont produit leur déclaration T3010, dont 12 436 (81 %) avec moins de 1 M$ de revenus (Agence du revenu du Canada [ARC], 2026 ; calcul de l’équipe, annexe H). Notre cible la plus probable, les organismes de bienfaisance (hors fondations) de 100 000 $ à 1 M$ de revenus, en compte 5 962. Ce décompte ne couvre que les organismes de bienfaisance enregistrés (ceux qui délivrent des reçus fiscaux), une partie des OBNL. Le seuil de 100 000 $ suit RD1 : 300 mensuels à 20 $ par mois donnent déjà environ 72 000 $ par an. Tous ne sollicitent pas des dons récurrents ; le marché adressable est donc plus petit, et il n’est pas mesuré.
 
-**Seuil de rentabilité.** Prix envisagé : 49 à 99 $ par mois. Après infrastructure, la marge par client est de 42 à 47 $ au prix de 49 $, et de 92 à 97 $ au prix de 99 $. Exploitation seule : environ 25 à 26 clients à 99 $ (50 à 56 à 49 $). Avec la V1 amortie sur 3 ans (833 à 908 $ par mois) : **33 à 36 clients à 99 $** (68 à 78 à 49 $), soit environ 0,6 % des 5 962 organismes de la cible (1,1 à 1,3 % à 49 $). En scénario prudent (V1 de 43 000 à 62 000 $, section 9.1), le seuil monte à 37 à 45 clients à 99 $.
+**Seuil de rentabilité.** Prix envisagé : 49 à 99 $ par mois. Après infrastructure, la marge par client est de 40 à 47 $ au prix de 49 $, et de 90 à 97 $ au prix de 99 $. Exploitation seule : environ 25 à 26 clients à 99 $ (50 à 58 à 49 $). Avec la V1 amortie sur 3 ans (840 à 916 $ par mois) : **33 à 36 clients à 99 $** (68 à 81 à 49 $), soit environ 0,6 % des 5 962 organismes de la cible (1,1 à 1,4 % à 49 $). En scénario prudent (V1 de 43 000 à 62 000 $, section 9.1), le seuil monte à 37 à 45 clients à 99 $.
 
-**Hypothèse forte : le support.** Un quart de poste pour environ 35 clients laisse 13 h par client et par an, environ une heure par mois. C’est plausible seulement si l’import reste un CSV standard et si la fédération assure le premier niveau d’aide. Nous ne l’avons pas vérifié. **Sensibilité :** si le support double (0,5 ETP), les coûts fixes passent à environ 4 494 $ par mois ; le seuil monte à 47 à 49 clients à 99 $, et à **55 à 59 clients** avec l’amortissement de la V1.
+**Hypothèse forte : le support.** Un quart de poste pour environ 35 clients laisse 13 h par client et par an, environ une heure par mois. C’est plausible seulement si l’import reste un CSV standard et si la fédération assure le premier niveau d’aide. Nous ne l’avons pas vérifié. **Sensibilité :** si le support double (0,5 ETP), les coûts fixes passent à environ 4 494 $ par mois ; le seuil monte à 47 à 50 clients à 99 $, et à **56 à 60 clients** avec l’amortissement de la V1.
 
 ### 9.4 Échéancier de la V1 (2 mois, puis pilote)
 
@@ -641,7 +667,7 @@ Cinq leçons ; trois autres (équité par âge, versionnage du modèle, piège 
 
 **Trois menaces pour la pérennité.**
 1. **Le volume de données.** Environ 5 trimestres d’historique pour un OBNL de 300 mensuels (section 5.4). Les plus petits resteront sur RFM, sans gain de l’IA.
-2. **La rentabilité.** Une V1 de 30 000 à 62 000 $ selon le scénario (section 9.1), puis environ 35 clients à 99 $ par mois (37 à 45 en scénario prudent), ou 55 à 59 si le support coûte le double (section 9.3). Le marché potentiel compte 5 962 organismes de bienfaisance québécois dans la cible (section 9.3), mais il faut le convaincre organisme par organisme.
+2. **La rentabilité.** Une V1 de 30 000 à 62 000 $ selon le scénario (section 9.1), puis environ 35 clients à 99 $ par mois (37 à 45 en scénario prudent), ou 56 à 60 si le support coûte le double (section 9.3). Le marché potentiel compte 5 962 organismes de bienfaisance québécois dans la cible (section 9.3), mais il faut le convaincre organisme par organisme.
 3. **La Loi 25.** Profilage, opposition, ÉFVP, purge : une organisation peut renoncer par prudence.
 
 Pour reprendre l’expression de la consigne, « dans la vraie vie », Fidélia pourrait ne pas être viable comme produit vendu seul. Une subvention ou une fédération d’OBNL est plus réaliste.
@@ -652,15 +678,23 @@ Pour reprendre l’expression de la consigne, « dans la vraie vie », Fidéli
 
 ## Références
 
-Format APA 7. Les DOI ont été vérifiés ; les pages Web ont été consultées le 9 novembre 2026, sauf mention contraire. Certaines références ne sont citées que dans les annexes. Au sens de la consigne (« provenant du plan de cours ou non »), 28 des 49 références sont académiques, marquées d’un astérisque (\*) : 21 articles de revues ou d’actes avec comité de lecture et 7 lectures du plan de cours (*Harvard Business Review*, *MIT Sloan Management Review*, ouvrages d’Anderson et Coveyduc et de Huyen).
+Format APA 7. Les DOI ont été vérifiés ; les pages Web ont été consultées le 9 novembre 2026, sauf mention contraire. Certaines références ne sont citées que dans les annexes. Au sens de la consigne (« provenant du plan de cours ou non »), 37 des 60 références sont académiques, marquées d’un astérisque (\*) : 30 articles de revues ou d’actes avec comité de lecture, soit la moitié de la liste à eux seuls, et 7 lectures du plan de cours (*Harvard Business Review*, *MIT Sloan Management Review*, ouvrages d’Anderson et Coveyduc et de Huyen).
 
 Agence du revenu du Canada. (2026). *Liste des organismes de bienfaisance 2024* [Jeu de données : identification et données financières, T3010]. Gouvernement ouvert du Canada. Consulté le 23 novembre 2026, sur https://ouvert.canada.ca/data/fr/dataset/80c00cdb-1358-415c-bb8b-0de7f12675b8
 
 \* Agrawal, A., Gans, J. et Goldfarb, A. (2018, 17 avril). A simple tool to start making decisions with the help of AI. *Harvard Business Review*. https://hbr.org/2018/04/a-simple-tool-to-start-making-decisions-with-the-help-of-ai
 
+Amazon Web Services. (2026). *AWS Price List : prix à la demande, région Canada (Centre), ca-central-1* [AWS Fargate, Amazon RDS for PostgreSQL, Amazon SES, Amazon Cognito, Amazon EventBridge, Elastic Load Balancing]. Consulté le 23 novembre 2026, sur https://aws.amazon.com/fargate/pricing/, https://aws.amazon.com/rds/postgresql/pricing/, https://aws.amazon.com/ses/pricing/, https://aws.amazon.com/cognito/pricing/, https://aws.amazon.com/eventbridge/pricing/ et https://aws.amazon.com/elasticloadbalancing/pricing/
+
 \* Anderson, J. L. et Coveyduc, J. L. (2020). *Artificial intelligence for business: A roadmap for getting started with AI*. Wiley.
 
+\* Ascarza, E. (2018). Retention futility: Targeting high-risk customers might be ineffective. *Journal of Marketing Research*, *55*(1), 80–98. https://doi.org/10.1509/jmr.16.0163
+
 Association of Fundraising Professionals et GivingTuesday. (2026). *Fundraising Effectiveness Project: Quarterly report, Q4 2025*. https://data.givingtuesday.org/fep-report/
+
+Banque du Canada. (2026). *Taux de change quotidiens* [Dollar américain en dollars canadiens, 23 novembre 2026 : 1,4369]. Consulté le 23 novembre 2026, sur https://www.banqueducanada.ca/taux/taux-de-change/taux-de-change-quotidiens/
+
+\* Bekkers, R. et Wiepking, P. (2011). A literature review of empirical studies of philanthropy: Eight mechanisms that drive charitable giving. *Nonprofit and Voluntary Sector Quarterly*, *40*(5), 924–973. https://doi.org/10.1177/0899764010380927
 
 Bloomerang. (s. d.-a). *Donor retention* [glossaire]. Consulté le 9 novembre 2026, sur https://bloomerang.com/nonprofit-glossary/donor-retention
 
@@ -673,6 +707,10 @@ Dataro. (s. d.-a). *Plans and pricing*. Consulté le 9 novembre 2026, sur https
 Dataro. (s. d.-b). *Available Dataro Predict models*. Consulté le 9 novembre 2026, sur https://support.dataro.io/knowledge/available-dataro-predict-models
 
 \* Davenport, T. H. et Ronanki, R. (2018). Artificial intelligence for the real world. *Harvard Business Review*, *96*(1), 108–116.
+
+\* Davis, J. et Goadrich, M. (2006). The relationship between precision-recall and ROC curves. Dans *Proceedings of the 23rd International Conference on Machine Learning (ICML ’06)* (p. 233–240). ACM. https://doi.org/10.1145/1143844.1143874
+
+\* Efron, B. (1979). Bootstrap methods: Another look at the jackknife. *The Annals of Statistics*, *7*(1), 1–26. https://doi.org/10.1214/aos/1176344552
 
 \* Enholm, I. M., Papagiannidis, E., Mikalef, P. et Krogstie, J. (2022). Artificial intelligence and business value: A literature review. *Information Systems Frontiers*, *24*(5), 1709–1734. https://doi.org/10.1007/s10796-021-10186-w
 
@@ -688,6 +726,8 @@ Gouvernement du Canada. (2025a). *Salaire de scientifique des données (CNP 2121
 
 Gouvernement du Canada. (2025b). *Salaire de programmeur en développement de logiciels (CNP 21232) dans la région de Montréal*. Guichet-Emplois. Consulté le 9 novembre 2026, sur https://www.guichetemplois.gc.ca/rapportmarche/salaire-profession/22531/22446
 
+\* Grinsztajn, L., Oyallon, E. et Varoquaux, G. (2022). Why do tree-based models still outperform deep learning on typical tabular data? Dans *Advances in Neural Information Processing Systems* (vol. 35, Datasets and Benchmarks Track, p. 507–520). Neural Information Processing Systems Foundation. https://doi.org/10.52202/068431-0037
+
 \* Huyen, C. (2022). *Designing machine learning systems: An iterative process for production-ready applications*. O’Reilly Media.
 
 \* Jarrahi, M. H., Memariani, A. et Guha, S. (2023). The principles of data-centric AI. *Communications of the ACM*, *66*(8), 84–92. https://doi.org/10.1145/3571724
@@ -702,6 +742,8 @@ Keela. (s. d.-b). *Nonprofit intelligence*. Consulté le 9 novembre 2026, sur h
 
 \* Kleinberg, J., Mullainathan, S. et Raghavan, M. (2017). Inherent trade-offs in the fair determination of risk scores. Dans *8th Innovations in Theoretical Computer Science Conference (ITCS 2017)* (Leibniz International Proceedings in Informatics, vol. 67, article 43, p. 1–23). Schloss Dagstuhl. https://doi.org/10.4230/LIPIcs.ITCS.2017.43
 
+\* Kohavi, R., Longbotham, R., Sommerfield, D. et Henne, R. M. (2009). Controlled experiments on the web: Survey and practical guide. *Data Mining and Knowledge Discovery*, *18*(1), 140–181. https://doi.org/10.1007/s10618-008-0114-1
+
 \* Kreuzberger, D., Kühl, N. et Hirschl, S. (2023). Machine learning operations (MLOps): Overview, definition, and architecture. *IEEE Access*, *11*, 31866–31879. https://doi.org/10.1109/ACCESS.2023.3262138
 
 \* Lebovitz, S., Lifshitz-Assaf, H. et Levina, N. (2022). To engage or not to engage with AI for critical judgments: How professionals deal with opacity when using AI for medical diagnosis. *Organization Science*, *33*(1), 126–148. https://doi.org/10.1287/orsc.2021.1549
@@ -710,7 +752,7 @@ Keela. (s. d.-b). *Nonprofit intelligence*. Consulté le 9 novembre 2026, sur h
 
 *Loi modernisant des dispositions législatives en matière de protection des renseignements personnels*, L.Q. 2021, c. 25 (Loi 25). https://www.publicationsduquebec.gouv.qc.ca/fileadmin/Fichiers_client/lois_et_reglements/LoisAnnuelles/fr/2021/2021C25F.PDF
 
-\* Longpre, S., Singh, N., Cherep, M., Tiwary, K., Materzynska, J., Brannon, W., Mahari, R., Obeng-Marnu, N., Dey, M., Hamdy, M., Saxena, N., Anis, A. M., Alghamdi, E. A., Chien, V. M., Yin, D., Qian, K., Li, Y., Liang, M., Dinh, A., … Kabbara, J. (2025). Bridging the data provenance gap across text, speech and video. Dans *The Thirteenth International Conference on Learning Representations (ICLR 2025)*. https://doi.org/10.48550/arXiv.2412.17847
+\* Longpre, S., Singh, N., Cherep, M., Tiwary, K., Materzynska, J., Brannon, W., Mahari, R., Obeng-Marnu, N., Dey, M., Hamdy, M., Saxena, N., Anis, A. M., Alghamdi, E. A., Chien, V. M., Yin, D., Qian, K., Li, Y., Liang, M., Dinh, A., … Kabbara, J. (2025). Bridging the data provenance gap across text, speech, and video. Dans *The Thirteenth International Conference on Learning Representations (ICLR 2025)*. https://proceedings.iclr.cc/paper_files/paper/2025/hash/97b983c974551153d20ddfabb62a5203-Abstract-Conference.html
 
 Meta. (2024a). *Meta Llama responsible use guide: Resources and best practices for responsible development of products built with large language models*. https://ai.meta.com/static-resource/responsible-use-guide
 
@@ -720,9 +762,13 @@ Meta. (2024b). *Llama 3 model card*. GitHub. Consulté le 9 novembre 2026, sur h
 
 National Institute of Standards and Technology. (2023). *Artificial intelligence risk management framework (AI RMF 1.0)* (NIST AI 100-1). https://doi.org/10.6028/NIST.AI.100-1
 
+\* Neslin, S. A., Gupta, S., Kamakura, W., Lu, J. et Mason, C. H. (2006). Defection detection: Measuring and understanding the predictive accuracy of customer churn models. *Journal of Marketing Research*, *43*(2), 204–211. https://doi.org/10.1509/jmkr.43.2.204
+
 \* Ng, A. (2019, 6 février). How to choose your first AI project. *Harvard Business Review*. https://hbr.org/2019/02/how-to-choose-your-first-ai-project
 
 Nguyen, T. K. Q. (2024, 17 décembre). *The rising demand for data literacy and AI in charities*. Charity Insights Canada Project, Carleton University. https://carleton.ca/cicp-pcpob/2024/the-rising-demand-for-data-literacy-and-ai-in-charities/
+
+\* Niculescu-Mizil, A. et Caruana, R. (2005). Predicting good probabilities with supervised learning. Dans *Proceedings of the 22nd International Conference on Machine Learning (ICML ’05)* (p. 625–632). ACM. https://doi.org/10.1145/1102351.1102430
 
 \* Raisch, S. et Krakowski, S. (2021). Artificial intelligence and management: The automation–augmentation paradox. *Academy of Management Review*, *46*(1), 192–210. https://doi.org/10.5465/amr.2018.0072
 
@@ -751,3 +797,5 @@ Université de Montréal. (2018). *Déclaration de Montréal pour un développem
 \* Vial, G., Jiang, J., Giannelia, T. et Cameron, A.-F. (2021). The data problem stalling AI. *MIT Sloan Management Review*, *62*(2), 47–53.
 
 Virtuous et Fundraising.AI. (2026). *The 2026 nonprofit AI adoption report*. https://virtuous.org/blog/the-2026-nonprofit-ai-adoption-report-blog/
+
+\* Zadrozny, B. et Elkan, C. (2001). Learning and making decisions when costs and probabilities are both unknown. Dans *Proceedings of the Seventh ACM SIGKDD International Conference on Knowledge Discovery and Data Mining (KDD ’01)* (p. 204–213). ACM. https://doi.org/10.1145/502512.502540
