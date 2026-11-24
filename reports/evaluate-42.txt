@@ -1,6 +1,6 @@
 graine=42 donateurs=4000 dons=17909
 
-churn n=2362/845/808 taux=6.7% retenu=gbdt L2=0.003 prof=2 arbres=94 2618ms
+churn n=2362/845/808 taux=6.7% retenu=gbdt L2=0.003 prof=2 arbres=94 883ms
   logistic  AUC-PR=0.207 [0.141–0.331] AUC=0.730 P@50=0.28 lift10=3.27 brier=0.0629
   gbdt      AUC-PR=0.243 [0.162–0.377] AUC=0.710 P@50=0.34 lift10=3.44 brier=0.0614
   ensemble  AUC-PR=0.229 [0.152–0.358] AUC=0.727 P@50=0.32 lift10=3.27 brier=0.0618
@@ -11,7 +11,7 @@ churn n=2362/845/808 taux=6.7% retenu=gbdt L2=0.003 prof=2 arbres=94 2618ms
   équité age 35 à 54 ans: n=316 sel=1.37 | 55 à 69 ans: n=133 sel=0.42 | 70 ans et plus: n=126 sel=0.48 | Moins de 35 ans: n=233 sel=1.12
   équité region Autres régions: n=184 sel=1.01 | Capitale-Nationale: n=148 sel=0.85 | Couronne de Montréal: n=203 sel=1.19 | Montréal: n=273 sel=0.94
 
-upgrade n=2054/737/704 taux=4.1% retenu=ensemble L2=0.003 prof=3 arbres=19 839ms
+upgrade n=2054/737/704 taux=4.1% retenu=ensemble L2=0.003 prof=3 arbres=19 553ms
   logistic  AUC-PR=0.084 [0.049–0.161] AUC=0.656 P@50=0.10 lift10=1.95 brier=0.0416
   gbdt      AUC-PR=0.066 [0.043–0.122] AUC=0.613 P@50=0.04 lift10=2.27 brier=0.0423
   ensemble  AUC-PR=0.076 [0.047–0.134] AUC=0.637 P@50=0.10 lift10=2.92 brier=0.0419
@@ -22,7 +22,7 @@ upgrade n=2054/737/704 taux=4.1% retenu=ensemble L2=0.003 prof=3 arbres=19 839ms
   équité age 35 à 54 ans: n=281 sel=0.50 | 55 à 69 ans: n=119 sel=1.23 | 70 ans et plus: n=95 sel=2.86 | Moins de 35 ans: n=209 sel=0.70
   équité region Autres régions: n=159 sel=0.73 | Capitale-Nationale: n=135 sel=1.12 | Couronne de Montréal: n=173 sel=0.96 | Montréal: n=237 sel=1.15
 
-conversion n=10688/3413/3541 taux=1.8% retenu=ensemble L2=0.0003 prof=2 arbres=25 7175ms
+conversion n=10688/3413/3541 taux=1.8% retenu=ensemble L2=0.0003 prof=2 arbres=25 3021ms
   logistic  AUC-PR=0.118 [0.077–0.196] AUC=0.820 P@50=0.24 lift10=4.78 brier=0.0176
   gbdt      AUC-PR=0.119 [0.070–0.198] AUC=0.810 P@50=0.18 lift10=4.03 brier=0.0179
   ensemble  AUC-PR=0.113 [0.076–0.195] AUC=0.818 P@50=0.24 lift10=4.78 brier=0.0177
@@ -33,7 +33,7 @@ conversion n=10688/3413/3541 taux=1.8% retenu=ensemble L2=0.0003 prof=2 arbres=2
   équité age 35 à 54 ans: n=1290 sel=0.54 | 55 à 69 ans: n=859 sel=1.29 | 70 ans et plus: n=729 sel=1.80 | Moins de 35 ans: n=663 sel=0.64
   équité region Autres régions: n=753 sel=0.88 | Capitale-Nationale: n=643 sel=0.93 | Couronne de Montréal: n=818 sel=1.34 | Montréal: n=1327 sel=0.89
 
-reactivation n=3468/1156/1199 taux=3.9% retenu=gbdt L2=0.0003 prof=3 arbres=60 1869ms
+reactivation n=3468/1156/1199 taux=3.9% retenu=gbdt L2=0.0003 prof=3 arbres=60 1101ms
   logistic  AUC-PR=0.105 [0.071–0.209] AUC=0.769 P@50=0.14 lift10=3.42 brier=0.0302
   gbdt      AUC-PR=0.123 [0.080–0.241] AUC=0.747 P@50=0.18 lift10=3.68 brier=0.0301
   ensemble  AUC-PR=0.117 [0.075–0.230] AUC=0.767 P@50=0.16 lift10=4.21 brier=0.0299
@@ -49,6 +49,9 @@ actions {
   churn_prevention: 43,
   upgrade_one_time: 53,
   reactivation: 28,
+  upgrade_annual: 16,
   thank: 33,
-  upgrade_annual: 16
+  upgrade_amount: 20
 }
+impact 100 contacts : modèle 1101 $ · RFM 232 $ · hasard 227 $ · ×4.7555 vs RFM · ×4.8528 vs hasard
+impact 300 contacts : modèle 2261 $ · RFM 759 $ · hasard 681 $ · ×2.9803 vs RFM · ×3.3196 vs hasard
