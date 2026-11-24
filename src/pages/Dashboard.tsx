@@ -233,7 +233,7 @@ export default function Dashboard() {
                   ) : fallback ? (
                     <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-600" title="Le modèle ne remplit pas nos deux conditions : Fidélia garde la méthode habituelle">Méthode habituelle</span>
                   ) : r && k === 'reactivation' && !reacReal && (
-                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800" title="Utilisé à titre d'essai : sur de vrais donateurs, ce modèle ne remplit pas encore nos deux conditions">À l'essai</span>
+                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800" title="Utilisé à titre d'essai : sur de vrais donateurs (KDD 98), un modèle de réactivation ne remplit pas encore nos deux conditions">À l'essai</span>
                   )}
                 </p>
                 <p className="mt-1 text-2xl font-semibold tabular-nums text-stone-900">{t ? `×${t}` : '–'}</p>

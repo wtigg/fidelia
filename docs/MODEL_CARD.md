@@ -44,13 +44,13 @@ Les requis sont vérifiés automatiquement à chaque entraînement (page **Modè
 - Réactivation : 4/6, R5 et R6 non validés.
 - Hausse : 2/6 ; le modèle ne bat pas RFM, la liste utilise donc la règle RFM.
 
-## Résultats sur le jeu synthétique (test, donateurs jamais vus, graine 42)
+## Résultats sur le jeu synthétique (test, donateurs gardés pour le test, graine 42)
 
 | Modèle | Taux de base | Candidat | AUC-PR [IC 95 %] | RFM AUC-PR [IC 95 %] | Écart apparié [IC 95 %] | AUC-ROC (modèle / RFM) | Déployé |
 |---|---|---|---|---|---|---|---|
 | Attrition 90 j | 6,7 % | Boosting | 0,243 [0,162–0,377] | 0,091 [0,068–0,139] | +0,152 [0,058 ; 0,255] | 0,710 / 0,585 | Modèle |
 | Passage au mensuel 6 mois | 1,8 % | Ensemble | 0,113 [0,076–0,195] | 0,043 [0,031–0,080] | +0,070 [0,028 ; 0,124] | 0,818 / 0,677 | Modèle |
-| Réactivation 6 mois | 3,9 % | Boosting | 0,123 [0,080–0,241] | 0,039 [0,027–0,060] | +0,084 [0,036 ; 0,187] | 0,747 / 0,598 | Modèle |
+| Réactivation 6 mois | 3,9 % | Boosting | 0,123 [0,080–0,241] | 0,039 [0,027–0,060] | +0,084 [0,036 ; 0,187] | 0,747 / 0,598 | Modèle (à l'essai : non confirmé sur KDD 98) |
 | Hausse 6 mois | 4,1 % | Ensemble | 0,076 [0,047–0,134] | 0,066 [0,042–0,113] | +0,011 [−0,024 ; 0,059] | 0,637 / 0,647 | **Règle RFM** |
 
 **Test temporel** (entraînement sur les dates anciennes, test sur les 4 plus récentes), AUC :
@@ -75,7 +75,7 @@ La réactivation se dégrade dans le temps (R5) : la population des inactifs cha
 | Tâche | Taux de base | Modèle AUC-PR [IC 95 %] | RFM AUC-PR [IC 95 %] | AUC modèle / RFM |
 |---|---|---|---|---|
 | Réactivation | 5,08 % | 0,083 [0,075–0,094] | 0,053 [0,049–0,058] | 0,62 / 0,53 |
-| Hausse du don | 1,73 % | 0,040 [0,033–0,050] | 0,019 [0,017–0,021] | 0,68 / 0,53 |
+| Don supérieur au dernier | 1,73 % | 0,040 [0,033–0,050] | 0,019 [0,017–0,021] | 0,68 / 0,53 |
 
 Sur KDD 98, la « hausse » est un donateur inactif dont la réponse à la relance dépasse son dernier don (`TARGET_D > LASTGIFT`). Ce n'est pas la même cible que la hausse du mensuel dans l'application.
 
@@ -84,7 +84,7 @@ Sur KDD 98, la « hausse » est un donateur inactif dont la réponse à la relan
 | Tâche | R1 : AUC-PR ≥ 2 × taux de base | R2 : écart apparié avec RFM [IC 95 %] | Déployable |
 |---|---|---|---|
 | Réactivation | 0,083 < 0,102 : **non validé** | [0,022 ; 0,039] : validé | **Non** |
-| Hausse du don | 0,040 ≥ 0,035 : validé | [0,016 ; 0,031] : validé | Oui |
+| Don supérieur au dernier | 0,040 ≥ 0,035 : validé | [0,016 ; 0,031] : validé | Oui |
 
 Le modèle de réactivation bat RFM de façon significative, mais ne fait pas 2 fois mieux que le hasard. Selon notre règle, il ne serait pas déployé. Sa courbe d'apprentissage est plate (0,082 avec 7 660 exemples, 0,083 avec 76 588) : la limite vient des variables, pas du volume.
 
@@ -126,7 +126,7 @@ L'âge et la région ne sont **pas** des variables du modèle. Pourtant :
 ## Limites connues
 
 1. Les données synthétiques reflètent les hypothèses du générateur. KDD 98 valide la **méthode** sur deux tâches voisines : la réactivation d'inactifs et un don plus élevé que le dernier, chez des inactifs. Il ne valide pas le modèle de hausse du mensuel, qui n'est d'ailleurs pas déployé. Sur KDD 98, la réactivation échoue à R1.
-2. Les modèles prédisent une **propension**, pas l'**effet causal** d'une action. Un groupe témoin de 10 % est prévu pour mesurer l'effet réel.
+2. Les modèles prédisent une **propension**, pas l'**effet causal** d'une action. Un groupe témoin (environ 10 %, tiré donateur par donateur) existe déjà dans le prototype pour mesurer l'effet réel.
 3. Petits effectifs de test pour les mensuels (environ 700 à 800 exemples), d'où des intervalles de confiance larges.
 4. Deux fuites de données ont été trouvées et corrigées pendant le projet (voir RAPPORT, leçon 2). Tout nouveau calcul de variable doit être revu sous cet angle.
 5. Boucle de rétroaction (Sculley et al., 2015) : une fois les relances lancées, les étiquettes futures sont influencées par le modèle. Le groupe témoin sert aussi à garder des données d'entraînement non biaisées.

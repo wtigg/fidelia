@@ -2,10 +2,11 @@
 """Construit l'affiche Fidélia (48 x 36 po) et sa fiche technique (lettre) à partir de reports/.
 
 Affiche (affiche.html → Affiche-Fidelia.pdf, apercu.png) : 5 blocs, 150 à 220 mots, un seul message :
-  « L'IA n'est utilisée que là où elle gagne : 3 listes sur 4 ».
+  « L'IA n'est utilisée que là où elle gagne : 3 modèles sur 4 » (réactivation à l'essai : pas confirmée sur de vrais donateurs).
   * graphique des 4 listes (modèle ÷ méthode habituelle, vert = modèle utilisé), reports/synthetique-42.json
-  * grand chiffre du ciblage (dons à risque ciblés, pas récupérés) : multiplicateur contre la méthode habituelle à 300 contacts
-    (reports/impact-42.json, bloc « app », identique à l'écran Impact de l'application)
+  * grand chiffre du ciblage (dons à risque visés, pas récupérés) : liste Relancer, campagne de 300 contacts, multiplicateur
+    contre la méthode habituelle, indépendant de l'effet supposé des courriels (reports/impact-42.json, bloc « app », ligne
+    « Pour Relancer seul » de l'écran Impact)
   * ligne « vrais donateurs » : KDD Cup 1998, réactivation et don plus élevé (reports/kdd98.json)
   * QR code vers la démo (segno si installé, sinon qr.svg)
   * captures de la fiche donateur (fiche-risque.png, fiche-raisons.png) :
@@ -62,10 +63,10 @@ def par_capacite(impact):
 # ---------------------------------------------------------------- AUC-PR
 def svg_aucpr(synth):
     taches = [
-        ("churn", "Attrition"),
-        ("conversion", "Passage|au mensuel"),
-        ("reactivation", "Réactivation"),
-        ("upgrade", "Hausse|du don"),
+        ("churn", "Relancer"),
+        ("conversion", "Proposer|le mensuel"),
+        ("reactivation", "Réactiver"),
+        ("upgrade", "Solliciter|plus"),
     ]
     W, H = 1600, 860
     g, d, h, b = 120, 10, 200, 250
@@ -76,7 +77,7 @@ def svg_aucpr(synth):
         return h + ph * (1 - min(v, ymax) / ymax)
 
     gagnes = sum(1 for k, _ in taches if synth[k]["deployed"] != "rfm")
-    titre = f'<p class="titre-graph">{gagnes} listes sur {len(taches)} : le modèle gagne.</p>'
+    titre = f'<p class="titre-graph">{gagnes} modèles sur {len(taches)} remplissent nos deux conditions (donateurs fictifs).</p>'
     o = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" font-family="{POLICE}" role="img" '
          'aria-label="Précision pour trouver les bons donateurs : Fidélia contre la méthode habituelle, quatre modèles">']
     # légende
@@ -127,7 +128,7 @@ def svg_aucpr(synth):
         for n, l in enumerate(lignes):
             o.append(f'<text x="{cx:.1f}" y="{y(0) + 58 + 52 * n:.1f}" font-size="48" font-weight="700" fill="{ENCRE}" text-anchor="middle">{l}</text>')
         deploye = t["deployed"] != "rfm"
-        lab = "Modèle utilisé" if deploye else "Méthode habituelle"
+        lab = ("Utilisé, à l'essai" if k == "reactivation" else "Modèle utilisé") if deploye else "Méthode habituelle"
         coul = VERT if deploye else AMBRE
         pw_ = 356
         o.append(f'<rect x="{cx - pw_ / 2:.1f}" y="{y(0) + 138:.1f}" width="{pw_}" height="66" rx="33" fill="{coul}"/>')
@@ -144,14 +145,14 @@ def svg_aucpr(synth):
 ORANGE = "#c2410c"
 VERT_AFF = "#17663f"
 NOMS_LISTES = [("churn", "Relancer"), ("conversion", "Proposer|le mensuel"),
-               ("reactivation", "Réactiver"), ("upgrade", "Solliciter|plus")]
+               ("reactivation", "Réactiver|(à l'essai)"), ("upgrade", "Solliciter|plus")]
 
 
 def svg_listes(synth):
     """Petit graphique de l'affiche : précision du modèle ÷ méthode habituelle, une barre par liste.
     Vert = modèle utilisé (R1 et R2 remplies), orange = méthode habituelle gardée."""
-    W, H = 1580, 500
-    haut, bas = 140, 140  # place pour la légende et les ×N, puis pour les noms
+    W, H = 1580, 560
+    haut, bas = 140, 200  # place pour la légende et les ×N, puis pour les noms
     ph = H - haut - bas
     rmax = 3.4
 
@@ -177,15 +178,22 @@ def svg_listes(synth):
         for n, l in enumerate(nom.split("|")):
             o.append(f'<text x="{cx:.1f}" y="{y(0) + 62 + 54 * n:.1f}" font-size="48" font-weight="700" fill="#0a2f1e" text-anchor="middle">{l}</text>')
     o.append(f'<line x1="0" y1="{y(0):.1f}" x2="{W}" y2="{y(0):.1f}" stroke="#0a2f1e" stroke-width="5"/>')
+    o.append(f'<text x="0" y="{H - 8}" font-size="44" font-weight="600" fill="#0a2f1e">×2,7 = 2,7 fois mieux que la méthode habituelle (donateurs fictifs)</text>')
     o.append("</svg>")
     return '<div class="graph-listes">' + "".join(o) + "</div>"
 
 
+def relancer(impact, capacite):
+    bloc = impact.get("app", impact)
+    c = next(c for c in bloc["impact"] if c["capacity"] == capacite)
+    return next(m for m in c["byModel"] if m["kind"] == "churn")
+
+
 def html_resultat(impact):
-    t = par_capacite(impact)[300]
+    t = relancer(impact, 300)
     m = round(t["multiplierVsRfm"])
     return (f'<div class="x3"><span class="badge">Démo 2</span><b><span class="fois">×</span>{m}</b>'
-            f'<p>de dons à risque ciblés, à effort égal<small>{t["contacted"]} contacts parmi 4&nbsp;000 donateurs fictifs, '
+            f'<p>de dons menacés visés, même effort<small>Liste Relancer, 300 contacts, donateurs fictifs, '
             f'contre la méthode habituelle</small></p></div>')
 
 
@@ -200,7 +208,7 @@ def kdd_hausse_ok(kdd):
 def html_kdd(kdd):
     n = kdd["reactivation"]["nTest"]
     ok, *_ = kdd_hausse_ok(kdd)
-    gagne = "l'IA gagne pour le don plus élevé, pas pour la réactivation" if ok else "l'IA ne gagne pas : méthode habituelle gardée"
+    gagne = "l'IA repère qui dépassera son dernier don ; réactiver n'est pas encore prouvé (« à l'essai »)" if ok else "l'IA ne gagne pas : méthode habituelle gardée"
     return f'<p class="reel"><b>{milliers(n)} vrais donateurs</b> : {gagne}.</p>'
 
 
@@ -252,22 +260,23 @@ def html_regle(synth):
 
 def html_ciblage(impact, synth, robust):
     par = par_capacite(impact)
+    r100, r300 = relancer(impact, 100), relancer(impact, 300)
     t = synth["churn"]
     ev = {e["algorithm"]: e for e in t["evaluations"]}
     pts = ev[t["selected"]]["valueGain"]
     p10 = min(pts, key=lambda p: abs(p["x"] - 0.10))
+    r10 = min(ev["rfm"]["valueGain"], key=lambda p: abs(p["x"] - 0.10))
     res = robust["results"].values()
     ok, tot = sum(x["deployed"] for x in res), sum(x["runs"] for x in res)
-    return (f'<p>À contacts égaux, valeur des dons à risque visée, Fidélia contre la méthode habituelle : '
-            f'<b>×{mult(par[100]["multiplierVsRfm"])}</b> avec 100 contacts, '
-            f'<b>×{mult(par[300]["multiplierVsRfm"])}</b> avec 300 '
-            f'({fr(par[300]["multiplierVsRfm"], 2)} exactement). Contre le hasard : ×{mult(par[100]["multiplierVsRandom"])} et '
-            f'×{mult(par[300]["multiplierVsRandom"])}. Donateurs fictifs.</p>'
+    return (f'<p>À contacts égaux, dons menacés visés par la liste Relancer, Fidélia contre la méthode habituelle : '
+            f'<b>×{fr(r300["multiplierVsRfm"], 1)}</b> avec une campagne de 300 contacts, <b>×{fr(r100["multiplierVsRfm"], 1)}</b> avec 100, '
+            f'quel que soit l\'effet des courriels.</p>'
+            f'<p>Les 4 listes réunies : ×{mult(par[300]["multiplierVsRfm"])} avec 300 contacts, '
+            f'×{mult(par[100]["multiplierVsRfm"])} avec 100 ; contre le hasard, ×{mult(par[300]["multiplierVsRandom"])} et '
+            f'×{mult(par[100]["multiplierVsRandom"])}, si l\'effet supposé des courriels se vérifie. Donateurs fictifs.</p>'
             f'<p>Attrition : {round(p10["x"] * 100)} % des mensuels contactés couvrent '
-            f'<b>{round(p10["y"] * 100)} %</b> des dons à risque.</p>'
-            f'<p>Robustesse : {ok} cas sur {tot} retenus (5 autres jeux de données × 4 modèles).</p>'
-            f'<p class="note">On mesure le ciblage, pas l\'effet d\'un courriel : il reste une hypothèse, '
-            f'qu\'un groupe témoin mesurera.</p>')
+            f'<b>{round(p10["y"] * 100)} %</b> des dons à risque (méthode habituelle : {round(r10["y"] * 100)} %).</p>'
+            f'<p>Robustesse : {ok} cas sur {tot} retenus (5 autres jeux de données × 4 modèles).</p>')
 
 
 def html_kdd_detail(kdd):
@@ -277,11 +286,10 @@ def html_kdd_detail(kdd):
     pr = k["profit"]
     gain20 = pr["modelTop20"]["net"] / pr["rfmTop20"]["net"] - 1
     pct20 = round(pr["modelTop20"]["mailed"] / k["nTest"] * 100)
-    return (f'<p><b>Réactivation : modèle non utilisé.</b> {milliers(k["nTest"])} vrais donateurs américains '
-            f'inactifs (données publiques, 1998) : AUC-PR {fr(ap)}, sous le seuil R1 ({fr(2 * k["baseRate"])}). '
-            f'Profit net : la méthode habituelle fait un peu mieux à gros volume ({milliers(round(pr["rfmSameVolume"]["net"]))}&nbsp;$ '
-            f'contre {milliers(round(pr["modelExpectedValue"]["net"]))}&nbsp;$) ; le modèle, <b>+{round(gain20 * 100)} %</b> avec {pct20} % des envois. '
-            f'On garde la méthode habituelle.</p>'
+    return (f'<p><b>Réactivation : pas encore validée.</b> {milliers(k["nTest"])} vrais donateurs inactifs (1998) : '
+            f'AUC-PR {fr(ap)}, sous le seuil R1 ({fr(2 * k["baseRate"])}). Profit net : <b>+{round(gain20 * 100)} %</b> avec {pct20} % des envois ; '
+            f'à gros volume, la méthode habituelle fait un peu mieux ({milliers(round(pr["rfmSameVolume"]["net"]))}&nbsp;$ '
+            f'contre {milliers(round(pr["modelExpectedValue"]["net"]))}&nbsp;$). Dans l\'application, ce modèle reste « à l\'essai ».</p>'
             + html_kdd_hausse(kdd))
 
 
@@ -289,7 +297,8 @@ def html_kdd_hausse(kdd):
     ok, m, r, h = kdd_hausse_ok(kdd)
     lo, hi = m["apDiffVsRfmCI"]
     verdict = "<b>R1 et R2 remplies</b> : résultat positif sur données réelles." if ok else "R1 ou R2 non remplie."
-    return (f'<p>Don plus élevé que le dernier : AUC-PR <b>{fr(m["ap"])}</b> contre {fr(r["ap"])} pour RFM '
+    return (f'<p>Don plus élevé que le dernier : AUC-PR <b>{fr(m["ap"])}</b> contre {fr(r["ap"], 4)} pour RFM, '
+            f'soit {fr(m["ap"] / r["ap"], 1)} fois mieux '
             f'(seuil R1 : {fr(2 * h["baseRate"])} ; écart : {fr(lo)} à {fr(hi)}). {verdict}</p>')
 
 

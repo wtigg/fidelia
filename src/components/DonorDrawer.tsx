@@ -118,7 +118,7 @@ export function DonorDrawer({ donorId, onClose }: { donorId: string | null; onCl
               <div className="mt-4 flex items-center gap-2 border-t border-stone-100 pt-4">
                 {inCampaign?.status === 'control' ? (
                   <p className="flex items-start gap-1.5 text-sm text-stone-600">
-                    <FlaskConical className="mt-0.5 size-4 shrink-0" /> Mis de côté pour mesurer : ce donateur fait partie des 10 % qu'on ne contacte pas cette fois, pour vérifier si les courriels font une vraie différence.
+                    <FlaskConical className="mt-0.5 size-4 shrink-0" /> Mis de côté pour mesurer : ce donateur fait partie des donateurs (environ 10 %) qu'on ne contacte pas cette fois, pour vérifier si les courriels font une vraie différence.
                   </p>
                 ) : inCampaign ? (
                   <p className="flex items-center gap-1.5 text-sm text-brand-700">

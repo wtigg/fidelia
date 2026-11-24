@@ -41,7 +41,7 @@ const TOUR_STEPS: Step[] = [
   {
     to: '/impact',
     title: 'Impact',
-    text: () => 'Avec le même nombre de contacts, combien de dons Fidélia permet de récupérer de plus que la méthode habituelle (dernier don, fréquence, montant). Faites glisser « Donateurs contactés ».',
+    text: () => 'Avec le même nombre de contacts, combien de dons menacés Fidélia vise de plus que la méthode habituelle (dernier don, fréquence, montant). Le montant en dollars suppose un effet des courriels, réglable. Faites glisser « Donateurs contactés ».',
     // bulle à gauche : elle laisse visibles le curseur et le résultat (encadré vert foncé, à droite)
     left: true,
     focus: 'capacite',
@@ -54,7 +54,7 @@ const TOUR_STEPS: Step[] = [
   {
     to: '/campagnes',
     title: 'Lundi matin : vos courriels',
-    text: () => 'Le brouillon est prêt, sans montant inventé. Relisez, puis « Approuver » et « Envoyer ». Rien ne part sans vous. Lors des envois groupés, 10 % des donateurs sont mis de côté exprès, pour mesurer si les courriels rapportent vraiment.',
+    text: () => 'Le brouillon est prêt, sans montant inventé. Relisez, puis « Approuver » et « Envoyer ». Rien ne part sans vous. Lors des envois groupés, environ 10 % des donateurs sont mis de côté exprès, pour mesurer si les courriels rapportent vraiment.',
     left: true,
     focus: 'courriel-actions',
     needsDraft: true,

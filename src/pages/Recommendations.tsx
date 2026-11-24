@@ -130,7 +130,7 @@ export default function Recommendations() {
         </div>
         {noConsent > 0 && (
           <p className="text-xs text-stone-500">
-            {noConsent} donateur{noConsent > 1 ? 's' : ''} de cette liste {noConsent > 1 ? "n'ont" : "n'a"} pas consenti aux courriels (« Sans consentement ») : à joindre par téléphone ou par la poste. Lors d'une préparation groupée, 10 % des courriels sont mis de côté pour mesurer l'effet.
+            {noConsent} donateur{noConsent > 1 ? 's' : ''} de cette liste {noConsent > 1 ? "n'ont" : "n'a"} pas consenti aux courriels (« Sans consentement ») : à joindre par téléphone ou par la poste. Lors d'une préparation groupée, environ 10 % des courriels sont mis de côté pour mesurer l'effet.
           </p>
         )}
       </div>

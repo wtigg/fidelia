@@ -4,7 +4,7 @@ Ces annexes complètent le rapport principal. Elles donnent les détails de calc
 
 ## Annexe A. Statistiques complémentaires (section 1.2)
 
-- **Coût du recrutement.** Recruter coûte jusqu’à 1,50 $ par dollar recueilli, contre 0,20 $ ou moins auprès des donateurs existants, soit jusqu’à 7,5 fois moins cher (Johnson, 2023).
+- **Coût du recrutement.** Recruter coûte jusqu’à 1,50 $ par dollar recueilli, contre 0,20 $ ou moins auprès des donateurs existants, soit jusqu’à 7,5 fois moins cher (Johnson, 2023 ; « jusqu’à 7 fois » à l’oral).
 - **Fidélité acquise.** 59,3 % des donateurs réguliers redonnent l’année suivante, contre 18,9 % des nouveaux (Bloomerang, s. d.-a, d’après le FEP du 4ᵉ trimestre 2025).
 - **Compétences en données.** Seuls 13 % des petits organismes canadiens ont une personne dédiée à la technologie et aux données, contre 25 % des grands (Gandhi, 2024). Un organisme sur quatre juge faibles ses compétences pour gérer et analyser ses données, et 23 % peinent à s’en servir pour décider (Nguyen, 2024).
 - **Capacité.** La demande dépasse la capacité dans 65 % des organismes canadiens en 2026 (Charity Insights Canada Project, 2026).
@@ -27,10 +27,11 @@ Source : `reports/evaluate-42.txt`. Positifs estimés = exemples (entraînement
 | Attrition | 1 603 | 108 | 0,225 | réussit |
 | Attrition | 3 207 | 216 | 0,243 | réussit |
 | Réactivation | 464 | 18 | 0,063 | 0,079 : **échoue** |
+| Réactivation | 1 156 | 45 | 0,085 | réussit |
 | Réactivation | 2 311 | 91 | 0,111 | réussit |
 | Réactivation | 4 624 | 182 | 0,123 | réussit |
 
-Vers 100 positifs, l’attrition atteint 93 % de son AUC-PR finale (0,225 sur 0,243) et la réactivation 90 % (0,111 sur 0,123). Sous un minimum technique (10 positifs à l’entraînement, 3 en validation et 3 en test), aucun modèle n’est entraîné : la liste n’est pas proposée et un message l’explique.
+Vers 100 positifs, l’attrition atteint 93 % de son AUC-PR finale (0,225 sur 0,243) et la réactivation 90 % (0,111 sur 0,123). Sous un minimum technique (100 exemples d’entraînement dont 10 positifs, 3 positifs en validation et 3 en test), aucun modèle n’est entraîné : la liste n’est pas proposée et un message l’explique.
 
 ### B.2 Calcul de puissance du groupe témoin
 
@@ -103,8 +104,11 @@ Un échec de l’analyse statique, des tests ou du contrôle de reproductibilit�
 | KDD 98, plus de variables | 74 variables candidates connues avant juin 1997 (historique des codes RFA, cartes, relances, richesse du quartier…), sélection par familles et élagage sur la validation | AUC-PR 0,0825 | 0,0825 (configuration inchangée) | Aucune famille ne gagne en validation ; les 16 variables actuelles captent déjà le signal |
 | KDD 98, réglage du modèle | Une trentaine de réglages : profondeur et nombre d’arbres, taux d’apprentissage, pondération des classes, interactions, ensembles | AUC-PR 0,0825 | 0,0813 | Léger recul dans le bruit ; le modèle plafonne vers 0,085 en validation (exploration non versionnée) |
 | Synthétique, hausse du don | 12 nouvelles variables d’historique (tendance, régularité, ratio au don médian, saison) | AUC-PR 0,076 | 0,084 sur la graine 42 | Le gain ne tient pas sur les 5 autres jeux ; R2 échoue toujours, la règle RFM reste utilisée |
+| Synthétique et KDD 98, combinaison des modèles (candidat v5) | Moyenne des rangs logistique + *boosting*, choisie par validation croisée groupée sur 6 jeux, sans lire le test ; contrôle avec scikit-learn (21 réglages par cas) | AUC-PR moyenne sur 24 cas de test (6 jeux × 4 modèles) | +2,4 % ; 13 cas gagnés sur 24 ; attrition en léger recul ; KDD 98 : 0,0819 en réactivation, 0,0412 pour le don supérieur | Gain non matériel (seuil fixé avant : +10 % ou un verdict R1 ou R2 qui change) ; la v4 reste en place. scikit-learn fait jeu égal (10 cas gagnés sur 24) : le modèle maison n’est pas le facteur limitant |
 
 Sur KDD 98, même la borne haute de l’IC (0,094) reste sous le seuil R1 de 0,102. Les signaux qui comptent le plus dans notre jeu synthétique (ouvertures de courriels, paiements échoués) n’existent pas dans KDD 98.
+
+La quatrième tentative est documentée hors du dépôt principal (branche `model-v5`, document `docs/MODEL_V5.md`). Les jeux de test des graines 1 à 5 avaient déjà été lus par la tentative « hausse » ; ces relectures n’ont servi à aucun choix, mais la confirmation reste à garanties faibles. Même un modèle qui verrait les variables cachées du générateur ne dépasse pas 0,113 en hausse sur la graine 42 : c’est la quantité de cas positifs (environ 29 au test) qui limite.
 
 ## Annexe E. Risques secondaires (section 7)
 
@@ -153,6 +157,8 @@ Sur KDD 98, même la borne haute de l’IC (0,094) reste sous le seuil R1 de 0,1
 
 Nous documentons l’écart, le surveillons et laissons la décision à l’organisation.
 
+**Une mesure mal construite peut inventer un gain.** Pour le candidat v5 (annexe D), notre première validation croisée regroupait les prédictions des 5 plis en une seule courbe. Elle annonçait +9 à +18 % d’AUC-PR. Mais la v4 choisit un algorithme différent dans chaque pli, avec une échelle de probabilité différente ; regrouper les plis la pénalisait, alors que la moyenne des rangs garde toujours la même échelle. Avec une AUC-PR calculée pli par pli puis moyennée, le gain tombe à +1 à +5 %, ce que le test confirme (+2,4 %). La mesure fautive aurait franchi notre seuil de +10 % et fait adopter v5 à tort. Leçon : quand l’échelle des scores varie d’un modèle à l’autre, comparer pli par pli, et vérifier qu’un gain survit à une autre façon de le mesurer avant d’y croire.
+
 **Pré-entraîner et versionner le modèle simplifie tout.** L’entraînement complet prend environ 20 s dans le navigateur. Sérialiser un modèle versionné (`model.json`) donne une application instantanée, un retour arrière simple et une traçabilité. Ce sont des pratiques MLOps vues en séance 7 (Kreuzberger et al., 2023).
 
 ## Annexe H. Estimations : détails (section 9)
@@ -187,3 +193,25 @@ Charges sociales et avantages : + 25 % (hypothèse de l’équipe). Un ETP com
 |---|---|---|---|
 | 2 330 $ (0,25 ETP) | 92 à 97 $ | 25 à 26 clients | 33 à 36 clients |
 | 4 494 $ (0,5 ETP) | 92 à 97 $ | 47 à 49 clients | 55 à 59 clients |
+
+**Taille du marché (section 9.3).** Source : Agence du revenu du Canada (2026), fichiers « Identification » et « Données financières » de la liste des organismes de bienfaisance 2024 (déclarations T3010 des exercices terminés en 2024). Calcul de l’équipe, le 23 novembre 2026 (`scripts/marche-t3010.py`) : dernière déclaration de chaque organisme, province de l’adresse, revenus totaux (ligne 4700).
+
+**Tableau H3.** *Organismes de bienfaisance enregistrés selon les revenus (exercice 2024)*
+
+| Périmètre | Québec | Canada |
+|---|---|---|
+| Déclarations T3010 | 15 414 | 83 710 |
+| Revenus de moins de 1 M$ | 12 436 (81 %) | 68 584 (82 %) |
+| Revenus de moins de 100 000 $ | 5 803 | 36 259 |
+| Organismes de bienfaisance (hors fondations), de 100 000 $ à 1 M$ | 5 962 | 28 830 |
+
+Seuil de 33 à 36 clients à 99 $ : environ 0,6 % des 5 962 organismes québécois de la cible. Ce décompte ne dit pas combien d’entre eux sollicitent des dons récurrents ni combien ont un historique suffisant (RD1).
+
+## Annexe I. Déclaration d’utilisation de l’IA générative
+
+Le plan de cours permet l’usage de l’IA générative pour ce travail. Nous l’avons utilisée comme assistant, d’octobre à décembre 2026, sous notre responsabilité :
+- **Code :** un assistant de programmation (Claude, d’Anthropic) a aidé à écrire et à corriger une partie du code de l’application et des scripts. Le code est vérifié par les 25 tests, le contrôle de reproductibilité et la comparaison avec scikit-learn (section 6.3).
+- **Rédaction :** relecture, reformulation et mise en forme du rapport, de l’affiche et du kit de présentation, à partir de nos propres plans et résultats.
+- **Recherche :** aide à trouver des sources. Chaque référence a été ouverte et vérifiée (DOI sur Crossref, pages consultées).
+
+Aucun chiffre n’a été écrit par l’IA : tous sont produits par l’exécution des scripts du dépôt (`reports/`), vérifiés par les tests et par scikit-learn, ou viennent de sources citées. Les choix de conception, les seuils R1 à R6, l’analyse et les conclusions sont ceux de l’équipe. Aucune donnée personnelle réelle n’a été transmise à ces outils : le prototype n’utilise que des données fictives et un jeu public.

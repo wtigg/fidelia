@@ -651,10 +651,10 @@ function RealData() {
       <div className="mt-6 rounded-2xl bg-brand-900 p-6 text-white">
         <p className="text-sm text-brand-100/80">En bref</p>
         <p className="mt-1 font-display text-xl font-semibold leading-snug sm:text-2xl">
-          Sur de vrais donateurs, avec le même budget, cibler avec le modèle de réactivation (à l'essai) rapporte <span className="text-gold">{Math.round((profit.modelTop20.net / profit.rfmTop20.net - 1) * 100)} % de profit en plus</span> que la méthode habituelle.
+          Sur de vrais donateurs, avec le même budget, cibler les inactifs avec notre méthode rapporte <span className="text-gold">{Math.round((profit.modelTop20.net / profit.rfmTop20.net - 1) * 100)} % de profit en plus</span> que la méthode habituelle.
         </p>
         <p className="mt-2 text-sm text-brand-100/80">
-          Ce profit vient du classement des inactifs à relancer : il valide la méthode. {reactivationReady ? 'Le modèle de réactivation remplit nos deux conditions.' : <>Mais ce modèle de réactivation ne remplit pas encore <Term k="conditions" light>nos deux conditions</Term> : dans l'application, il reste à l'essai.</>}
+          Ce profit vient du classement des inactifs à relancer : il valide la méthode. {reactivationReady ? 'Le modèle de réactivation remplit nos deux conditions.' : <>Mais le modèle de réactivation entraîné sur ces vrais donateurs ne remplit pas <Term k="conditions" light>nos deux conditions</Term> : dans l'application, celui des données de démo reste donc à l'essai.</>}
           {' '}{hausseReady
             ? <>Pour repérer qui donnera plus que son dernier don, le modèle remplit nos deux conditions : il les repère {fx(hausseSel.ap / hausseRfm.ap, 1)} fois mieux que la méthode habituelle.</>
             : 'Pour repérer qui donnera plus que son dernier don, le modèle ne remplit pas nos deux conditions.'}

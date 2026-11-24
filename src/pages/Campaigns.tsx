@@ -58,7 +58,7 @@ export default function Campaigns() {
       <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
         <Info className="mt-0.5 size-4 shrink-0" />
         Envoi simulé : aucun courriel ne part réellement dans le prototype. En production : fournisseur d'envoi (Brevo, Mailchimp…) et suivi des ouvertures.
-        Fidélia met de côté 10 % des donateurs ciblés : ils ne sont jamais contactés. Comparer leurs dons à ceux des contactés mesure l'effet réel des courriels.
+        Fidélia met de côté environ 10 % des donateurs ciblés (tirage par donateur) : ils ne sont jamais contactés. Comparer leurs dons à ceux des contactés mesure l'effet réel des courriels.
       </div>
 
       <div className="mb-4">
@@ -129,7 +129,7 @@ export default function Campaigns() {
                 )}
               </div>
               <div className="space-y-4 p-6">
-                {item.status === 'control' && <p className="rounded-lg bg-stone-100 px-3 py-2 text-sm text-stone-700">Ce courriel ne partira pas : ce donateur fait partie des 10 % mis de côté pour mesurer. Ses dons serviront de comparaison avec ceux des donateurs contactés.</p>}
+                {item.status === 'control' && <p className="rounded-lg bg-stone-100 px-3 py-2 text-sm text-stone-700">Ce courriel ne partira pas : ce donateur fait partie des donateurs mis de côté (environ 10 %) pour mesurer. Ses dons serviront de comparaison avec ceux des donateurs contactés.</p>}
                 <label className="block">
                   <span className="text-xs font-medium uppercase tracking-wide text-stone-400">Objet</span>
                   <input

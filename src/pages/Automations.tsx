@@ -50,7 +50,7 @@ export default function Automations() {
             <>Rien de nouveau cette semaine : les donateurs des listes ont déjà un courriel en attente, envoyé ou mis de côté{result.skipped > 0 ? `, ou ont été contactés il y a moins de ${CONTACT_COOLDOWN_DAYS} jours` : ''}.{' '}</>
           ) : (<>
           Listes de la semaine prêtes : <b>{result.drafted}</b> courriel{result.drafted > 1 ? 's' : ''} en attente de validation, <b>{result.sent}</b> envoyé{result.sent > 1 ? 's' : ''} automatiquement (simulé),{' '}
-          <b>{result.control}</b> donateur{result.control > 1 ? 's' : ''} mis de côté pour mesurer l'effet (10 %), {result.skipped} laissé{result.skipped > 1 ? 's' : ''} de côté cette semaine (déjà contacté{result.skipped > 1 ? 's' : ''} il y a moins de {CONTACT_COOLDOWN_DAYS} jours).{' '}
+          <b>{result.control}</b> donateur{result.control > 1 ? 's' : ''} mis de côté pour mesurer l'effet (environ 10 % en moyenne), {result.skipped} laissé{result.skipped > 1 ? 's' : ''} de côté cette semaine (déjà contacté{result.skipped > 1 ? 's' : ''} il y a moins de {CONTACT_COOLDOWN_DAYS} jours).{' '}
           </>)}
           <Link to="/campagnes" className="font-medium underline">Voir les courriels</Link>
         </div>
