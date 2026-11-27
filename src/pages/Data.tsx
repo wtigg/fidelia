@@ -3,7 +3,7 @@ import { CheckCircle2, Database, Download, FileUp, Mail, RefreshCw, Wand2, XCirc
 import { Badge, Button, Card, PageHeader } from '../components/ui.tsx'
 import { TechDetails } from '../components/plain/TechDetails.tsx'
 import { generateDemo } from '../data/generate.ts'
-import { download, exportDonations, exportDonors, exportEngagement, importCsv } from '../lib/csv.ts'
+import { download, exportDonations, exportDonors, exportEngagement, importCsv, toCsv } from '../lib/csv.ts'
 import { formatDate, fx } from '../lib/dates.ts'
 import { ACTION_LABELS } from '../lib/labels.ts'
 import { isOk, qualityReport, type QualityCheck } from '../lib/quality.ts'
@@ -11,11 +11,11 @@ import { useStore } from '../state/store.tsx'
 
 /** Étiquette simple de chaque famille de contrôle (le nom savant reste dans le détail) */
 const PLAIN_DIMENSION: Record<QualityCheck['dimension'], string> = {
-  Complétude: 'Manquant',
-  Validité: 'Erreur',
-  Unicité: 'Doublon',
-  Cohérence: 'Incohérent',
-  Actualité: 'À jour ?',
+  Complétude: 'Remplissage',
+  Validité: 'Valeurs',
+  Unicité: 'Doublons',
+  Cohérence: 'Cohérence',
+  Actualité: 'À jour',
   Accessibilité: 'Consentement',
 }
 
@@ -64,12 +64,12 @@ export default function Data() {
   }
 
   const exportScores = () => {
-    const header = 'donor_id,first_name,last_name,email,segment,probability,action,expected_value,reasons'
+    // point décimal et champs échappés : le fichier reste lisible par un tableur ou un CRM
     const rows = scores.map((s) => {
       const d = donorsById.get(s.donorId)!
-      return [s.donorId, d.firstName, d.lastName, d.email, s.segment, fx(s.actionProb, 3), s.action ? ACTION_LABELS[s.action] : '', s.expectedValue, `"${s.reasons.map((r) => r.text).join(' | ')}"`].join(',')
+      return { donor_id: s.donorId, first_name: d.firstName, last_name: d.lastName, email: d.email, segment: s.segment, probability: s.actionProb.toFixed(3), action: s.action ? ACTION_LABELS[s.action] : '', expected_value: s.expectedValue, reasons: s.reasons.map((r) => r.text).join(' | ') }
     })
-    download('fidelia-scores.csv', [header, ...rows].join('\n'))
+    download('fidelia-scores.csv', toCsv(rows))
   }
 
   const fileInput = (key: keyof typeof files, label: string, hint: string, required = true) => (
@@ -79,7 +79,7 @@ export default function Data() {
         <p className="text-sm font-medium text-stone-800">
           {label} {!required && <span className="font-normal text-stone-400">(optionnel)</span>}
         </p>
-        <p className="truncate text-xs text-stone-500">{files[key]?.name ?? hint}</p>
+        <p className="break-words text-xs text-stone-500">{files[key]?.name ?? hint}</p>
       </div>
       <input type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => setFiles({ ...files, [key]: e.target.files?.[0] })} />
     </label>
@@ -98,19 +98,19 @@ export default function Data() {
         </span>
       </div>
 
-      <Card className="mb-6" title="Qualité des données" subtitle="Fidélia vérifie votre fichier automatiquement, à chaque chargement.">
+      <Card className="mb-6" title="Qualité des données" subtitle={quality.every(isOk) ? 'Fidélia vérifie votre fichier à chaque chargement. Fichier utilisable : aucun contrôle en rouge, les petits écarts restent visibles ci-dessous.' : `Fidélia vérifie votre fichier à chaque chargement. ${quality.filter((c) => !isOk(c)).length} point(s) en rouge à vérifier.`}>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-sm">
+          <table className="w-full text-sm sm:min-w-[640px]">
             <tbody className="divide-y divide-stone-100">
               {quality.map((c) => {
                 const ok = isOk(c)
                 return (
                   <tr key={c.label}>
                     <td className="w-8 py-2.5 pl-5">{ok ? <CheckCircle2 className="size-4 text-brand-600" /> : <XCircle className="size-4 text-rose-500" />}</td>
-                    <td className="px-3 py-2.5"><span title={c.dimension} className="whitespace-nowrap rounded-md bg-stone-100 px-1.5 py-0.5 text-xs text-stone-600">{PLAIN_DIMENSION[c.dimension]}</span></td>
+                    <td className="hidden px-3 py-2.5 sm:table-cell"><span title={c.dimension} className="whitespace-nowrap rounded-md bg-stone-100 px-1.5 py-0.5 text-xs text-stone-600">{PLAIN_DIMENSION[c.dimension]}</span></td>
                     <td className="px-3 py-2.5 text-stone-700">{c.label}</td>
                     <td className="py-2.5 pr-5 text-right tabular-nums text-stone-900">
-                      {c.total > 1 ? `${c.value.toLocaleString('fr-CA')} / ${c.total.toLocaleString('fr-CA')} (${fx(((c.value / c.total) * 100), 1)} %)` : c.value}
+                      {c.total > 1 ? `${c.value.toLocaleString('fr-CA')} / ${c.total.toLocaleString('fr-CA')} (${fx(((c.value / c.total) * 100), 1)}\u00a0%)` : c.value}
                     </td>
                   </tr>
                 )
@@ -121,7 +121,7 @@ export default function Data() {
         <div className="border-t border-stone-100 px-5 py-3">
           <TechDetails label="Voir le détail">
             <p className="text-xs text-stone-500">
-              Les contrôles suivent les dimensions de qualité de Strong, Lee et Wang (1997) : complétude (Manquant), validité (Erreur), unicité (Doublon), cohérence, actualité et accessibilité (consentement).
+              Les contrôles suivent les dimensions de qualité de Strong, Lee et Wang (1997) : complétude (Remplissage), validité (Valeurs), unicité (Doublons), cohérence, actualité et accessibilité (consentement).
               Les autres dimensions (crédibilité, interprétabilité…) sont décrites dans la fiche des données du dépôt (docs/DATASHEET-synthetique.md).
             </p>
           </TechDetails>
@@ -142,7 +142,7 @@ export default function Data() {
               <ColumnList cols={COLUMNS.donations} />
               <p className="mt-2 text-xs font-medium text-stone-700">Ouverture des courriels (facultatif)</p>
               <ColumnList cols={COLUMNS.engagement} />
-              <p className="mt-2 text-xs text-stone-500">Les noms de colonnes restent en anglais : ce sont ceux qu'exportent la plupart des outils de dons. « Modèles de fichiers » télécharge un exemple complet.</p>
+              <p className="mt-2 text-xs text-stone-500">Les noms de colonnes restent en anglais : ce sont ceux qu'exportent la plupart des outils de dons. « Exemple complet » télécharge les 3 fichiers de la démo, au bon format.</p>
             </details>
             {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
             {ok && <p className="rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-800">{ok}</p>}
@@ -151,7 +151,7 @@ export default function Data() {
                 <FileUp className="size-4" /> Importer et entraîner
               </Button>
               <Button variant="ghost" onClick={() => { download('donateurs.csv', exportDonors(dataset)); download('dons.csv', exportDonations(dataset)); download('engagement.csv', exportEngagement(dataset)) }}>
-                <Download className="size-4" /> Modèles de fichiers
+                <Download className="size-4" /> Exemple complet (3 fichiers)
               </Button>
             </div>
             <p className="text-xs text-stone-400">Les fichiers sont lus dans votre navigateur et ne sont envoyés à aucun serveur.</p>
@@ -178,6 +178,22 @@ export default function Data() {
             <Button variant="secondary" onClick={() => { loadDataset(generateDemo(size, seed)); setOk(undefined) }}>
               <Wand2 className="size-4" /> Générer et réentraîner
             </Button>
+            <div className="border-t border-stone-100 pt-4">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  if (!confirm('Remettre la démo à zéro ? Courriels, réglages des listes et choix de modèle seront effacés.')) return
+                  try {
+                    for (const k of Object.keys(localStorage)) if (k.startsWith('fidelia:')) localStorage.removeItem(k)
+                  } catch { /* stockage indisponible */ }
+                  location.hash = '#/'
+                  location.reload()
+                }}
+              >
+                <RefreshCw className="size-4" /> Remettre la démo à zéro
+              </Button>
+              <p className="mt-1 text-xs text-stone-400">Revient aux 4 000 donateurs de démonstration et au modèle versionné, sans courriels ni réglages modifiés.</p>
+            </div>
           </div>
         </Card>
 

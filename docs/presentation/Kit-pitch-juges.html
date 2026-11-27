@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Kit pitch Fidélia</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,700&display=swap" rel="stylesheet">
+<style>
+@page { size: Letter; margin: 0.5in 0.55in 0.6in }
+:root { --forest:#0a2f1e; --g700:#0f5132; --g500:#1f7a4d; --g50:#eef7f1; --g100:#d5ecdd;
+  --gold:#f4c95d; --gold50:#fdf6e3; --red:#d61f45; --ink:#1c1917; --muted:#57534e; --line:#d6d3d1 }
+* { box-sizing: border-box }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact }
+body { font-family: Inter, Helvetica, Arial, sans-serif; color: var(--ink); background: #fff;
+  font-size: 12.5pt; line-height: 1.38; margin: 0 }
+h1 { font-family: Fraunces, Georgia, serif; font-weight: 700; color: var(--forest);
+  font-size: 25pt; line-height: 1.1; margin: 0 0 6pt; display: flex; align-items: center; gap: 10pt; flex-wrap: wrap }
+h3 { font-size: 13.5pt; color: var(--g700); margin: 12pt 0 5pt; text-transform: none }
+p { margin: 0 0 6pt }
+ul { margin: 0 0 6pt; padding-left: 16pt } li { margin: 2pt 0 }
+.lead { color: var(--muted); font-size: 12pt; margin-bottom: 8pt }
+.tag { font-family: Inter, sans-serif; font-size: 10.5pt; font-weight: 700; color: var(--forest);
+  background: var(--gold); border-radius: 20pt; padding: 3pt 10pt; letter-spacing: .3pt }
+table { width: 100%; border-collapse: collapse; margin: 4pt 0 8pt; page-break-inside: auto }
+tr { page-break-inside: avoid; break-inside: avoid }
+th { background: var(--forest); color: #fff; text-align: left; font-size: 11pt; padding: 5pt 7pt }
+td { border-bottom: 1px solid var(--line); padding: 5pt 7pt; vertical-align: top }
+tbody tr:nth-child(even) td { background: #fafaf9 }
+.p, .b { display: inline-block; font-size: 10pt; font-weight: 700; border-radius: 5pt; padding: 1.5pt 6pt; white-space: nowrap; line-height: 1.35 }
+.p { background: var(--g100); color: var(--g700); border: 1px solid #a9d6b9 }
+.p.ft { background: var(--gold50); color: #7a5300; border-color: #e8cf86 }
+.b { background: var(--red); color: #fff }
+.b::before { content: "\25B6\00a0"; font-size: 7pt; vertical-align: 1pt }
+.card { border: 1.5px solid var(--g100); background: var(--g50); border-radius: 10pt; padding: 8pt 12pt }
+.card h3 { margin-top: 0 }
+.cue { font-size: 19pt; line-height: 1.3 } .cue td { padding: 8pt 8pt } .cue td:first-child { width: 130pt }
+.cue .p, .cue .b { font-size: 14pt; padding: 3pt 9pt } .cue p { margin-top: 12pt }
+.warn { color: var(--red); font-weight: 700; font-size: 11pt; margin: 0 0 4pt }
+.check ul { list-style: none; padding-left: 2pt }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12pt; margin: 6pt 0 }
+.tip { background: var(--gold50); border-left: 5pt solid var(--gold); border-radius: 6pt; padding: 6pt 11pt; margin: 6pt 0; font-size: 11pt; break-inside: avoid }
+.tip p { margin: 0 0 3pt }
+.pb { break-after: page; height: 0 }
+.cover h1 { font-size: 28pt }
+.compact { font-size: 12pt } .compact td { padding: 5pt 7pt } .compact h3 { margin-top: 8pt }
+table.rot td:first-child { white-space: nowrap; width: 100pt } table.rot td { padding: 4pt 7pt } .check li { margin: 1pt 0 }
+.cover table td:first-child { font-weight: 700; color: var(--g700); width: 54pt }
+.map td:first-child { width: 150pt }
+/* pitch 2 min : plus gros, lisible à bout de bras */
+.pitch { font-size: 12.2pt; line-height: 1.26 }
+.pitch .tip { font-size: 11pt }
+.pitch td:first-child { width: 96pt }
+.pitch td { padding: 4pt 7pt }
+/* version complète : colonnes compactes */
+table.full td:nth-child(1) { width: 24pt; font-weight: 700; color: var(--g700) }
+table.full td:nth-child(2) { width: 36pt }
+table.full td:nth-child(3) { width: 92pt }
+table.full td:last-child { width: 34pt; color: var(--muted); font-size: 10.5pt; white-space: nowrap }
+table.full { font-size: 11.2pt } table.full td { padding: 4pt 6pt }
+table.short td:nth-child(1) { width: 18pt; font-weight: 700; color: var(--g700) }
+table.short td:nth-child(2) { width: 120pt }
+table.short td:last-child { width: 34pt; color: var(--muted); font-size: 10.5pt; white-space: nowrap }
+.qa p { margin: 0 0 7pt; break-inside: avoid; font-size: 12.4pt; line-height: 1.34 }
+.qa strong:first-child { display: inline; color: var(--forest); font-size: 12.8pt }
+.qa p > strong:first-child + br { display: block }
+table.cal td:nth-child(1) { width: 92pt; white-space: nowrap }
+table.cal td:nth-child(3) { width: 40pt }
+table.cal td:last-child { width: 18pt; text-align: center }
+table.cal { font-size: 11pt } table.cal td { padding: 3.5pt 6pt }
+.board-wrap { display: grid; grid-template-columns: 250pt 1fr; gap: 14pt; align-items: start; margin-top: 4pt }
+.board { position: relative; width: 250pt; height: 166.7pt; border: 3pt solid #8a6d3b; background: #c8a46a; border-radius: 3pt }
+.board .z { position: absolute; display: grid; place-items: center; text-align: center; font-size: 8.5pt; font-weight: 700; line-height: 1.2; border-radius: 2pt; padding: 2pt }
+.board .poster { left: 0; top: 0; width: 66.67%; height: 75%; background: var(--forest); color: #fff; font-size: 10pt }
+.board .poster small { font-weight: 500; font-size: 7.5pt; opacity: .85 }
+.board .canvas { left: 66.67%; top: 0; width: 33.33%; height: 41.7%; background: #fff; color: var(--g700); border: 1px solid var(--g100) }
+.board .fiche { left: 70%; top: 47%; width: 26.67%; height: 38%; background: var(--gold50); color: #7a5300 }
+.board .free { left: 0; top: 75%; width: 66.67%; height: 25%; background: transparent; color: #3b2a10; font-weight: 600; font-size: 7.5pt }
+code { font-size: 10.5pt; background: #f5f5f4; padding: 0 3pt; border-radius: 3pt }
+</style></head><body>
+<!-- Source du kit. PDF : python3 docs/presentation/build_kit.py (Markdown -> HTML -> PDF Letter, Chrome sans fenêtre). -->
+
+<div class="cover">
+<h1>Fidélia : kit de pitch pour les juges</h1>
+<p><strong>Session d'affiches, jeudi 3 décembre 2026, Atrium Hydro-Québec.</strong> Arrivée 15 h 15, juges dès 15 h 45 environ, 5 à 10 min par équipe.<br />
+<strong>Équipe 4 :</strong> Geoffrey Carel, Juliette Ponce, Juliette Violon, Paul Soubigou.</p>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Contenu</th>
+<th>Quand l'utiliser</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2</td>
+<td><strong>Aide-mémoire</strong> : repères sur l'affiche, mots à dire</td>
+<td>Avant chaque juge</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Pitch 2 minutes</strong></td>
+<td>Une seule personne, n'importe qui, à tout moment</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>Carte-repère</strong> en gros caractères</td>
+<td>À garder en main</td>
+</tr>
+<tr>
+<td>5-6</td>
+<td><strong>Version complète 5 à 7 min</strong>, rôles A et B</td>
+<td>Un juge qui a le temps</td>
+</tr>
+<tr>
+<td>7</td>
+<td><strong>Version courte 3 min</strong></td>
+<td>Un juge pressé</td>
+</tr>
+<tr>
+<td>8-10</td>
+<td><strong>17 questions probables</strong> et nos réponses</td>
+<td>Après le pitch</td>
+</tr>
+<tr>
+<td>11-12</td>
+<td><strong>Logistique</strong> : dates, babillard, matériel, rotation</td>
+<td>Avant et pendant</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="grid2">
+<div class="card">
+<h3>La grille des juges (15 points)</h3>
+<ul>
+<li><strong>Clarté (4)</strong> : une idée par phrase, zéro jargon.</li>
+<li><strong>Qualité des arguments (3)</strong> : un chiffre, puis sa source.</li>
+<li><strong>Usage de l'affiche (3)</strong> : chaque phrase pointe un bloc.</li>
+<li><strong>Appréciation globale (5)</strong> : on dit aussi où l'IA ne gagne pas.</li>
+</ul>
+</div>
+<div class="card">
+<h3>Le message en une phrase</h3>
+<p><strong>Fidélia dit à une petite équipe qui relancer, remercier ou solliciter en premier, et ne garde l'IA que là où elle fait mieux que la méthode habituelle.</strong></p>
+</div>
+</div>
+<div class="pb"></div>
+
+<h1>Aide-mémoire <span class="tag">à relire avant chaque juge</span></h1>
+<div class="compact">
+<h3>Repères sur l'affiche</h3>
+<div class="map">
+<table>
+<thead>
+<tr>
+<th>Repère</th>
+<th>Où sur l'affiche</th>
+<th>Ce qu'on y montre</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="p">Bandeau</span></td>
+<td>En haut</td>
+<td>Fidélia, la question, <strong>43,3 %</strong></td>
+</tr>
+<tr>
+<td><span class="p">Bloc 1</span></td>
+<td>Colonne gauche, « Avant »</td>
+<td>Sophie, 2 heures, 4 000 donateurs</td>
+</tr>
+<tr>
+<td><span class="p">Bloc 2</span></td>
+<td>Colonne centre, « Avec Fidélia »</td>
+<td>Les 4 étapes, la fiche du donateur (35 %)</td>
+</tr>
+<tr>
+<td><span class="p">Bloc 3</span></td>
+<td>Colonne droite, « Résultat »</td>
+<td>3 modèles sur 4, les 4 barres, la ligne 18 824, le <strong>×3</strong> (liste Relancer), les garde-fous</td>
+</tr>
+<tr>
+<td><span class="p">Pied</span></td>
+<td>Bande jaune du bas</td>
+<td>Coûts, revenus, feuille de route, QR « Essayez la démo »</td>
+</tr>
+<tr>
+<td><span class="b">Démo 1</span> <span class="b">Démo 2</span> <span class="b">Démo 3</span></td>
+<td>Badges rouges</td>
+<td>Fiche donateur, ×3, garde-fous : à montrer dans l'application</td>
+</tr>
+<tr>
+<td><span class="p ft">Fiche</span></td>
+<td>Sur la table</td>
+<td>Fiche technique : chiffres détaillés, à tendre au juge</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3>Les mots à dire</h3>
+<table>
+<thead>
+<tr>
+<th>Ne pas dire</th>
+<th>Dire</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AUC-PR</td>
+<td>précision pour trouver les bons donateurs</td>
+</tr>
+<tr>
+<td>RFM</td>
+<td>méthode habituelle (dernier don, fréquence, montant)</td>
+</tr>
+<tr>
+<td>R1 et R2</td>
+<td>nos deux conditions pour utiliser l'IA</td>
+</tr>
+<tr>
+<td>gradient boosting, régression logistique</td>
+<td>modèle qui apprend des dons passés</td>
+</tr>
+<tr>
+<td>attrition, churn</td>
+<td>arrêter son don</td>
+</tr>
+<tr>
+<td>IC 95 %, bootstrap, Brier</td>
+<td>rien ; si un juge insiste : la fiche technique</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pb"></div>
+
+<div class="pitch">
+<h1>Pitch 2 minutes <span class="tag">une seule personne</span></h1>
+<p class="lead">Chacun le connaît par cœur. Debout à côté de l'affiche, la main sur le bloc nommé à gauche. Environ 270 mots, ton calme.</p>
+<table>
+<thead>
+<tr>
+<th>Pointer</th>
+<th>Dire</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="p">Bandeau</span></td>
+<td>« Bonjour, nous sommes l'équipe Fidélia. Sur 100 donateurs d'un organisme, combien redonnent l'année suivante ? Moins de la moitié : <strong>43,3 %</strong>. Or, aller chercher un dollar chez un donateur fidèle coûte <strong>jusqu'à 7 fois moins cher</strong> que chez un nouveau, selon l'Université d'État de l'Arizona. »</td>
+</tr>
+<tr>
+<td><span class="p">Bloc 1</span></td>
+<td>« Voici Sophie. Elle s'occupe des dons dans un petit organisme. Elle a <strong>2 heures par semaine</strong> pour <strong>4 000 donateurs</strong>. Sa question : par qui je commence ? »</td>
+</tr>
+<tr>
+<td><span class="p">Bloc 2</span></td>
+<td>« Fidélia lit l'historique des dons et lui donne chaque lundi une courte liste : qui relancer, qui remercier, qui solliciter. »</td>
+</tr>
+<tr>
+<td><span class="b">Démo 1</span></td>
+<td>« Pour chaque nom, la raison en mots simples. Ce donateur a <strong>35 %</strong> de risque d'arrêter son don mensuel : dernier don il y a 101 jours, 3 paiements échoués. Sophie relit, approuve, et le courriel part. <strong>Rien ne part sans elle.</strong> »</td>
+</tr>
+<tr>
+<td><span class="p">Bloc 3</span> titre et barres</td>
+<td>« Notre différence : l'IA doit faire <strong>2 fois mieux que le hasard</strong> et <strong>mieux que la méthode habituelle</strong> (dernier don, fréquence, montant). Chaque barre : combien de fois mieux que cette méthode. Relancer, proposer le mensuel, réactiver : <strong>près de 3 fois mieux</strong>, elle est utilisée. Solliciter plus, en orange : à peine mieux, on garde la méthode habituelle. C'est le <strong>3 sur 4</strong> du titre, sur nos donateurs fictifs. »</td>
+</tr>
+<tr>
+<td><span class="b">Démo 2</span></td>
+<td>« Autre chiffre : même effort, 300 contacts, la liste Relancer vise environ <strong>3 fois plus</strong> de dons menacés. Donateurs fictifs. »</td>
+</tr>
+<tr>
+<td><span class="p">Bloc 3</span> ligne 18 824</td>
+<td>« Ces donateurs sont fictifs. On a donc aussi testé la méthode sur <strong>18 824 vrais donateurs</strong>. L'IA gagne pour repérer qui donnera plus que son dernier don. Pour faire revenir les anciens, pas encore : d'où le mot <strong>à l'essai</strong> sous « Réactiver ». Sophie décide. »</td>
+</tr>
+<tr>
+<td><span class="p">Pied</span></td>
+<td>« Bâtir la première version : <strong>30 000 à 33 000 $</strong>, pilote et réserve compris. Pour un organisme : <strong>99 $ par mois</strong>. »</td>
+</tr>
+<tr>
+<td><span class="p">Pied</span> QR</td>
+<td>« Voulez-vous voir la démo ? Sinon, le code QR vous permet de l'essayer sur votre téléphone. »</td>
+</tr>
+</tbody>
+</table>
+<div class="tip">
+<p><strong>Oui à la démo :</strong> B prend l'ordinateur, page 5 dès la ligne B1 (page 7 si le juge est pressé). <strong>Le juge coupe :</strong> « En une ligne : l'IA seulement là où elle fait nettement mieux que la méthode habituelle. » <strong>Ne jamais dire</strong> « l'IA augmente les dons » : on mesure le ciblage.</p>
+</div>
+</div>
+<div class="pb"></div>
+
+<div class="cue">
+<h1>Carte-repère <span class="tag">à garder en main</span></h1>
+<table>
+<thead>
+<tr>
+<th>Pointer</th>
+<th>Mot-clé</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="p">Bandeau</span></td>
+<td><strong>43,3 %</strong> redonnent ; jusqu'à <strong>7 fois</strong> moins cher</td>
+</tr>
+<tr>
+<td><span class="p">Bloc 1</span></td>
+<td>Sophie : <strong>2 h</strong>, <strong>4 000</strong> donateurs</td>
+</tr>
+<tr>
+<td><span class="p">Bloc 2</span></td>
+<td>Liste du lundi : relancer, remercier, solliciter</td>
+</tr>
+<tr>
+<td><span class="b">Démo 1</span></td>
+<td><strong>35 %</strong>, 3 raisons, Sophie valide</td>
+</tr>
+<tr>
+<td><span class="p">Bloc 3</span></td>
+<td>4 barres : l'IA gagne <strong>3 modèles sur 4</strong> ; 2 × le hasard <strong>et</strong> mieux que la méthode habituelle</td>
+</tr>
+<tr>
+<td><span class="b">Démo 2</span></td>
+<td><strong>×3</strong> pour Relancer, même effort, fictif</td>
+</tr>
+<tr>
+<td><span class="p">Bloc 3</span></td>
+<td><strong>18 824</strong> vrais : gagne 1 question sur 2 ; réactivation <strong>à l'essai</strong></td>
+</tr>
+<tr>
+<td><span class="b">Démo 3</span></td>
+<td>Humain valide, 1 courriel / 30 jours</td>
+</tr>
+<tr>
+<td><span class="p">Pied</span></td>
+<td><strong>30 à 33 k$</strong>, <strong>99 $/mois</strong>, <strong>35</strong> clients</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Secours :</strong> « L'IA seulement là où elle fait nettement mieux que la méthode habituelle. Un humain décide toujours. »</p>
+</div>
+<div class="pb"></div>
+
+<h1>Version complète 5 à 7 min <span class="tag">2 personnes</span></h1>
+<p class="lead"><b>A</b> = histoire, problème, affiche (debout à côté de l'affiche). <b>B</b> = démo (à l'ordinateur, écran tourné vers le juge). Avant l'arrivée du juge : application ouverte sur le tableau de bord, bouton « Visite guidée » visible. N'importe quelle paire peut jouer A et B.</p>
+
+<table class="full">
+<thead>
+<tr>
+<th>#</th>
+<th>Qui</th>
+<th>Pointer</th>
+<th>Dire et faire</th>
+<th>Durée</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A1</td>
+<td><strong>A</strong></td>
+<td><span class="p">Bandeau</span></td>
+<td>« Moins d'un donateur sur deux redonne l'année suivante : <strong>43,3 %</strong>. Aller chercher un dollar chez un donateur fidèle coûte jusqu'à 7 fois moins cher que chez un nouveau, selon l'Université d'État de l'Arizona (2023). »</td>
+<td>20 s</td>
+</tr>
+<tr>
+<td>A2</td>
+<td><strong>A</strong></td>
+<td><span class="p">Bloc 1</span></td>
+<td>« Selon un sondage de CanadaHelps, plus de la moitié des organismes de moins de 1 M$ de revenus confient leurs données à quelqu'un qui n'a ni formation ni mandat pour ça. C'est Sophie : <strong>2 heures par semaine, 4 000 donateurs</strong>. Par qui commencer ? »</td>
+<td>25 s</td>
+</tr>
+<tr>
+<td>A3</td>
+<td><strong>A</strong></td>
+<td><span class="p">Bloc 2</span> 4 étapes</td>
+<td>« Fidélia lit l'historique des dons. L'IA classe et explique. L'équipe valide. Le courriel est prêt. Je laisse [prénom de B] vous montrer. »</td>
+<td>15 s</td>
+</tr>
+<tr>
+<td>B1</td>
+<td><strong>B</strong></td>
+<td><span class="p">Bloc 1</span></td>
+<td>Cliquer sur <strong>« Visite guidée »</strong>. Étape 1, tableau de bord : « 4 000 donateurs fictifs. En haut, la valeur des dons mensuels à risque. » Lire le montant affiché.</td>
+<td>25 s</td>
+</tr>
+<tr>
+<td>B2</td>
+<td><strong>B</strong></td>
+<td><span class="p">Bloc 2</span></td>
+<td>« Suivant ». Étape 2, recommandations : « Fidélia dit par où commencer : qui relancer, qui remercier, qui solliciter. Les plus utiles sont en haut. »</td>
+<td>20 s</td>
+</tr>
+<tr>
+<td>B3</td>
+<td><strong>B</strong></td>
+<td><span class="b">Démo 1</span></td>
+<td>« Suivant ». Étape 3, fiche : montrer le risque, les 3 raisons, les paiements échoués en rouge sur 24 mois. « Le modèle explique sa décision. <strong>Vous décidez</strong> ; un clic prépare le courriel. » <strong>A</strong> pointe la fiche du donateur sur l'affiche.</td>
+<td>50 s</td>
+</tr>
+<tr>
+<td>B4</td>
+<td><strong>B</strong></td>
+<td><span class="b">Démo 2</span></td>
+<td>« Suivant ». Étape 4, impact : curseur « Donateurs contactés » à 300, puis glisser à 100. « Regardez la petite ligne : pour la liste Relancer, <strong>3,1 fois plus</strong> de dons menacés visés, même effort, quel que soit l'effet des courriels. C'est le ×3 de l'affiche. Avec 100 contacts, 6,1 fois. Donateurs fictifs. Le grand total au-dessus suppose un effet des courriels, réglable ici. »</td>
+<td>50 s</td>
+</tr>
+<tr>
+<td>A4</td>
+<td><strong>A</strong></td>
+<td><span class="p">Bloc 3</span> titre et barres</td>
+<td>« Chaque barre dit combien de fois l'IA trouve mieux les bons donateurs que la méthode habituelle. Notre règle : l'IA seulement si elle bat la méthode habituelle, <strong>et</strong> fait au moins 2 fois mieux que le hasard (la phrase en vert au-dessus des barres). Vert, 3 modèles sur 4 : l'IA est utilisée. Orange, solliciter plus : ×1,2 seulement, on garde la méthode habituelle. » <strong>B</strong> peut passer l'étape 5 (Modèle IA) ou la sauter.</td>
+<td>40 s</td>
+</tr>
+<tr>
+<td>A5</td>
+<td><strong>A</strong></td>
+<td><span class="p">Bloc 3</span> ligne 18 824</td>
+<td>« Nos données sont fictives, faute de vraies données d'organisme. On a donc testé la méthode sur <strong>18 824 vrais donateurs</strong> : l'IA gagne pour repérer qui donnera plus que son dernier don. Pour la réactivation, elle bat la méthode habituelle, mais <strong>pas assez le hasard</strong> : sur ces vrais donateurs, notre règle dit non. Voilà pourquoi, dans l'application, la réactivation reste <strong>à l'essai</strong>. »</td>
+<td>30 s</td>
+</tr>
+<tr>
+<td>B5</td>
+<td><strong>B</strong></td>
+<td><span class="b">Démo 3</span></td>
+<td>Étape 6, Courriels : brouillon prêt. « Le courriel parle de la carte expirée, <strong>sans montant inventé</strong>. Je relis, j'approuve, j'envoie. Rien ne part sans un humain. Au plus un courriel par 30 jours. »</td>
+<td>40 s</td>
+</tr>
+<tr>
+<td>A6</td>
+<td><strong>A</strong></td>
+<td><span class="p ft">Fiche</span> encadré Équité</td>
+<td>Tendre la fiche technique. « Un point à surveiller : pour proposer le don mensuel, le modèle choisit <strong>1,8 fois plus souvent les 70 ans et plus</strong>. L'âge n'est pas utilisé, mais d'autres indices le reflètent. On le mesure, et on le revérifiera sur de vraies données. »</td>
+<td>25 s</td>
+</tr>
+<tr>
+<td>A7</td>
+<td><strong>A</strong></td>
+<td><span class="p">Pied</span></td>
+<td>« Bâtir la première version : <strong>30 000 à 33 000 $</strong>, en 2 mois, pilote et réserve compris. <strong>99 $ par mois</strong> par organisme, rentable vers <strong>35 clients</strong>. Le pilote se fait avec 2 organismes et leurs vraies données. »</td>
+<td>25 s</td>
+</tr>
+<tr>
+<td>A8</td>
+<td><strong>A + B</strong></td>
+<td><span class="p">Bloc 3</span> titre</td>
+<td><strong>B :</strong> « Simple, mesurable, responsable. » <strong>A :</strong> « Et un humain décide toujours. Avez-vous des questions ? »</td>
+<td>10 s</td>
+</tr>
+</tbody>
+</table>
+<div class="tip">
+<p><strong>Total : environ 6 min.</strong> Trop long ? Sauter A6 et dire B1 en une phrase (6 min devient 5). Le juge reste ? Ajouter l'étape 5 de la visite, onglets « Hausse du don » et « Données réelles » (1 min).<br />
+<strong>Si l'application plante :</strong> A continue sur l'affiche (pitch 2 min, lignes Démo 1 et Démo 2) ; B lance la vidéo de secours sur le bureau.<br />
+<strong>Rôles :</strong> celui qui ne parle pas pointe et tient le temps (signe à 1 min de la fin).</p>
+</div>
+<div class="pb"></div>
+
+<h1>Version courte 3 min <span class="tag">juge pressé</span></h1>
+<p class="lead">Sans visite guidée : on va droit à la fiche et à l'impact. Une personne peut la faire seule ; à deux, A parle, B clique.</p>
+
+<table class="short">
+<thead>
+<tr>
+<th>#</th>
+<th>Pointer</th>
+<th>Dire et faire</th>
+<th>Durée</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><span class="p">Bandeau</span> + <span class="p">Bloc 1</span></td>
+<td>« Moins d'un donateur sur deux redonne l'année suivante. Sophie a 2 heures par semaine pour 4 000 donateurs. Fidélia lui dit par qui commencer. »</td>
+<td>20 s</td>
+</tr>
+<tr>
+<td>2</td>
+<td><span class="b">Démo 1</span></td>
+<td>Dans l'application : <strong>Visite guidée</strong>, puis 2 fois « Suivant » : la fiche du donateur de l'affiche s'ouvre seule. « 35 % de risque d'arrêter son don. Les raisons : dernier don il y a 101 jours, 3 paiements échoués. Un clic prépare le courriel ; Sophie valide. »</td>
+<td>45 s</td>
+</tr>
+<tr>
+<td>3</td>
+<td><span class="b">Démo 2</span></td>
+<td>« Suivant » : page <strong>Impact</strong>, curseur sur 300. « Même effort : la liste Relancer vise environ <strong>3 fois plus</strong> de dons menacés que la méthode habituelle. Donateurs fictifs. »</td>
+<td>30 s</td>
+</tr>
+<tr>
+<td>4</td>
+<td><span class="p">Bloc 3</span> barres + ligne 18 824</td>
+<td>« L'IA n'est utilisée que si elle fait 2 fois mieux que le hasard et mieux que la méthode habituelle : 3 modèles sur 4. Sur 18 824 vrais donateurs, elle gagne pour repérer qui donnera plus, pas encore pour faire revenir les anciens : ce modèle reste à l'essai. On le dit. »</td>
+<td>35 s</td>
+</tr>
+<tr>
+<td>5</td>
+<td><span class="b">Démo 3</span></td>
+<td>« Un humain valide chaque envoi, un courriel au plus par 30 jours. Le droit de refuser le profilage (Loi 25) est prévu dans la V1, avant tout vrai donateur. »</td>
+<td>20 s</td>
+</tr>
+<tr>
+<td>6</td>
+<td><span class="p">Pied</span> + <span class="p ft">Fiche</span></td>
+<td>« 30 000 à 33 000 $ pour la première version, pilote compris, 99 $ par mois. Tous les chiffres sont sur cette fiche, et le QR ouvre la démo. Merci ! » Tendre la fiche technique.</td>
+<td>20 s</td>
+</tr>
+</tbody>
+</table>
+<div class="tip">
+<p><strong>Moins de 2 minutes ?</strong> Lignes 1, 2, 4 et 6 seulement.<br />
+<strong>Le juge part avant la fin ?</strong> Lui tendre la fiche technique et montrer le QR : « Tout est là, la démo aussi. »</p>
+</div>
+<h3>La phrase de secours, si on perd le fil</h3>
+<p>« L'idée tient en une ligne : <strong>l'IA seulement là où elle fait nettement mieux que la méthode habituelle et que le hasard</strong>. Ici, 3 modèles sur 4, et un humain valide chaque envoi. »</p>
+<div class="pb"></div>
+
+<h1>17 questions probables <span class="tag">2-3 phrases chacune</span></h1>
+<p class="lead">20 secondes par réponse, puis pointer le repère indiqué. Ne pas savoir n'est pas grave : « On ne l'a pas mesuré ; voici ce qu'on ferait. »</p>
+
+<div class="qa">
+<p><strong>1. Pourquoi ne pas simplement utiliser ChatGPT ?</strong><br />
+ChatGPT écrit bien, mais il ne sait pas quel donateur va partir : ce n'est pas fait pour classer des milliers de fiches de dons. Notre modèle apprend des dons passés de l'organisme, donne toujours la même réponse, ne coûte presque rien et les données restent hébergées au Canada. En V2, un modèle de langage ouvert, hébergé au Canada, reformulera les courriels, toujours relus par un humain.</p>
+<p><strong>2. Vos données sont fausses ?</strong> <span class="p">Pied</span> sources<br />
+Oui : nous n'avions pas accès aux données d'un vrai organisme. On a donc testé la méthode sur 5 autres jeux fictifs, où l'IA est retenue dans 15 cas sur 20, et sur <strong>18 824 vrais donateurs</strong> d'une base publique américaine (KDD Cup 1998), où elle passe pour une question sur deux. Et on le dit : sur des données fictives, le modèle retrouve d'abord les règles qu'on a nous-mêmes mises dedans.</p>
+<p><strong>3. Où l'IA ne gagne-t-elle pas ?</strong> <span class="p">Bloc 3</span> barre orange + ligne 18 824<br />
+Deux fois. Sur nos données fictives, pour « solliciter plus », elle fait à peine mieux (×1,2) : l'outil garde la méthode habituelle. Sur les vrais donateurs, pour la réactivation, elle bat la méthode habituelle (profit net de 2 133 $ contre 1 413 $ avec 20 % des envois), mais ne fait pas 2 fois mieux que le hasard, et à gros volume la méthode habituelle fait même un peu mieux : sur ces données, notre règle dit non. Dans l'application, ce modèle est donc marqué « à l'essai » : il reste en vert parce qu'il remplit nos deux conditions sur nos données fictives, mais Sophie voit l'avertissement, et le pilote tranchera.</p>
+<p><strong>4. Vous dites « solliciter plus » en orange, mais l'IA gagne pour « don plus élevé » sur vrais donateurs ?</strong><br />
+Ce ne sont pas les mêmes questions. Sur l'affiche, « solliciter plus » veut dire : un donateur mensuel va-t-il augmenter son prélèvement ? Sur la base réelle, c'est : un donateur inactif donnera-t-il plus que son dernier don ? D'où la règle : chaque liste doit regagner sa place sur les données de chaque organisme.</p>
+<p><strong>5. Un organisme de 3 personnes a-t-il assez de données ?</strong><br />
+Il faut environ 100 cas par liste, par exemple 100 départs de donateurs. Un organisme de 300 donateurs mensuels en voit environ 20 par trimestre : il lui faut environ 5 trimestres d'historique. En dessous, l'outil classe automatiquement avec la méthode habituelle, et avec très peu de cas, la liste n'est pas proposée.</p>
+<p><strong>6. Le modèle est-il juste envers les aînés ?</strong> <span class="p ft">Fiche</span> encadré Équité<br />
+Pour proposer le don mensuel, il choisit <strong>1,8 fois plus souvent les 70 ans et plus</strong> (entre 1,5 et 2,1 selon nos tests ; notre seuil d'alerte est 1,5). L'âge n'est pas utilisé, mais d'autres indices le reflètent. Avant tout envoi réel, une personne responsable doit plafonner leur part ou accepter l'écart par écrit ; on le revérifiera sur de vraies données au pilote.</p>
+<p><strong>7. Et la Loi 25 ?</strong> <span class="b">Démo 3</span><br />
+Classer des donateurs, c'est du profilage : il faut les informer et leur laisser le droit de refuser. La V1 prévoit ce droit (le donateur sort de toutes les listes), l'accès, la suppression, l'effacement des scores après 24 mois, et un hébergement à Montréal. Le prototype n'a pas encore ce bouton, mais ses données ne quittent jamais l'ordinateur ; ce sera prêt avant de toucher à de vrais donateurs.</p>
+<p><strong>8. Combien ça coûte, et est-ce rentable ?</strong> <span class="p">Pied</span> Coûts et Revenus<br />
+<strong>30 000 à 33 000 $</strong> pour la V1 : 2 mois de travail, le pilote et une réserve, car le prototype existe déjà. Puis environ 28 000 $ par an de support et d'obligations légales. À <strong>99 $ par mois</strong>, c'est rentable vers <strong>35 clients</strong>, ou 55 à 59 si le support coûte le double. Au Québec, environ 6 000 organismes de bienfaisance ont entre 100 000 $ et 1 M$ de revenus : 35 clients, c'est environ 0,6 % d'entre eux. Honnêtement, une subvention ou une fédération d'organismes est plus réaliste qu'une vente client par client.</p>
+<p><strong>9. Pourquoi ne pas acheter Dataro ou Bloomerang ?</strong> <span class="p">Pied</span> Revenus<br />
+Sur l'affiche, le 125 $ est le prix de départ de Bloomerang. Dataro commence à 15 000 $ par an, hors de portée d'un petit organisme. Bloomerang a son IA avancée sur devis, et Keela coûte 164 à 489 $ par mois. Surtout, aucun ne publie s'il fait mieux que la méthode habituelle ni ne retire son modèle quand il ne gagne pas ; Fidélia, en français, le mesure et l'affiche.</p>
+<p><strong>10. Et si le modèle se trompe, ou se dégrade ?</strong><br />
+À chaque nouvel entraînement, il doit remplir nos deux conditions ; sinon, l'outil revient tout seul à la méthode habituelle. On surveille chaque semaine, on réentraîne chaque trimestre et on peut revenir à la version précédente. Et une erreur ne part jamais seule : un humain relit chaque courriel.</p>
+<p><strong>11. Quelle place pour l'humain ?</strong> <span class="b">Démo 3</span><br />
+Fidélia suggère, l'équipe décide : rien ne part sans validation. Elle fixe le seuil et le ton, voit les 3 raisons de chaque choix pour pouvoir contester, et chaque donateur reçoit au plus un courriel par 30 jours, seulement s'il a accepté de recevoir des courriels.</p>
+<p><strong>12. Comment savoir qu'un courriel fait vraiment revenir les dons ?</strong> <span class="b">Démo 2</span><br />
+On ne le sait pas encore, et on le dit : le ×3 mesure qui on vise, pas les dons récupérés. L'effet d'un courriel est une hypothèse, réglable dans l'application. Environ 10 % des donateurs ciblés sont mis de côté et ne reçoivent rien ; un seul petit organisme est trop petit pour conclure, il faudra regrouper les témoins d'environ 40 organismes.</p>
+<p><strong>13. Peut-on refaire vos résultats ?</strong><br />
+Oui. Après avoir construit l'image Docker, une seule commande relance nos 25 tests, réentraîne le modèle et retrouve exactement nos chiffres enregistrés. Elle tourne automatiquement à chaque mise à jour du code, et nos modèles ont été vérifiés contre la bibliothèque de référence scikit-learn.</p>
+<p><strong>14. Quelles sont les prochaines étapes ?</strong> <span class="p">Pied</span> Feuille de route<br />
+D'abord la V1 en 2 mois : vrais envois de courriels, comptes protégés, Loi 25. Puis un pilote de 3 mois avec 2 organismes et leurs vraies données. On continue seulement si, chez chacun, au moins une liste remplit nos deux conditions et si l'équipe s'en sert chaque semaine ; la V2 ajoutera la rédaction assistée des courriels.</p>
+<p><strong>15. Si c'était à refaire ?</strong><br />
+Nos seuils n'ont pas bougé, mais on a changé trois façons de les tester après avoir vu des résultats ; on l'a déclaré, mais on fixerait tout dès le départ. On chercherait plus tôt un vrai organisme partenaire, car le fictif ne remplace pas le réel. Et on calculerait plus tôt la quantité de données nécessaire : c'est souvent elle qui bloque, pas l'algorithme.</p>
+<p><strong>16. Vos 43,3 % sont américains. Et au Québec ?</strong> <span class="p">Bandeau</span><br />
+Le chiffre vient du Fundraising Effectiveness Project : 15 102 organismes américains, données 2025. C'est notre meilleure source publique ; pour le Québec, le pilote vérifiera nos modèles sur les vraies données de 2 organismes.</p>
+<p><strong>17. Quel modèle, exactement ?</strong> <span class="p ft">Fiche</span><br />
+Deux modèles simples qui apprennent des dons passés : l'un pèse chaque signal, l'autre enchaîne des questions oui ou non (des arbres de décision), et parfois les deux combinés. On choisit le meilleur sur des donateurs mis de côté, puis on le teste sur d'autres qu'il n'a jamais vus. Pas de carte graphique, quelques secondes de calcul ; le détail est sur la fiche technique.</p>
+</div>
+<div class="tip">
+<p><strong>Chiffres techniques demandés ?</strong> Tendre la fiche technique (précision du modèle, intervalles, robustesse 15 sur 20), ou ouvrir « Voir le détail » dans l'application.</p>
+</div>
+<div class="pb"></div>
+
+<h1>Logistique <span class="tag">qui fait quoi, quand</span></h1>
+<h3>Calendrier</h3>
+<p class="warn">À remplir avant impression : un responsable par ligne [nom].</p>
+
+<table class="cal">
+<thead>
+<tr>
+<th>Date</th>
+<th>À faire</th>
+<th>Qui</th>
+<th>✓</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Ven 27 nov.</strong></td>
+<td>Affiche finale validée par les 4 (PDF 48 × 36 po). Code QR scanné sur l'écran avec 2 téléphones (iPhone et Android).</td>
+<td>Tous</td>
+<td>☐</td>
+</tr>
+<tr>
+<td><strong>Lun 30 nov.</strong></td>
+<td><strong>Commander l'impression</strong> à la reprographie (RC, édifice Côte-Sainte-Catherine) : affiche 48 × 36 po, couleur ; canevas d'IA en 24 × 20 po ; <strong>15 fiches techniques</strong> lettre couleur ; 2 copies de ce kit. Demander le délai et l'heure de retrait.</td>
+<td>[nom]</td>
+<td>☐</td>
+</tr>
+<tr>
+<td><strong>Mar 1er déc.</strong></td>
+<td><strong>Date limite de commande</strong> (au moins 24 h avant le 3). Le 30, faire confirmer le délai par la reprographie ; s'il dépasse 24 h, commander le 30 avant midi.</td>
+<td>[nom]</td>
+<td>☐</td>
+</tr>
+<tr>
+<td><strong>Mar 1er déc.</strong></td>
+<td>Vidéo de secours finale (visite guidée + voix) copiée sur le bureau des 2 ordinateurs et sur une clé USB.</td>
+<td>[nom]</td>
+<td>☐</td>
+</tr>
+<tr>
+<td><strong>Mer 2 déc.</strong></td>
+<td>Retirer les impressions et vérifier : couleurs, chiffres lisibles à 2 m, QR scanné <strong>sur le papier</strong>.</td>
+<td>[nom]</td>
+<td>☐</td>
+</tr>
+<tr>
+<td><strong>Mer 2 déc.</strong></td>
+<td>Répétition : chacun dit le pitch 2 min seul ; 2 passages chronométrés de la version complète, en changeant les paires.</td>
+<td>Tous</td>
+<td>☐</td>
+</tr>
+<tr>
+<td><strong>Jeu 3 déc., 15 h 15</strong></td>
+<td>Arrivée, montage du babillard, test de la démo hors ligne.</td>
+<td>Tous</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3>Le babillard (72 × 48 po) et l'affiche (48 × 36 po)</h3>
+<div class="board-wrap">
+<div aria-label="Plan du babillard" class="board">
+<div class="z poster">Affiche 48 × 36 po<br><small>à gauche, bord haut aligné en haut</small></div>
+<div class="z canvas">Canevas d'IA<br>24 × 20 po</div>
+<div class="z fiche">Fiche technique<br>épinglée + pochette de copies</div>
+<div class="z free">Bande libre 48 × 12 po : laisser vide (de l'air) ou noms de l'équipe en grand</div>
+</div>
+<div class="board-txt">
+<ul>
+<li>L'affiche ne prend que les 2/3 de la largeur : <strong>12 po libres en bas, 24 po à droite</strong>.</li>
+<li><strong>Colonne droite :</strong> en haut, le <strong>canevas d'IA</strong> imprimé en 24 × 20 po (<code>docs/canevas/canevas.png</code>, rapport 1,2 pour 1) ; dessous, une <strong>fiche technique épinglée</strong> et une pochette avec les copies à emporter.</li>
+<li>Garder les fiches techniques sur la table, à tendre aux juges.</li>
+<li>Apporter punaises et ruban adhésif (vérifier s'ils sont fournis).</li>
+</ul>
+</div>
+</div>
+<div class="pb"></div>
+
+<h3>Le matériel</h3>
+<div class="grid2 check">
+<div>
+<ul>
+<li>☐ Ordinateur de démo <strong>chargé à 100 %</strong> + chargeur + petite rallonge (la table a une prise).</li>
+<li>☐ 2e ordinateur, avec la démo et la vidéo, en secours.</li>
+<li>☐ <strong>Démo hors ligne</strong>, testée Wi-Fi coupé le mer 2 déc. : <code>npm run build &amp;&amp; npm run preview</code>, puis <code>http://localhost:4173</code> (garder <code>node_modules</code>). Hors ligne, les polices changent un peu : normal. En ligne : wtigg.github.io/fidelia.</li>
+<li>☐ <strong>Vidéo de secours</strong> sur le bureau, testée en lecture hors ligne ; copie sur clé USB.</li>
+<li>☐ Navigateur en plein écran, zoom 125 %, un seul onglet, notifications coupées, son coupé.</li>
+</ul>
+</div>
+<div>
+<ul>
+<li>☐ Application remise sur le tableau de bord avant chaque juge (visite guidée prête). Si des courriels ont été préparés : page <strong>Données</strong>, « Remettre la démo à zéro ».</li>
+<li>☐ Code QR testé sur l'affiche imprimée, à 1 m et 2 m, avec 2 téléphones.</li>
+<li>☐ 15 fiches techniques + 2 kits de pitch imprimés.</li>
+<li>☐ Téléphone chronomètre (signal à 1 min de la fin).</li>
+<li>☐ Bouteille d'eau, tenue soignée.</li>
+</ul>
+</div>
+</div>
+<h3>Rotation : au moins 2 personnes, toujours</h3>
+<p class="lead"><b>A</b> = histoire et affiche. <b>B</b> = démo. <b>Accueil</b> = accueille le juge suivant avec le pitch 2 min si une démo est en cours, tend la fiche technique, tient le temps. Proposition à ajuster entre nous ; remplacer les [nom] du calendrier avant d'imprimer.</p>
+
+<table class="rot">
+<thead>
+<tr>
+<th>Heure</th>
+<th>A (affiche)</th>
+<th>B (démo)</th>
+<th>Accueil</th>
+<th>En pause</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>15 h 15 - 15 h 45</td>
+<td>Montage : <strong>tous</strong></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>15 h 45 - 16 h 20</td>
+<td>Juliette P.</td>
+<td>Paul</td>
+<td>Geoffrey</td>
+<td>Juliette V.</td>
+</tr>
+<tr>
+<td>16 h 20 - 16 h 55</td>
+<td>Juliette V.</td>
+<td>Geoffrey</td>
+<td>Paul</td>
+<td>Juliette P.</td>
+</tr>
+<tr>
+<td>16 h 55 - 17 h 30</td>
+<td>Geoffrey</td>
+<td>Juliette V.</td>
+<td>Juliette P.</td>
+<td>Paul</td>
+</tr>
+<tr>
+<td>17 h 30 - 18 h 30</td>
+<td>Au moins 2 restent jusqu'à la fin (18 h 30, à confirmer)</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<div class="tip">
+<p><strong>Règles :</strong> jamais moins de 2 au babillard ; on part en pause seulement quand le remplaçant est arrivé. Chacun peut jouer A, B et le pitch 2 min. Après chaque juge : 10 secondes pour remettre l'application au début et noter la question posée (pour la suivante).</p>
+</div>
+</body></html>

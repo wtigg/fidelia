@@ -26,7 +26,9 @@ export function Layout({ children }: { children: ReactNode }) {
   const location = useLocation()
   const navigate = useNavigate()
   const drafts = campaign.filter((c) => c.status === 'draft' || c.status === 'approved').length
-  const recos = scores.filter((s) => s.action).length
+  // badge = recommandations pas encore traitées (ni préparées, ni envoyées, ni mises de côté, ni ignorées)
+  const handled = new Set(campaign.map((c) => c.donorId))
+  const recos = scores.filter((s) => s.action && !handled.has(s.donorId)).length
 
   // les brouillons de courriels citent le dernier don réel (montant, date)
   useEffect(() => setEmailContext(dataset), [dataset])
@@ -48,7 +50,7 @@ export function Layout({ children }: { children: ReactNode }) {
         >
           <Icon className="size-4" />
           <span className="flex-1">{label}</span>
-          {to === '/recommandations' && recos > 0 && <span className="rounded-md bg-gold px-1.5 text-xs font-semibold text-brand-900 tabular-nums">{recos}</span>}
+          {to === '/recommandations' && recos > 0 && <span title="Recommandations pas encore traitées" className="rounded-md bg-gold px-1.5 text-xs font-semibold text-brand-900 tabular-nums">{recos}</span>}
           {to === '/campagnes' && drafts > 0 && <span className="rounded-md bg-white/15 px-1.5 text-xs tabular-nums">{drafts}</span>}
         </NavLink>
       ))}
@@ -108,7 +110,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <div className="absolute inset-y-0 left-0 w-64">{sidebar}</div>
         </div>
       )}
-      <main key={location.pathname} className="mx-auto max-w-7xl px-4 py-8 sm:px-8 lg:py-10">
+      <main key={location.pathname} className={cx('mx-auto max-w-7xl px-4 py-8 sm:px-8 lg:py-10', tourStep !== null && 'pb-72 sm:pb-80')}>
         {trainError && (
           <p role="alert" className="mb-6 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
@@ -121,7 +123,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <p role="status" className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
             <span>
-              <b>Données insuffisantes pour : {trainSkipped.map((k) => MODEL_SPECS[k].title).join(', ')}.</b> Fidélia ne propose pas encore ces actions : il manque d'exemples dans l'historique importé. <details className="mt-1 inline"><summary className="cursor-pointer underline">Voir le détail</summary> Minimum technique : 100 exemples, dont 10 cas positifs à l'entraînement, et 3 cas positifs en validation comme en test. Entre ce minimum et 100 cas positifs (requis RD1), le modèle est entraîné mais Fidélia classe avec la méthode habituelle.</details>
+              <b>Données insuffisantes pour : {trainSkipped.map((k) => MODEL_SPECS[k].title).join(', ')}.</b> Fidélia ne propose pas encore ces actions : il manque d'exemples dans ces données. <details className="mt-1 inline"><summary className="cursor-pointer underline">Voir le détail</summary> Minimum technique : 100 exemples, dont 10 cas positifs à l'entraînement, et 3 cas positifs en validation comme en test. Entre ce minimum et 100 cas positifs (requis RD1), le modèle est entraîné mais Fidélia classe avec la méthode habituelle.</details>
             </span>
           </p>
         )}

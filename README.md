@@ -23,12 +23,14 @@ Projet d'équipe, TECH60711 *Réalisation d'applications d'IA*, HEC Montréal, a
 | AUC-PR hausse, jeu synthétique | 0,076 | 0,066 : **règle RFM conservée** |
 | AUC-PR réactivation, **vrais donateurs** (KDD Cup 1998) : bat RFM, mais échoue à R1 (0,083 < 0,102) | **0,083** [0,075–0,094] | 0,053 [0,049–0,058] |
 | Profit d'une relance réelle avec 20 % des envois (KDD 98) : valide la méthode de classement, pas un modèle déployable (échec à R1) | **2 133 $** | 1 413 $ |
+| AUC-PR « don plus élevé que le dernier », **vrais donateurs** (KDD 98) : passe R1 (0,040 ≥ 0,035) et R2 | **0,040** [0,033–0,050] | 0,019 [0,017–0,021] |
+| Valeur ciblée, 4 listes, 100 contacts (donateurs fictifs ; pondérée par l'effet supposé de chaque relance ; `reports/impact-42.json`) | **× 4,8** vs RFM, × 4,9 vs hasard | |
 | Condition de déploiement R1 + R2 remplie, 5 jeux générés × 4 modèles | **15 / 20** | |
 | Requis de performance R1 à R6 validés par le meilleur candidat (6 requis × 4 modèles) | **17 / 24** (échecs discutés dans le rapport) | |
 
 **Gouvernance.** Un modèle n'est déployé que s'il fait au moins 2 fois mieux que le hasard (R1) et bat la règle RFM de façon significative (R2). Sinon, l'application garde la règle RFM : c'est le cas aujourd'hui pour la hausse du don mensuel. R3 à R6 sont des alertes, à examiner par un humain avant tout usage réel : le passage au mensuel (R6) et la réactivation (R5, R6) en portent une.
 
-**Portée de KDD 98.** KDD 98 valide la méthode sur deux tâches voisines (réactivation d'inactifs, don plus élevé que le dernier). Il ne valide pas le modèle de hausse du mensuel de l'application.
+**Portée de KDD 98.** KDD 98 valide la méthode sur deux tâches voisines (réactivation d'inactifs, don plus élevé que le dernier) ; la seconde passe R1 et R2. Il ne valide pas le modèle de hausse du mensuel de l'application.
 
 Les implémentations maison donnent des résultats équivalents à scikit-learn (`verification/RESULTATS.md`) : logistique à 0,003 près, boosting à 0,03 près.
 
@@ -53,12 +55,12 @@ Seul Docker est requis. Le `Dockerfile` fige la version de Node et installe les 
 # Application sur http://localhost:8080
 docker build -t fidelia . && docker run --rm -p 8080:80 fidelia
 
-# 24 tests, puis contrôle de reproductibilité (graine 42)
+# 25 tests, puis contrôle de reproductibilité (graine 42)
 docker build --target eval -t fidelia-eval .
 docker run --rm fidelia-eval
 ```
 
-La cible `eval` lance les 24 tests, réentraîne la graine 42 dans un dossier temporaire et compare le résultat au rapport versionné `reports/synthetique-42.json` (tolérance 1e-9, horodatage et durée ignorés). Message attendu : « Reproductible : rapport graine 42 identique à reports/synthetique-42.json ». Rien n'est écrit dans `reports/`.
+La cible `eval` lance les 25 tests, réentraîne la graine 42 dans un dossier temporaire et compare le résultat au rapport versionné `reports/synthetique-42.json` (tolérance 1e-9, horodatage et durée ignorés). Message attendu : « Reproductible : rapport graine 42 identique à reports/synthetique-42.json ». Rien n'est écrit dans `reports/`.
 
 Pour régénérer le rapport sur le poste :
 
@@ -70,7 +72,7 @@ docker run --rm -v "$PWD/reports:/app/reports" fidelia-eval npm run evaluate 42
 
 ```bash
 npm ci        # dépendances exactes du package-lock.json
-npm test      # 24 tests
+npm test      # 25 tests
 npm run dev
 ```
 
@@ -79,7 +81,7 @@ npm run dev
 | Commande | Rôle |
 |---|---|
 | `npm run dev` | Application en local |
-| `npm test` | 24 tests unitaires : métriques, règle RFM, pipeline, requis R1, R2, R6 et gouvernance, CSV, comptes par action |
+| `npm test` | 25 tests unitaires : métriques, règle RFM, pipeline, requis R1, R2, R6 et gouvernance, CSV, comptes par action |
 | `npm run build` | Version de production (`dist/`, compatible GitHub Pages) |
 | `npm run check:repro` | Réentraîne la graine 42 dans un dossier temporaire et compare au rapport versionné `reports/synthetique-42.json` (tolérance 1e-9) |
 | `npm run check:browser` | Construit le site, ouvre la page Impact dans Chrome sans interface (profil neuf) et compare ses chiffres au bloc `app` de `reports/impact-42.json`. Garde-fou contre les écarts de `Math.log` d'un moteur JavaScript à l'autre (variables arrondies à 12 chiffres dans `src/ml/features.ts`) |
@@ -97,6 +99,7 @@ Les fichiers `.txt` de `reports/` sont la sortie console des scripts, redirigée
 ## Documentation
 
 - [`docs/RAPPORT.md`](docs/RAPPORT.md) : rapport complet, structuré selon la grille du cours
+- [`docs/ANNEXES.md`](docs/ANNEXES.md) : annexes du rapport (calculs détaillés, commandes, risques et leçons complémentaires)
 - [`docs/GRILLE.md`](docs/GRILLE.md) : correspondance entre la grille d'évaluation et le livrable
 - [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md) : fiche du modèle
 - [`docs/DATASHEET-synthetique.md`](docs/DATASHEET-synthetique.md) et [`docs/DATASHEET-kdd98.md`](docs/DATASHEET-kdd98.md) : datasheets (Gebru et al., 2021)

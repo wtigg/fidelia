@@ -32,7 +32,7 @@
   .cases { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .case { background: var(--pale); border-radius: 6px; padding: 6px 9px; }
   .case b { display: block; font-size: 9.5px; letter-spacing: 1.2px; color: var(--bleu); }
-  .graph svg { width: 60%; height: auto; display: block; margin: 0 auto; }
+  .graph svg { width: 56%; height: auto; display: block; margin: 0 auto; }
   .titre-graph { font-weight: 800; font-size: 12.5px; margin-bottom: 2px; }
   .encadre { background: var(--bleu-pale); border-radius: 8px; padding: 9px 12px; }
   .nuance { border-left: 4px solid var(--ambre); padding-left: 10px; }
@@ -57,7 +57,7 @@
         <div class="case"><b>ACTION</b>Courriel de relance : carte expirée, impact du don, pause.</div>
         <div class="case"><b>RÉSULTAT</b>Toujours mensuel 90 jours plus tard, comparé au groupe témoin.</div>
       </div>
-      <p class="note" style="margin-top:5px">Quatre listes : Relancer (mensuels à risque), Proposer le mensuel, Solliciter (réactiver, hausser), Remercier. Canevas complet : <code>docs/canevas/</code>.</p>
+      <p class="note" style="margin-top:5px">Quatre listes ciblées : Relancer, Proposer le mensuel, Réactiver, Solliciter plus ; plus Remercier (règle simple, sans IA). Canevas complet : <code>docs/canevas/</code>.</p>
     </section>
 
     <section>
@@ -70,7 +70,7 @@
     <section class="plein graph">
       <h2>L'IA fait-elle mieux que la méthode habituelle ?</h2>
       <!-- AUCPR:debut -->
-<p class="titre-graph">3 listes sur 4 : le modèle gagne.</p>
+<p class="titre-graph">3 modèles sur 4 remplissent nos deux conditions (donateurs fictifs).</p>
 <svg viewBox="0 0 1600 860" xmlns="http://www.w3.org/2000/svg" font-family="Avenir Next, Helvetica Neue, Helvetica, Arial, sans-serif" role="img" aria-label="Précision pour trouver les bons donateurs : Fidélia contre la méthode habituelle, quatre modèles">
 <rect x="120" y="14" width="56" height="56" rx="8" fill="#1f5fa8"/><text x="194" y="58" font-size="46" fill="#14213d" font-weight="700">Fidélia</text>
 <rect x="450" y="14" width="56" height="56" rx="8" fill="#9aa4b2"/><text x="524" y="58" font-size="46" fill="#14213d" font-weight="700">Méthode habituelle</text>
@@ -96,7 +96,7 @@
 <line x1="363.8" y1="467.8" x2="407.8" y2="467.8" stroke="#14213d" stroke-width="5"/>
 <text x="303.8" y="138" font-size="76" font-weight="800" fill="#1f5fa8" text-anchor="middle">×2,7</text>
 <line x1="123.8" y1="472.1" x2="483.8" y2="472.1" stroke="#14213d" stroke-width="6" stroke-dasharray="14 10"/>
-<text x="303.8" y="668.0" font-size="48" font-weight="700" fill="#14213d" text-anchor="middle">Attrition</text>
+<text x="303.8" y="668.0" font-size="48" font-weight="700" fill="#14213d" text-anchor="middle">Relancer</text>
 <rect x="125.8" y="748.0" width="356" height="66" rx="33" fill="#1e7a4c"/>
 <text x="303.8" y="794.0" font-size="38" font-weight="700" fill="#fff" text-anchor="middle">Modèle utilisé</text>
 <rect x="519.2" y="494.3" width="140" height="115.7" rx="6" fill="#1f5fa8"/>
@@ -109,8 +109,8 @@
 <line x1="731.2" y1="527.9" x2="775.2" y2="527.9" stroke="#14213d" stroke-width="5"/>
 <text x="671.2" y="138" font-size="76" font-weight="800" fill="#1f5fa8" text-anchor="middle">×2,6</text>
 <line x1="491.2" y1="572.6" x2="851.2" y2="572.6" stroke="#14213d" stroke-width="6" stroke-dasharray="14 10"/>
-<text x="671.2" y="668.0" font-size="48" font-weight="700" fill="#14213d" text-anchor="middle">Passage</text>
-<text x="671.2" y="720.0" font-size="48" font-weight="700" fill="#14213d" text-anchor="middle">au mensuel</text>
+<text x="671.2" y="668.0" font-size="48" font-weight="700" fill="#14213d" text-anchor="middle">Proposer</text>
+<text x="671.2" y="720.0" font-size="48" font-weight="700" fill="#14213d" text-anchor="middle">le mensuel</text>
 <rect x="493.2" y="748.0" width="356" height="66" rx="33" fill="#1e7a4c"/>
 <text x="671.2" y="794.0" font-size="38" font-weight="700" fill="#fff" text-anchor="middle">Modèle utilisé</text>
 <rect x="886.8" y="484.0" width="140" height="126.0" rx="6" fill="#1f5fa8"/>
@@ -123,9 +123,9 @@
 <line x1="1098.8" y1="548.1" x2="1142.8" y2="548.1" stroke="#14213d" stroke-width="5"/>
 <text x="1038.8" y="138" font-size="76" font-weight="800" fill="#1f5fa8" text-anchor="middle">×3,1</text>
 <line x1="858.8" y1="529.4" x2="1218.8" y2="529.4" stroke="#14213d" stroke-width="6" stroke-dasharray="14 10"/>
-<text x="1038.8" y="668.0" font-size="48" font-weight="700" fill="#14213d" text-anchor="middle">Réactivation</text>
+<text x="1038.8" y="668.0" font-size="48" font-weight="700" fill="#14213d" text-anchor="middle">Réactiver</text>
 <rect x="860.8" y="748.0" width="356" height="66" rx="33" fill="#1e7a4c"/>
-<text x="1038.8" y="794.0" font-size="38" font-weight="700" fill="#fff" text-anchor="middle">Modèle utilisé</text>
+<text x="1038.8" y="794.0" font-size="38" font-weight="700" fill="#fff" text-anchor="middle">Utilisé, à l'essai</text>
 <rect x="1254.2" y="531.8" width="140" height="78.2" rx="6" fill="#1f5fa8"/>
 <line x1="1324.2" y1="561.9" x2="1324.2" y2="473.1" stroke="#14213d" stroke-width="5"/>
 <line x1="1302.2" y1="561.9" x2="1346.2" y2="561.9" stroke="#14213d" stroke-width="5"/>
@@ -136,8 +136,8 @@
 <line x1="1466.2" y1="494.1" x2="1510.2" y2="494.1" stroke="#14213d" stroke-width="5"/>
 <text x="1406.2" y="138" font-size="76" font-weight="800" fill="#a85d00" text-anchor="middle">×1,2</text>
 <line x1="1226.2" y1="524.9" x2="1586.2" y2="524.9" stroke="#14213d" stroke-width="6" stroke-dasharray="14 10"/>
-<text x="1406.2" y="668.0" font-size="48" font-weight="700" fill="#14213d" text-anchor="middle">Hausse</text>
-<text x="1406.2" y="720.0" font-size="48" font-weight="700" fill="#14213d" text-anchor="middle">du don</text>
+<text x="1406.2" y="668.0" font-size="48" font-weight="700" fill="#14213d" text-anchor="middle">Solliciter</text>
+<text x="1406.2" y="720.0" font-size="48" font-weight="700" fill="#14213d" text-anchor="middle">plus</text>
 <rect x="1228.2" y="748.0" width="356" height="66" rx="33" fill="#a85d00"/>
 <text x="1406.2" y="794.0" font-size="34" font-weight="700" fill="#fff" text-anchor="middle">Méthode habituelle</text>
 <text x="221.8" y="205.1" font-size="32" font-weight="600" fill="#1f5fa8" text-anchor="middle" stroke="#fff" stroke-width="10" paint-order="stroke">0,243</text>
@@ -157,14 +157,14 @@
     <section>
       <h2>Ciblage mesuré</h2>
       <!-- CIBLAGE:debut -->
-<p>À contacts égaux, valeur des dons à risque visée, Fidélia contre la méthode habituelle : <b>×4,8</b> avec 100 contacts, <b>×3</b> avec 300 (2,98 exactement).</p><p>Attrition : 10 % des mensuels contactés couvrent <b>41 %</b> des dons à risque.</p><p>Robustesse : 15 cas sur 20 retenus (5 autres jeux de données × 4 modèles).</p><p class="note">On mesure le ciblage, pas l'effet d'un courriel : il reste une hypothèse, qu'un groupe témoin mesurera.</p>
+<p>À contacts égaux, dons menacés visés par la liste Relancer, Fidélia contre la méthode habituelle : <b>×3,1</b> avec une campagne de 300 contacts, <b>×6,1</b> avec 100, quel que soit l'effet des courriels.</p><p>Les 4 listes réunies : ×3 avec 300 contacts, ×4,8 avec 100 ; contre le hasard, ×3,3 et ×4,9, si l'effet supposé des courriels se vérifie. Donateurs fictifs.</p><p>Attrition : 10 % des mensuels contactés couvrent <b>41 %</b> des dons à risque (méthode habituelle : 7 %).</p><p>Robustesse : 15 cas sur 20 retenus (5 autres jeux de données × 4 modèles).</p>
 <!-- CIBLAGE:fin -->
     </section>
 
     <section class="nuance">
       <h2>Vrais donateurs (KDD Cup 1998)</h2>
       <!-- KDDDETAIL:debut -->
-<p><b>Méthode validée, modèle non utilisé.</b> 18&nbsp;824 vrais donateurs américains inactifs (données publiques, 1998) : le modèle obtient une AUC-PR de 0,083, sous le seuil R1 (0,102). Il ne fait pas 2 fois mieux que le hasard.</p><p>À gros volume (12&nbsp;894 envois), la méthode habituelle fait même un peu mieux : 2&nbsp;422&nbsp;$ de profit net contre 2&nbsp;320&nbsp;$.</p><p>Seul signe positif : avec 20 % des envois, <b>+51 %</b> de profit net contre la méthode habituelle. Selon nos propres conditions, on garde la méthode habituelle.</p>
+<p><b>Réactivation : pas encore validée.</b> 18&nbsp;824 vrais donateurs inactifs (1998) : AUC-PR 0,083, sous le seuil R1 (0,102). Profit net : <b>+51 %</b> avec 20 % des envois ; à gros volume, la méthode habituelle fait un peu mieux (2&nbsp;422&nbsp;$ contre 2&nbsp;320&nbsp;$). Dans l'application, ce modèle reste « à l'essai ».</p><p>Don plus élevé que le dernier : AUC-PR <b>0,040</b> contre 0,0186 pour RFM, soit 2,2 fois mieux (seuil R1 : 0,035 ; écart : 0,016 à 0,031). <b>R1 et R2 remplies</b> : résultat positif sur données réelles.</p>
 <!-- KDDDETAIL:fin -->
     </section>
 
@@ -179,16 +179,16 @@
       <h2>Garde-fous et limites</h2>
       <ul>
         <li>Un humain valide chaque envoi ; un courriel par 30 jours, au plus.</li>
-        <li>Ni âge ni région dans les modèles ; Loi 25 : droit de refuser le profilage.</li>
+        <li>Ni âge ni région dans les modèles ; Loi 25 : droit de refuser le profilage, prévu en V1.</li>
         <li>Prédire n'est pas causer : l'effet des relances se mesure avec un groupe témoin.</li>
         <li>Données fictives : elles valident la chaîne, pas la performance réelle.</li>
-        <li>Modèle d'affaires : 99 $ par mois par OBNL, rentable vers 35 clients (V1 : environ 27 000 $ en 2 mois).</li>
+        <li>99 $/mois par OBNL, rentable vers 33 à 36 clients. V1 : 30 000 à 33 000 $, pilote et réserve compris ; puis 28 000 $/an.</li>
       </ul>
     </section>
   </div>
 
   <footer>
-    <b>Références :</b> Agrawal, Gans et Goldfarb (2018), <i>Prediction Machines</i> · Gebru et al. (2021), « Datasheets for Datasets » · Suresh et Guttag (2021), « A Framework for Understanding Sources of Harm » · Strong (1997), RFM · Fundraising Effectiveness Project (2025) · CanadaHelps, via Future of Good (2024) · Virtuous et Fundraising.AI (2026).<br>
+    <b>Références :</b> Agrawal, Gans et Goldfarb (2018), <i>Harvard Business Review</i> · Fader, Hardie et Lee (2005), RFM · Gebru et al. (2021) · Suresh et Guttag (2021) · Strong, Lee et Wang (1997) · AFP et GivingTuesday (2026), Fundraising Effectiveness Project · Gandhi (2024), Future of Good · Virtuous et Fundraising.AI (2026).<br>
     <b>Données :</b> donateurs fictifs (graine 42), aucune donnée réelle d'organisation ; KDD Cup 1998 (UCI), données publiques. Tous les chiffres sont régénérés depuis <code>reports/</code> par <code>docs/affiche/build_affiche.py</code>.
   </footer>
 </div>

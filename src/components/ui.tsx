@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import { useEffect, useRef, type ButtonHTMLAttributes, type ReactNode, type Ref } from 'react'
 import { X } from 'lucide-react'
 
 export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ')
@@ -50,7 +50,7 @@ export function Badge({ children, className }: { children: ReactNode; className?
   return <span className={cx('inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset', className ?? 'bg-stone-100 text-stone-700 ring-stone-200')}>{children}</span>
 }
 
-type BtnProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'ghost' | 'danger'; size?: 'sm' | 'md' }
+type BtnProps = ButtonHTMLAttributes<HTMLButtonElement> & { ref?: Ref<HTMLButtonElement>; variant?: 'primary' | 'secondary' | 'ghost' | 'danger'; size?: 'sm' | 'md' }
 export function Button({ variant = 'secondary', size = 'md', className, ...rest }: BtnProps) {
   const v = {
     primary: 'bg-brand-600 text-white hover:bg-brand-700 shadow-sm disabled:bg-stone-300',
@@ -70,7 +70,7 @@ export function ProbBar({ value, color = '#1f7a4d', width = 'w-24', word }: { va
         <div className="h-full rounded-full" style={{ width: `${Math.min(100, value * 100)}%`, background: color }} />
       </div>
       <span className="whitespace-nowrap text-[13px] font-medium tabular-nums text-stone-700">
-        {Math.round(value * 100)} %{word && <span className="font-normal text-stone-500"> {word}</span>}
+        {value < 0.1 && value > 0 ? (value * 100).toLocaleString('fr-CA', { maximumFractionDigits: 1 }) : Math.round(value * 100)} %{word && <span className="font-normal text-stone-500"> {word}</span>}
       </span>
     </div>
   )
@@ -83,13 +83,14 @@ export function Tabs<T extends string>({ value, onChange, items }: { value: T; o
         <button
           key={it.value}
           onClick={() => onChange(it.value)}
+          aria-pressed={value === it.value}
           className={cx(
             'flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors',
             value === it.value ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500 hover:text-stone-800',
           )}
         >
           {it.label}
-          {it.count !== undefined && <span className={cx('rounded-md px-1.5 text-xs tabular-nums', value === it.value ? 'bg-stone-100' : 'bg-stone-200/60')}>{it.count}</span>}
+          {it.count !== undefined && <span className={cx('rounded-md px-1.5 text-xs tabular-nums', value === it.value ? 'bg-stone-100' : 'bg-stone-200/60')}>{it.count.toLocaleString('fr-CA')}</span>}
         </button>
       ))}
     </div>
@@ -111,14 +112,29 @@ export function Toggle({ checked, onChange, label }: { checked: boolean; onChang
 }
 
 export function Drawer({ open, onClose, children, title }: { open: boolean; onClose: () => void; children: ReactNode; title: ReactNode }) {
+  const closeRef = useRef<HTMLButtonElement>(null)
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  })
+  // Échap ferme la fiche ; le focus clavier va sur « Fermer » à l'ouverture
+  useEffect(() => {
+    if (!open) return
+    closeRef.current?.focus({ preventScroll: true })
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCloseRef.current()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
   if (!open) return null
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-stone-900/30 backdrop-blur-[2px]" onClick={onClose} />
-      <aside className="relative flex h-full w-full max-w-2xl flex-col bg-stone-50 shadow-2xl">
+      <aside role="dialog" aria-modal="true" className="relative flex h-full w-full max-w-2xl flex-col bg-stone-50 shadow-2xl">
         <header className="flex items-center justify-between border-b border-stone-200 bg-white px-6 py-4">
           <div className="min-w-0">{title}</div>
-          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Fermer">
+          <Button ref={closeRef} variant="ghost" size="sm" onClick={onClose} aria-label="Fermer">
             <X className="size-4" />
           </Button>
         </header>

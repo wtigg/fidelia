@@ -36,18 +36,22 @@ export default function Automations() {
     <>
       <PageHeader
         title="Automatisations"
-        subtitle="Choisissez à partir de quelle chance (ou quel risque) Fidélia ajoute un donateur à une liste. Curseur à gauche : plus de donateurs, moins ciblés. À droite : moins de courriels, plus pertinents."
+        subtitle="Choisissez la taille de chaque liste. Curseur à gauche, plus de donateurs mais moins sûrs. À droite, moins de courriels mais mieux ciblés."
         actions={
           <Button variant="primary" disabled={training} onClick={() => setResult(runCycle())}>
-            <Play className="size-4" /> Lancer le cycle maintenant
+            <Play className="size-4" /> Préparer les courriels de la semaine
           </Button>
         }
       />
 
       {result && (
         <div className="mb-6 rounded-xl border border-brand-100 bg-brand-50 px-4 py-3 text-sm text-brand-900">
-          Cycle terminé : <b>{result.drafted}</b> courriel{result.drafted > 1 ? 's' : ''} en attente de validation, <b>{result.sent}</b> envoyé{result.sent > 1 ? 's' : ''} automatiquement (simulé),{' '}
-          <b>{result.control}</b> donateur{result.control > 1 ? 's' : ''} mis de côté pour mesurer l'effet (10 %), {result.skipped} ignoré{result.skipped > 1 ? 's' : ''} (déjà contacté{result.skipped > 1 ? 's' : ''} il y a moins de {CONTACT_COOLDOWN_DAYS} jours).{' '}
+          {result.drafted + result.sent + result.control === 0 ? (
+            <>Rien de nouveau cette semaine : les donateurs des listes ont déjà un courriel en attente, envoyé ou mis de côté{result.skipped > 0 ? `, ou ont été contactés il y a moins de ${CONTACT_COOLDOWN_DAYS} jours` : ''}.{' '}</>
+          ) : (<>
+          Listes de la semaine prêtes : <b>{result.drafted}</b> courriel{result.drafted > 1 ? 's' : ''} en attente de validation, <b>{result.sent}</b> envoyé{result.sent > 1 ? 's' : ''} automatiquement (simulé),{' '}
+          <b>{result.control}</b> donateur{result.control > 1 ? 's' : ''} mis de côté pour mesurer l'effet (environ 10 % en moyenne), {result.skipped} laissé{result.skipped > 1 ? 's' : ''} de côté cette semaine (déjà contacté{result.skipped > 1 ? 's' : ''} il y a moins de {CONTACT_COOLDOWN_DAYS} jours).{' '}
+          </>)}
           <Link to="/campagnes" className="font-medium underline">Voir les courriels</Link>
         </div>
       )}
@@ -78,7 +82,7 @@ export default function Automations() {
                 ) : (
                 <div className="mt-6">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-stone-600">{PROB_WORD(a.type) === 'risque' ? 'Risque minimal' : 'Chance minimale'}</span>
+                    <span className="text-stone-600">Seuil : {PROB_WORD(a.type) === 'risque' ? 'risque' : 'chance'} d'au moins</span>
                     <span className="font-semibold tabular-nums text-stone-900">{thresholdText(a.threshold)}</span>
                   </div>
                   <input
@@ -96,7 +100,7 @@ export default function Automations() {
                     <div className="rounded-xl bg-stone-50 p-3">
                       <p className="text-xs text-stone-500">Donateurs ciblés</p>
                       <p className="mt-0.5 text-lg font-semibold tabular-nums text-stone-900">
-                        {s.count} <span className="text-sm font-normal text-stone-400">/ {s.pool}</span>
+                        {s.count} <span className="text-sm font-normal text-stone-400">/ {s.pool.toLocaleString('fr-CA')}</span>
                       </p>
                     </div>
                     <div className="rounded-xl bg-stone-50 p-3">
@@ -123,7 +127,7 @@ export default function Automations() {
       <div className="mt-6 flex items-start gap-3 rounded-2xl border border-stone-200 bg-white p-5 text-sm text-stone-600">
         <CalendarClock className="mt-0.5 size-5 shrink-0 text-brand-600" />
         <p>
-          En production, ce cycle tourne chaque semaine : import des nouveaux dons, mise à jour des listes, préparation des courriels. Garde-fous :
+          En production, Fidélia fait ce travail chaque lundi : import des nouveaux dons, mise à jour des listes, préparation des courriels. Par défaut, rien ne part sans votre accord. Garde-fous :
           un courriel au plus tous les {CONTACT_COOLDOWN_DAYS} jours par donateur, remerciement avant toute sollicitation, exclusion des donateurs sans consentement,
           et {Math.round(CONTROL_SHARE * 100)} % des donateurs ciblés mis de côté, sans contact, pour mesurer l'effet réel des actions.
         </p>

@@ -121,7 +121,7 @@ export function impactReport(ds: Dataset, reports: Reports, seed: number) {
     seed,
     donors: ds.donors.length,
     refDate: ds.refDate,
-    note: "Valeur captée en $ par an, à effort égal (même nombre de contacts). Part captée lue sur la courbe de valeur mesurée sur le jeu de test ; effet de l'action = hypothèse (effectAssumed), identique pour les trois stratégies, donc sans effet sur les multiplicateurs.",
+    note: "Valeur captée en $ par an, à effort égal (même nombre de contacts). Part captée lue sur la courbe de valeur mesurée sur le jeu de test ; effet de l'action = hypothèse (effectAssumed), identique pour les trois stratégies. Liste par liste, les multiplicateurs n'en dépendent pas ; le total des quatre listes en dépend, car il pondère chaque liste par son effet supposé.",
     effectAssumed: DEFAULT_EFFECT,
     impact: CAPACITIES.map((c) => impactAt(scores, reports, c)),
     app: bundledImpact(ds, seed),

@@ -40,7 +40,8 @@ interface Store {
   setAlgo: (kind: ModelKind, choice: AlgoChoice) => void
   loadDataset: (ds: Dataset) => void
   setAutomation: (type: ActionType, patch: Partial<Automation>) => void
-  createDrafts: (donorIds: string[]) => { drafted: number; control: number }
+  /** Prépare les brouillons. Par liste (défaut), 10 % des ciblés sont mis de côté ; un clic sur une seule fiche (control: false) prépare toujours le courriel. */
+  createDrafts: (donorIds: string[], opts?: { control?: boolean }) => { drafted: number; control: number }
   updateItem: (id: string, patch: Partial<CampaignItem>) => void
   sendItems: (ids: string[]) => number
   runCycle: () => { drafted: number; sent: number; skipped: number; control: number }
@@ -124,9 +125,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setRawReports(e.data.reports)
       setTrainSkipped(e.data.skipped)
       setTrainMs(e.data.ms)
-      const t = new Date().toISOString()
-      setTrainedAt(t)
-      setVersion(`v${t.slice(0, 10).replace(/-/g, '')}.${t.slice(11, 16).replace(':', '')}-local`)
+      const now = new Date()
+      // date et version à l'heure locale (toISOString donnerait la date UTC, soit le lendemain en soirée au Québec)
+      const two = (n: number) => String(n).padStart(2, '0')
+      setTrainedAt(`${now.getFullYear()}-${two(now.getMonth() + 1)}-${two(now.getDate())}`)
+      setVersion(`v${now.getFullYear()}${two(now.getMonth() + 1)}${two(now.getDate())}.${two(now.getHours())}${two(now.getMinutes())}-local`)
       setTraining(false)
       setTrainingStep(undefined)
       w.terminate()
@@ -159,12 +162,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const modelVersion = version
 
-  const scores = useMemo(() => (Object.keys(reports).length ? scoreAll(dataset, reports, automations) : []), [dataset, reports, automations])
+  // pendant l'entraînement : aucun score ; ensuite, même sans aucun modèle (petit fichier), on garde la base, les segments et la liste « Remercier » (règle simple)
+  const scores = useMemo(() => (training && !Object.keys(reports).length ? [] : scoreAll(dataset, reports, automations)), [dataset, reports, automations, training])
   const scoresById = useMemo(() => new Map(scores.map((s) => [s.donorId, s])), [scores])
   const donorsById = useMemo(() => new Map(dataset.donors.map((d) => [d.id, d])), [dataset])
 
   const makeDrafts = useCallback(
-    (ids: string[], existing: CampaignItem[], origin: CampaignItem['origin']): { items: CampaignItem[]; skipped: number } => {
+    (ids: string[], existing: CampaignItem[], origin: CampaignItem['origin'], allowControl = true): { items: CampaignItem[]; skipped: number } => {
       // un donateur du groupe témoin n'est jamais recontacté, même à la main
       const busy = new Set(existing.filter((c) => c.status === 'draft' || c.status === 'approved' || c.status === 'control').map((c) => c.donorId))
       const cutoff = Date.now() - CONTACT_COOLDOWN_DAYS * 86_400_000
@@ -181,7 +185,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }
         const { subject, body } = draftEmail(s.action, d, s)
         // tirage stable par donateur, quelle que soit l'origine : 10 % des ciblés forment le groupe témoin (jamais pour un remerciement)
-        const control = s.action !== 'thank' && (parseInt(id.replace(/\D/g, ''), 10) * 2654435761) % 100 < CONTROL_SHARE * 100
+        const control = allowControl && s.action !== 'thank' && (parseInt(id.replace(/\D/g, ''), 10) * 2654435761) % 100 < CONTROL_SHARE * 100
         items.push({ id: uid(), donorId: id, type: s.action, subject, body, status: control ? 'control' : 'draft', createdAt: new Date().toISOString(), origin })
       }
       return { items, skipped }
@@ -212,8 +216,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setCampaign([])
     },
     setAutomation: (type, patch) => setAutomations((list) => list.map((a) => (a.type === type ? { ...a, ...patch } : a))),
-    createDrafts: (ids) => {
-      const { items } = makeDrafts(ids, campaign, 'manual')
+    createDrafts: (ids, opts) => {
+      const { items } = makeDrafts(ids, campaign, 'manual', opts?.control ?? true)
       setCampaign((c) => [...items, ...c])
       const control = items.filter((i) => i.status === 'control').length
       return { drafted: items.length - control, control }

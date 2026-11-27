@@ -1,0 +1,159 @@
+1
+00:00:04,091 --> 00:00:06,746
+Moins d'un donateur sur deux redonne l'année suivante.
+
+2
+00:00:07,098 --> 00:00:11,517
+Or garder un donateur coûte environ 7 fois moins cher que d'en trouver un nouveau.
+
+3
+00:00:11,871 --> 00:00:19,365
+Au Canada, plus de la moitié des organismes de moins de 1 M$ confient leurs données à quelqu'un qui n'a ni formation ni mandat pour ça.
+
+4
+00:00:19,718 --> 00:00:24,977
+Fidélia leur dit par qui commencer, et n'utilise l'IA que là où elle fait mieux que la méthode habituelle.
+
+5
+00:00:25,600 --> 00:00:27,419
+Voyons-le avec la visite guidée.
+
+6
+00:00:29,602 --> 00:00:33,917
+Voici Les Petits Pas, un organisme fictif avec 4 000 donateurs.
+
+7
+00:00:34,515 --> 00:00:38,991
+En haut, la valeur des dons mensuels à risque : 8 406 $ par an.
+
+8
+00:00:40,491 --> 00:00:44,260
+Plus bas, les priorités du jour, classées par dollars à gagner.
+
+9
+00:00:47,376 --> 00:00:52,902
+Fidélia dit par où commencer : qui relancer, qui remercier, qui solliciter.
+
+10
+00:00:53,503 --> 00:00:57,270
+Les listes sont classées par dollars à gagner : les plus utiles sont en haut.
+
+11
+00:00:57,870 --> 00:01:01,439
+Chaque ligne dit quoi faire, et combien de dons sont en jeu sur un an.
+
+12
+00:01:05,051 --> 00:01:08,472
+Voici la fiche d'un donateur à relancer : Olivier Gauthier.
+
+13
+00:01:09,264 --> 00:01:12,788
+Son risque d'arrêter son don mensuel : 35 %.
+
+14
+00:01:13,598 --> 00:01:16,612
+Ses dons espérés sur un an : 63 $.
+
+15
+00:01:17,417 --> 00:01:23,633
+Les raisons sont écrites en mots simples : dernier don il y a 101 jours, et 3 paiements échoués sur 90 jours.
+
+16
+00:01:25,581 --> 00:01:29,524
+Dans son historique sur 24 mois, les paiements échoués sont en rouge.
+
+17
+00:01:31,471 --> 00:01:36,003
+Le modèle explique sa décision. Vous décidez : un clic prépare le courriel.
+
+18
+00:01:41,311 --> 00:01:45,753
+Passons à l'impact. Ici, l'équipe peut contacter 300 donateurs.
+
+19
+00:01:46,353 --> 00:01:53,837
+Pour la liste à relancer, Fidélia vise 3,1 fois plus de dons menacés que la méthode habituelle, quel que soit l'effet du courriel.
+
+20
+00:01:54,486 --> 00:02:00,379
+Pour les quatre listes ensemble, c'est 3 fois plus, mais ce total dépend de l'effet supposé des courriels.
+
+21
+00:02:02,528 --> 00:02:09,200
+Avec 100 contacts seulement : 6,1 fois plus pour la liste à relancer, et 4,8 fois plus au total.
+
+22
+00:02:09,553 --> 00:02:11,464
+Ce sont des donateurs fictifs.
+
+23
+00:02:12,066 --> 00:02:17,818
+On mesure bien le ciblage. L'effet d'un courriel, lui, est une hypothèse, réglable ici.
+
+24
+00:02:18,168 --> 00:02:20,750
+Les donateurs mis de côté exprès le mesureront.
+
+25
+00:02:24,167 --> 00:02:25,948
+Le modèle apprend des dons passés.
+
+26
+00:02:26,543 --> 00:02:33,758
+On ne l'utilise que s'il remplit nos deux conditions : trouver les bons donateurs 2 fois mieux que le hasard, et mieux que la méthode habituelle.
+
+27
+00:02:34,352 --> 00:02:42,660
+Pour le risque d'arrêt, parmi les 50 premiers noms proposés, 34 % sont de vrais cas, contre 8 % avec la méthode habituelle.
+
+28
+00:02:44,752 --> 00:02:49,217
+Pour la hausse du don, il ne fait pas mieux : l'outil garde donc la méthode habituelle.
+
+29
+00:02:52,403 --> 00:02:59,329
+Sur 18 824 vrais donateurs, le modèle remplit nos deux conditions pour repérer qui donnera plus que son dernier don.
+
+30
+00:02:59,928 --> 00:03:05,752
+Mais pas encore pour la réactivation : dans l'application, ce modèle reste à l'essai. Nous le disons.
+
+31
+00:03:10,274 --> 00:03:13,204
+Lundi matin, les courriels de la semaine sont prêts.
+
+32
+00:03:13,802 --> 00:03:17,324
+Le courriel parle de la carte expirée, sans montant inventé.
+
+33
+00:03:17,923 --> 00:03:21,773
+Je relis, j'approuve, j'envoie. Rien ne part sans un humain.
+
+34
+00:03:23,940 --> 00:03:30,841
+Lors des envois groupés, environ 10 % des donateurs sont mis de côté exprès, pour mesurer si les courriels rapportent vraiment.
+
+35
+00:03:35,466 --> 00:03:37,389
+Un dernier point : l'équité.
+
+36
+00:03:41,290 --> 00:03:46,858
+Pour proposer le don mensuel, le modèle choisit 1,8 fois plus souvent les 70 ans et plus.
+
+37
+00:03:47,457 --> 00:03:51,504
+C'est moins que leur vrai taux de passage au mensuel : il les sous-estime un peu,
+
+38
+00:03:51,605 --> 00:03:56,071
+et surestime les 35 à 54 ans, qu'on risque de trop solliciter.
+
+39
+00:03:56,424 --> 00:04:02,907
+L'âge n'est pas utilisé, mais d'autres indices le reflètent. On le mesure, et on le revérifiera sur de vraies données.
+
+40
+00:04:05,131 --> 00:04:09,399
+Simple, mesurable, responsable. Un humain décide toujours.

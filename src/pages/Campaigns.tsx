@@ -29,6 +29,9 @@ export default function Campaigns() {
   const score = item ? scoresById.get(item.donorId) : undefined
   const why = item?.type === 'thank' ? (score?.thankReason ? [score.thankReason] : []) : (score?.reasons.slice(0, 3).map((r) => r.text) ?? [])
   const approved = groups.todo.filter((c) => c.status === 'approved')
+  // un courriel sans objet ou sans message ne peut être ni approuvé ni envoyé
+  const complete = (c: CampaignItem) => c.subject.trim().length > 0 && c.body.trim().length > 0
+  const empty = item ? !complete(item) : false
 
   return (
     <>
@@ -38,14 +41,14 @@ export default function Campaigns() {
         actions={
           <>
             {campaign.length > 0 && (
-              <Button variant="ghost" onClick={() => confirm('Vider tout l\'historique des courriels ?') && resetCampaign()}>
-                <Trash2 className="size-4" /> Vider
+              <Button variant="ghost" onClick={() => confirm('Effacer tous les courriels (à envoyer, envoyés, mis de côté, ignorés) ?') && resetCampaign()}>
+                <Trash2 className="size-4" /> Tout effacer
               </Button>
             )}
-            <Button variant="secondary" disabled={!groups.todo.length} onClick={() => groups.todo.forEach((c) => updateItem(c.id, { status: 'approved' }))}>
+            <Button variant="secondary" disabled={!groups.todo.length} onClick={() => { const n = groups.todo.filter((c) => c.status === 'draft' && complete(c)).length; if (n > 1 && !confirm(`Approuver ${n} courriels d'un coup ? Pensez à en relire quelques-uns avant l'envoi.`)) return; groups.todo.filter(complete).forEach((c) => updateItem(c.id, { status: 'approved' })) }}>
               <CheckCheck className="size-4" /> Tout approuver
             </Button>
-            <Button variant="primary" disabled={!approved.length} onClick={() => sendItems(approved.map((c) => c.id))}>
+            <Button variant="primary" disabled={!approved.length} onClick={() => sendItems(approved.filter(complete).map((c) => c.id))}>
               <Send className="size-4" /> Envoyer les approuvés ({approved.length})
             </Button>
           </>
@@ -55,7 +58,7 @@ export default function Campaigns() {
       <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
         <Info className="mt-0.5 size-4 shrink-0" />
         Envoi simulé : aucun courriel ne part réellement dans le prototype. En production : fournisseur d'envoi (Brevo, Mailchimp…) et suivi des ouvertures.
-        Fidélia met de côté 10 % des donateurs ciblés : ils ne sont jamais contactés. Comparer leurs dons à ceux des contactés mesure l'effet réel des courriels.
+        Fidélia met de côté environ 10 % des donateurs ciblés (tirage par donateur) : ils ne sont jamais contactés. Comparer leurs dons à ceux des contactés mesure l'effet réel des courriels.
       </div>
 
       <div className="mb-4">
@@ -65,7 +68,7 @@ export default function Campaigns() {
           items={[
             { value: 'todo', label: 'À envoyer', count: groups.todo.length },
             { value: 'sent', label: 'Envoyés', count: groups.sent.length },
-            { value: 'control', label: 'Mis de côté pour mesurer (10 %)', count: groups.control.length },
+            { value: 'control', label: 'Mis de côté pour mesurer', count: groups.control.length },
             { value: 'dismissed', label: 'Ignorés', count: groups.dismissed.length },
           ]}
         />
@@ -73,8 +76,12 @@ export default function Campaigns() {
 
       {!list.length ? (
         <Card>
-          <Empty icon={<Mail className="size-5" />} title={filter === 'todo' ? 'Aucun courriel en attente' : 'Rien ici pour le moment'}>
-            {filter === 'todo' && (
+          <Empty icon={<Mail className="size-5" />} title={filter === 'todo' ? (groups.sent.length ? 'Tout est envoyé' : 'Aucun courriel en attente') : filter === 'dismissed' ? 'Aucun courriel ignoré' : 'Rien ici pour le moment'}>
+            {filter === 'todo' && groups.sent.length > 0 && (
+              <>{groups.sent.length.toLocaleString('fr-CA')} courriel{groups.sent.length > 1 ? 's' : ''} envoyé{groups.sent.length > 1 ? 's' : ''} (simulation), à retrouver dans « Envoyés ». Pour une nouvelle liste : <Link className="font-medium text-brand-600" to="/recommandations">recommandations</Link>.</>
+            )}
+            {filter === 'dismissed' && <>Les courriels écartés avec « Ignorer » apparaissent ici.</>}
+            {filter === 'todo' && !groups.sent.length && (
               <>
                 Préparez des courriels depuis les <Link className="font-medium text-brand-600" to="/recommandations">recommandations</Link> ou lancez une{' '}
                 <Link className="font-medium text-brand-600" to="/automatisations">automatisation</Link>.
@@ -90,7 +97,7 @@ export default function Campaigns() {
                 const d = donorsById.get(c.donorId)
                 return (
                   <li key={c.id}>
-                    <button onClick={() => setCurrent(c.id)} className={cx('w-full px-4 py-3 text-left hover:bg-stone-50', item?.id === c.id && 'bg-brand-50/60')}>
+                    <button onClick={() => { setCurrent(c.id); if (window.innerWidth < 1024) requestAnimationFrame(() => document.getElementById('courriel-editeur')?.scrollIntoView({ behavior: 'smooth', block: 'start' })) }} className={cx('w-full px-4 py-3 text-left hover:bg-stone-50', item?.id === c.id && 'bg-brand-50/60')}>
                       <div className="flex items-center justify-between gap-2">
                         <p className="truncate text-sm font-medium text-stone-900">{d ? `${d.firstName} ${d.lastName}` : c.donorId}</p>
                         {c.status === 'approved' && <Badge className="bg-brand-50 text-brand-700 ring-brand-100">Approuvé</Badge>}
@@ -106,7 +113,7 @@ export default function Campaigns() {
           </Card>
 
           {item && (
-            <Card>
+            <Card id="courriel-editeur" className="scroll-mt-20">
               <div className="border-b border-stone-100 px-6 py-4 text-sm">
                 <p className="text-stone-500">À : <span className="text-stone-900">{donor ? `${donor.firstName} ${donor.lastName} <${donor.email}>` : item.donorId}</span></p>
                 <p className="mt-1 text-xs text-stone-400">
@@ -122,11 +129,12 @@ export default function Campaigns() {
                 )}
               </div>
               <div className="space-y-4 p-6">
+                {item.status === 'control' && <p className="rounded-lg bg-stone-100 px-3 py-2 text-sm text-stone-700">Ce courriel ne partira pas : ce donateur fait partie des donateurs mis de côté (environ 10 %) pour mesurer. Ses dons serviront de comparaison avec ceux des donateurs contactés.</p>}
                 <label className="block">
                   <span className="text-xs font-medium uppercase tracking-wide text-stone-400">Objet</span>
                   <input
                     value={item.subject}
-                    disabled={item.status === 'sent'}
+                    disabled={item.status === 'sent' || item.status === 'control'}
                     onChange={(e) => updateItem(item.id, { subject: e.target.value })}
                     className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm font-medium outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:bg-stone-50"
                   />
@@ -135,13 +143,13 @@ export default function Campaigns() {
                   <span className="text-xs font-medium uppercase tracking-wide text-stone-400">Message</span>
                   <textarea
                     value={item.body}
-                    disabled={item.status === 'sent'}
+                    disabled={item.status === 'sent' || item.status === 'control'}
                     onChange={(e) => updateItem(item.id, { body: e.target.value })}
                     rows={14}
                     className="mt-1 w-full resize-y rounded-lg border border-stone-200 px-3 py-2 text-sm leading-relaxed outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:bg-stone-50"
                   />
                 </label>
-                {item.status === 'control' && <p className="rounded-lg bg-stone-50 px-3 py-2 text-sm text-stone-600">Mis de côté pour mesurer : ce donateur n'est volontairement pas contacté. Ses dons servent de comparaison.</p>}
+                {(item.status === 'draft' || item.status === 'approved') && <p className="text-xs text-stone-500">Les liens entre crochets (paiement, désabonnement) sont ajoutés par l'outil d'envoi. Vous pouvez signer de votre nom à la place de la signature de l'équipe.</p>}
                 {item.status !== 'sent' && item.status !== 'control' && (
                   <div id="courriel-actions" className="flex flex-wrap justify-end gap-2">
                     {item.status !== 'dismissed' && (
@@ -149,15 +157,16 @@ export default function Campaigns() {
                         <X className="size-4" /> Ignorer
                       </Button>
                     )}
+                    {empty && <p className="mr-auto self-center text-sm text-rose-700">Objet ou message vide : complétez-le avant d'envoyer.</p>}
                     {item.status === 'draft' && (
-                      <Button variant="secondary" onClick={() => updateItem(item.id, { status: 'approved' })}>
+                      <Button variant="secondary" disabled={empty} onClick={() => updateItem(item.id, { status: 'approved' })}>
                         <CheckCheck className="size-4" /> Approuver
                       </Button>
                     )}
                     {item.status === 'dismissed' ? (
                       <Button variant="secondary" onClick={() => updateItem(item.id, { status: 'draft' })}>Restaurer</Button>
                     ) : (
-                      <Button variant="primary" onClick={() => sendItems([item.id])}>
+                      <Button variant="primary" disabled={empty} onClick={() => sendItems([item.id])}>
                         <Send className="size-4" /> Envoyer
                       </Button>
                     )}

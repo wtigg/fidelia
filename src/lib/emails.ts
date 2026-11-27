@@ -52,7 +52,7 @@ export function draftEmail(type: ActionType, donor: Donor, score: DonorScore): {
   const monthly = donor.monthlyAmount
   const since = tenure(f.tenureMonths)
   const last = lastGift(donor)
-  const sign = `\n\nAvec toute notre reconnaissance,\n\n[Votre prénom et nom]\nResponsable des dons, ${ORG_NAME}\n\n—\nVous recevez ce courriel parce que vous soutenez ${ORG_NAME}. Pour ne plus recevoir nos messages : [se désabonner]`
+  const sign = `\n\nAvec toute notre reconnaissance,\n\nL'équipe des ${ORG_NAME.replace(/^Les /, '')}\n\nVous recevez ce courriel parce que vous soutenez ${ORG_NAME}. Pour ne plus recevoir nos messages : [se désabonner]`
   const p = (...parts: string[]) => `Bonjour ${name},\n\n${parts.filter(Boolean).join('\n\n')}${sign}`
 
   switch (type) {

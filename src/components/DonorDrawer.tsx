@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { Check, Mail, MailX, MapPin, Sparkles } from 'lucide-react'
-import { addMonths, formatDate, formatMoney, iso, monthIndex, fx } from '../lib/dates.ts'
+import { Check, FlaskConical, Mail, MailX, MapPin, Sparkles } from 'lucide-react'
+import { addMonths, formatDate, formatMoney, monthIndex, fx } from '../lib/dates.ts'
 import { ACTION_COLOR, ACTION_LABELS, ACTION_TONE, PROB_LABEL, SEGMENT_HELP, SEGMENT_LABELS, SEGMENT_TONE } from '../lib/labels.ts'
 import type { ModelKind } from '../lib/types.ts'
 import { FEATURE_KEYS, FEATURE_LABELS } from '../ml/features.ts'
@@ -103,7 +104,7 @@ export function DonorDrawer({ donorId, onClose }: { donorId: string | null; onCl
                   <Badge>Aucune action recommandée</Badge>
                 )}
                 <p className="mt-2 text-sm text-stone-500">
-                  Dons espérés sur un an <span className="font-semibold text-stone-900">{formatMoney(score.expectedValue)}</span>
+                  <span title="Chance × montant annuel du donateur : la valeur en jeu, pas un don déjà gagné" className="cursor-help underline decoration-dotted underline-offset-2">Dons espérés sur un an</span> <span className="font-semibold text-stone-900">{formatMoney(score.expectedValue)}</span>
                 </p>
                 {score.thankReason && <p className="mt-2 text-sm text-pink-700">À remercier : {score.thankReason}</p>}
                 {score.suggestedMonthly && score.action !== 'churn_prevention' && score.action !== 'reactivation' && (
@@ -115,12 +116,17 @@ export function DonorDrawer({ donorId, onClose }: { donorId: string | null; onCl
             </div>
             {score.action && (
               <div className="mt-4 flex items-center gap-2 border-t border-stone-100 pt-4">
-                {inCampaign ? (
+                {inCampaign?.status === 'control' ? (
+                  <p className="flex items-start gap-1.5 text-sm text-stone-600">
+                    <FlaskConical className="mt-0.5 size-4 shrink-0" /> Mis de côté pour mesurer : ce donateur fait partie des donateurs (environ 10 %) qu'on ne contacte pas cette fois, pour vérifier si les courriels font une vraie différence.
+                  </p>
+                ) : inCampaign ? (
                   <p className="flex items-center gap-1.5 text-sm text-brand-700">
-                    <Check className="size-4" /> Courriel {inCampaign.status === 'sent' ? 'envoyé' : inCampaign.status === 'control' ? "non envoyé (mis de côté pour mesurer l'effet)" : 'en préparation'}
+                    <Check className="size-4" /> Courriel {inCampaign.status === 'sent' ? 'envoyé' : 'prêt à relire'}
+                    {<Link to="/campagnes" className="ml-1 font-medium underline underline-offset-2">Voir dans Courriels</Link>}
                   </p>
                 ) : donor.emailConsent ? (
-                  <Button variant="primary" size="sm" onClick={() => createDrafts([donor.id])}>
+                  <Button variant="primary" size="sm" onClick={() => createDrafts([donor.id], { control: false })}>
                     <Mail className="size-4" /> Préparer le courriel
                   </Button>
                 ) : (
@@ -152,14 +158,14 @@ export function DonorDrawer({ donorId, onClose }: { donorId: string | null; onCl
           </div>
         </Card>
 
-        <Card title="Historique sur 24 mois" subtitle="Dons (barres) et taux d'ouverture des courriels (courbe)">
+        <Card title="Historique sur 24 mois" subtitle="Dons reçus (barres vertes), paiements échoués (barres rouges) et part des courriels ouverts (courbe orange)">
           <div className="h-56 px-2 py-4">
             <ResponsiveContainer>
               <ComposedChart data={history} margin={{ left: 0, right: 8, top: 4 }}>
                 <CartesianGrid vertical={false} stroke="#f0eeec" />
                 <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#a8a29e' }} tickLine={false} axisLine={false} interval={3} />
-                <YAxis yAxisId="eur" tick={{ fontSize: 11, fill: '#a8a29e' }} tickLine={false} axisLine={false} width={40} unit="$" />
-                <YAxis yAxisId="pct" orientation="right" domain={[0, 100]} hide />
+                <YAxis yAxisId="eur" tick={{ fontSize: 11, fill: '#a8a29e' }} tickLine={false} axisLine={false} width={44} tickFormatter={(v) => `${v} $`} />
+                <YAxis yAxisId="pct" orientation="right" domain={[0, 100]} width={48} tick={{ fontSize: 11, fill: '#d97706' }} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}\u00a0%`} />
                 <Tooltip
                   contentStyle={{ borderRadius: 12, border: '1px solid #e7e5e4', fontSize: 12 }}
                   formatter={(v, name) => [name === 'open' ? `${v} %` : `${v} $`, name === 'paid' ? 'Don' : name === 'failed' ? 'Échec de paiement' : 'Ouverture des courriels']}
@@ -224,7 +230,7 @@ export function DonorDrawer({ donorId, onClose }: { donorId: string | null; onCl
             </div>
             <div>
               <dt className="text-stone-400">Date d'analyse</dt>
-              <dd className="text-stone-800">{iso(new Date(dataset.refDate))}</dd>
+              <dd className="text-stone-800">{formatDate(dataset.refDate)}</dd>
             </div>
           </dl>
         </Card>

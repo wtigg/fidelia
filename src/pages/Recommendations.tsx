@@ -5,18 +5,24 @@ import { Check, Mail, MailX, SlidersHorizontal, Sparkles } from 'lucide-react'
 import { DonorDrawer } from '../components/DonorDrawer.tsx'
 import { Badge, Button, Card, Empty, PageHeader, ProbBar, Tabs, Td, Th } from '../components/ui.tsx'
 import { formatMoney } from '../lib/dates.ts'
-import { ACTION_COLOR, ACTION_DESCRIPTIONS, ACTION_LABELS, ACTION_TONE, ACTION_TYPES, PROB_WORD, SEGMENT_LABELS, thresholdText } from '../lib/labels.ts'
+import { ACTION_COLOR, ACTION_DESCRIPTIONS, ACTION_LABELS, ACTION_MODEL, ACTION_TONE, ACTION_TYPES, PROB_WORD, SEGMENT_LABELS, thresholdText } from '../lib/labels.ts'
+import { failedAlerts } from '../lib/requirements.ts'
+import { MODEL_SPECS } from '../ml/pipeline.ts'
 import type { ActionType } from '../lib/types.ts'
 import { useStore } from '../state/store.tsx'
 
 type Filter = 'all' | ActionType
 const TYPES = ACTION_TYPES
 const PAGE = 40
+/** Donateur montré sur l'affiche (badge Démo 1) et ouvert par la visite guidée */
+const DEMO_DONOR = { firstName: 'Olivier', lastName: 'Gauthier' }
 
 export default function Recommendations() {
-  const { scores, donorsById, campaign, createDrafts, automations, training } = useStore()
+  const { scores, donorsById, campaign, createDrafts, automations, training, reports } = useStore()
   const [params, setParams] = useSearchParams()
-  const filter = (params.get('type') as Filter) ?? 'all'
+  // type inconnu dans l'adresse : on revient à « Toutes »
+  const rawType = params.get('type')
+  const filter: Filter = rawType && (ACTION_TYPES as string[]).includes(rawType) ? (rawType as Filter) : 'all'
   const [sort, setSort] = useState<'value' | 'prob'>('value')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [limit, setLimit] = useState(PAGE)
@@ -30,7 +36,10 @@ export default function Recommendations() {
     return sort === 'prob' ? [...l].sort((a, b) => b.actionProb - a.actionProb) : l
   }, [all, filter, sort])
   const shown = list.slice(0, limit)
+  // lignes cochables : ni déjà dans Courriels, ni sans consentement
+  const selectable = shown.filter((s) => !inCampaign.has(s.donorId) && donorsById.get(s.donorId)?.emailConsent).map((s) => s.donorId)
   const actionable = list.filter((s) => !inCampaign.has(s.donorId) && donorsById.get(s.donorId)?.emailConsent)
+  const noConsent = list.filter((s) => !donorsById.get(s.donorId)?.emailConsent).length
 
   const toggle = (id: string) => setSelected((s) => {
     const n = new Set(s)
@@ -47,9 +56,16 @@ export default function Recommendations() {
     setTimeout(() => setToast(undefined), 3500)
   }
 
-  // ?fiche=auto (visite guidée) : ouvre la fiche du premier donateur, de préférence avec un paiement échoué
+  // ?fiche=demo (visite guidée) : ouvre la fiche du donateur de l'affiche (Olivier Gauthier, données de démo par défaut).
+  // S'il n'est pas dans la liste (autre jeu de données), ?fiche=auto prend le premier donateur avec un paiement échoué.
   const fiche = params.get('fiche')
-  const autoFiche = fiche === 'auto' ? (list.find((s) => s.features.failed90d > 0) ?? list[0])?.donorId ?? null : fiche
+  const firstFailed = () => (list.find((s) => s.features.failed90d > 0) ?? list[0])?.donorId ?? null
+  const demoDonor = () =>
+    list.find((s) => {
+      const d = donorsById.get(s.donorId)
+      return d?.firstName === DEMO_DONOR.firstName && d.lastName === DEMO_DONOR.lastName && s.features.failed90d > 0
+    })?.donorId ?? firstFailed()
+  const autoFiche = fiche === 'demo' ? demoDonor() : fiche === 'auto' ? firstFailed() : fiche
   const drawerId = open ?? autoFiche
   const closeDrawer = () => {
     setOpen(null)
@@ -61,6 +77,9 @@ export default function Recommendations() {
   }
 
   const auto = filter !== 'all' ? automations.find((a) => a.type === filter) : undefined
+  const listModel = filter !== 'all' ? ACTION_MODEL[filter] : null
+  const listReport = listModel ? reports[listModel] : undefined
+  const listAlerts = listReport && listReport.deployed !== 'rfm' ? failedAlerts(listReport) : []
   const changeFilter = (v: Filter) => {
     setParams(v === 'all' ? {} : { type: v })
     setLimit(PAGE)
@@ -98,7 +117,7 @@ export default function Recommendations() {
           Afficher
           <select value={filter} onChange={(e) => changeFilter(e.target.value as Filter)} className="min-w-0 flex-1 rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-sm text-stone-800">
             {filterItems.map((it) => (
-              <option key={it.value} value={it.value}>{it.label} ({it.count})</option>
+              <option key={it.value} value={it.value}>{it.label} ({it.count.toLocaleString('fr-CA')})</option>
             ))}
           </select>
         </label>
@@ -109,11 +128,18 @@ export default function Recommendations() {
             <option value="prob">Chance ou risque le plus élevé</option>
           </select>
         </div>
+        {noConsent > 0 && (
+          <p className="text-xs text-stone-500">
+            {noConsent} donateur{noConsent > 1 ? 's' : ''} de cette liste {noConsent > 1 ? "n'ont" : "n'a"} pas consenti aux courriels (« Sans consentement ») : à joindre par téléphone ou par la poste. Lors d'une préparation groupée, environ 10 % des courriels sont mis de côté pour mesurer l'effet.
+          </p>
+        )}
       </div>
 
       {filter !== 'all' && (
         <p className="mb-4 text-sm text-stone-500">
           {ACTION_DESCRIPTIONS[filter]} {filter !== 'thank' && <>Fidélia retient les donateurs dont {PROB_WORD(filter) === 'risque' ? 'le risque' : 'la chance'} atteint <b className="text-stone-700">{thresholdText(auto?.threshold ?? 0)}</b>.</>}
+          {listModel && <> Classement : {listReport?.deployed === 'rfm' ? 'méthode habituelle (liste indicative)' : <>modèle « {MODEL_SPECS[listModel].title} »</>}.</>}
+          {listAlerts.length > 0 && <span className="text-amber-800"> Point{listAlerts.length > 1 ? 's' : ''} à surveiller avant un usage réel : {listAlerts.join(', ')}{filter === 'reactivation' ? " ; modèle à l'essai, pas encore validé sur de vrais donateurs" : ''}.</span>}
         </p>
       )}
 
@@ -168,8 +194,9 @@ export default function Recommendations() {
                     <input
                       type="checkbox"
                       className="accent-brand-600"
-                      checked={selected.size > 0 && shown.every((s) => selected.has(s.donorId) || inCampaign.has(s.donorId))}
-                      onChange={(e) => setSelected(e.target.checked ? new Set(shown.filter((s) => !inCampaign.has(s.donorId) && donorsById.get(s.donorId)?.emailConsent).map((s) => s.donorId)) : new Set())}
+                      aria-label="Tout sélectionner"
+                      checked={selectable.length > 0 && selectable.every((id) => selected.has(id))}
+                      onChange={(e) => setSelected(e.target.checked ? new Set(selectable) : new Set())}
                     />
                   </Th>
                   <Th>Donateur</Th>
@@ -205,7 +232,7 @@ export default function Recommendations() {
                         </p>
                       </Td>
                       <Td><Badge className={ACTION_TONE[s.action!]}>{ACTION_LABELS[s.action!]}</Badge></Td>
-                      <Td>{s.action === 'thank' ? <span className="text-xs text-stone-500">Toujours</span> : <ProbBar value={s.actionProb} color={ACTION_COLOR[s.action!]} width="w-14" word={PROB_WORD(s.action)} />}</Td>
+                      <Td>{s.action === 'thank' ? <span className="text-xs text-stone-500">Règle simple</span> : <ProbBar value={s.actionProb} color={ACTION_COLOR[s.action!]} width="w-14" word={PROB_WORD(s.action)} />}</Td>
                       <Td>
                         <div className="flex flex-col items-start gap-1">
                           {s.action === 'thank' && <span className="whitespace-nowrap rounded-md bg-pink-50 px-1.5 py-0.5 text-xs text-pink-700">{s.thankReason}</span>}
@@ -214,7 +241,7 @@ export default function Recommendations() {
                           ))}
                         </div>
                       </Td>
-                      <Td className="text-right font-semibold tabular-nums text-stone-900">{s.action === 'thank' ? '—' : formatMoney(s.expectedValue)}</Td>
+                      <Td className="text-right font-semibold tabular-nums text-stone-900">{s.action === 'thank' ? '–' : formatMoney(s.expectedValue)}</Td>
                       <Td className="text-right">
                         {status ? (
                           <Badge className="bg-brand-50 text-brand-700 ring-brand-100"><Check className="size-3" />{status === 'sent' ? 'Envoyé' : 'Préparé'}</Badge>

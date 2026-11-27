@@ -67,3 +67,24 @@ export const REQUIREMENTS: Requirement[] = [
     },
   },
 ]
+
+/** Noms simples des contrôles R3 à R6, affichés comme alertes à côté de la décision */
+export const ALERT_NAMES: Record<string, string> = {
+  R3: 'les 50 premiers noms',
+  R4: 'fiabilité des pourcentages',
+  R5: 'stabilité dans le temps',
+  R6: "équilibre entre tranches d'âge",
+}
+
+/** Contrôles R3 à R6 non remplis : le modèle reste utilisé (R1 et R2 suffisent), mais une personne doit les vérifier avant un usage réel */
+export function failedAlerts(r: ModelReport): string[] {
+  return REQUIREMENTS.filter((q) => q.id in ALERT_NAMES && !q.check(r).ok).map((q) => {
+    if (q.id !== 'R6') return ALERT_NAMES[q.id]
+    // R6 : dire quel groupe est sur-estimé (risque de trop le solliciter) ou sous-estimé (risque de l'oublier)
+    const groups = r.fairness.find((f) => f.by === 'age')?.groups.filter((g) => g.group !== 'Inconnu' && g.n >= 100 && g.baseRate * g.n >= 5 && g.baseRate > 0) ?? []
+    const over = groups.filter((g) => g.meanPred / g.baseRate > 1.5).map((g) => g.group.toLowerCase().replace(/^(\d)/, 'les $1'))
+    const under = groups.filter((g) => g.meanPred / g.baseRate < 0.67).map((g) => g.group.toLowerCase().replace(/^(\d)/, 'les $1'))
+    const parts = [over.length ? `surestime ${over.join(' et ')}` : '', under.length ? `sous-estime ${under.join(' et ')}` : ''].filter(Boolean)
+    return parts.length ? `${ALERT_NAMES.R6} (${parts.join(', ')})` : ALERT_NAMES.R6
+  })
+}

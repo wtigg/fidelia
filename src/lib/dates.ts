@@ -47,6 +47,6 @@ export function formatMoney(n: number): string {
 
 /** Nombre à décimales fixes, au format québécois (virgule décimale) */
 export function fx(n: number | undefined | null, digits = 2): string {
-  if (n === undefined || n === null || !Number.isFinite(n)) return '—'
+  if (n === undefined || n === null || !Number.isFinite(n)) return '–'
   return n.toLocaleString('fr-CA', { minimumFractionDigits: digits, maximumFractionDigits: digits })
 }

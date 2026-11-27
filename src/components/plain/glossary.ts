@@ -17,7 +17,7 @@ export const GLOSSARY = {
     def: 'Un programme qui repère, dans l’historique de vos donateurs, les signes qui précèdent un départ, une hausse ou un retour.',
   },
   jamaisVus: {
-    term: 'Donateurs jamais vus',
+    term: 'Donateurs gardés pour le test',
     def: 'Une partie des donateurs est mise de côté. Le modèle ne les voit pas pendant son apprentissage : on le teste ensuite sur eux, comme un examen.',
   },
   valeurEnJeu: {

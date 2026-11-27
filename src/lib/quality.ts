@@ -1,4 +1,5 @@
 import type { Dataset } from './types.ts'
+import { formatDate } from './dates.ts'
 
 /**
  * Contrôles de qualité des données, regroupés selon les dimensions de Strong, Lee et Wang (1997).
@@ -53,7 +54,7 @@ export function qualityReport(ds: Dataset): QualityCheck[] {
     { dimension: 'Cohérence', label: 'Dons sans donateur correspondant', value: orphan, total: g, higherIsBetter: false, threshold: 0 },
     { dimension: 'Cohérence', label: "Dons antérieurs à la date d'inscription", value: beforeJoin, total: g, higherIsBetter: false, threshold: 0.001 },
     { dimension: 'Cohérence', label: 'Mensuels sans aucun prélèvement / arrêt avant inscription', value: monthlyNoGift + churnBeforeJoin, total: n, higherIsBetter: false, threshold: 0.01 },
-    { dimension: 'Actualité', label: `Jours depuis le dernier don enregistré (${lastDate || '—'})`, value: staleDays, total: 1, higherIsBetter: false, threshold: 31 },
+    { dimension: 'Actualité', label: `Jours depuis le dernier don enregistré (${lastDate ? formatDate(lastDate) : '–'})`, value: staleDays, total: 1, higherIsBetter: false, threshold: 31 },
     { dimension: 'Accessibilité', label: 'Donateurs ayant consenti aux courriels (Loi 25 / LCAP)', value: consent, total: n, higherIsBetter: true, threshold: 0.7 },
   ]
 }

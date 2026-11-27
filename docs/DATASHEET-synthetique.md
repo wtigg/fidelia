@@ -113,7 +113,7 @@ Un modèle entraîné sur ce jeu apprend d'abord les règles du générateur. D'
 ## 6. Distribution
 
 - **Où :** produit à la volée dans le navigateur ou par les scripts. Aucun fichier de données n'est versionné, seulement le code, ce qui garantit la reproductibilité.
-- **Comment l'exporter :** page Données, bouton « Modèles de fichiers » (CSV).
+- **Comment l'exporter :** page Données, bouton « Exemple complet (3 fichiers) » (CSV).
 - **Licence :** celle du dépôt.
 
 ## 7. Maintenance
